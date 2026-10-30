@@ -1,0 +1,29 @@
+{
+  "_note": "Freshness ledger for perishable researched info. Dates are ISO YYYY-MM-DD.",
+  "entries": [
+    {
+      "id": "newsletter-digest-prior-art",
+      "artifact": "README.md#prior-art",
+      "topic": "Newsletter readers, email digests, self-hosted projects, and product feature comparisons",
+      "checked": "2026-10-30",
+      "recheck_by": "2027-01-30",
+      "volatility": "medium",
+      "reason": "Product capabilities, project activity, deployment options, and availability change; recheck primary project pages and repositories before relying on the competitive positioning.",
+      "sources": [
+        "https://github.com/jonhadfield/taran",
+        "https://github.com/AlexisBalayre/ai-daily-summary",
+        "https://github.com/pengyaoc/openreader",
+        "https://github.com/eschnou/morningdeck",
+        "https://github.com/wanleung/summermail",
+        "https://github.com/LeonMusCoden/letterfeed",
+        "https://github.com/omnivore-app/omnivore",
+        "https://github.com/kamui-fin/readspace",
+        "https://www.passel.email/",
+        "https://docs.meco.app/",
+        "https://www.readless.app/",
+        "https://mailbrew.com/",
+        "https://leavemealone.com/rollups/"
+      ]
+    }
+  ]
+}

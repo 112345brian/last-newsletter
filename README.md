@@ -6,25 +6,46 @@ themes ranked by how many sources covered them, not just emails in a list.
 
 ## Why another one of these
 
-Several hosted products already do roughly this — see [Prior art](#prior-art) below.
-What's missing is a **self-hosted, open-source** version: you point it at your own
-mailbox (IMAP or Gmail) and your own LLM API key, nothing routes through a third
-party's servers, and you can see exactly what prompt summarizes your email.
+There are now self-hosted, open-source readers and AI digest pipelines in this
+space, so self-hosting alone is not a unique differentiator. See the [prior-art
+survey](#prior-art) for the closest overlaps and adjacent tools. The project’s
+current hypothesis is narrower: a small, inspectable tool focused on turning
+newsletters already in your mailbox into one periodic digest, with source
+agreement used to rank shared themes. That hypothesis needs validation against
+projects such as Taran and AI Daily Summary, which already cover parts of it.
 
 ## Prior art
 
-Researched before writing any code, so we're not duplicating a solved problem:
+> **Freshness:** checked 2026-10-30; recheck by 2027-01-30. See `freshness.json`.
 
-| Product | Model | Notes |
-|---|---|---|
-| [Passel](https://www.passel.email/) | Hosted, dedicated `@passel.email` forwarding address | Closest match: AI weekly digest, cross-source theme ranking ("4 of your newsletters covered AI agents this week"), links back to originals. Free tier + paid. |
-| [Meco](https://meco.app) | Hosted, dedicated inbox address, Gmail/Outlook OAuth | iOS/Android/web reader; AI summaries are a Pro-only feature (~$3–5/mo). |
-| [Readless](https://www.readless.app) | Hosted, dedicated forwarding address | AI summaries only, no free tier (Pro ~$4.90/mo, Max ~$9/mo). |
-| [Mailbrew](https://mailbrew.com) | Hosted | Bundles newsletters + RSS + social feeds into one daily email; broader than just newsletters. |
-| [Leave Me Alone Rollups](https://leavemealone.com/rollups/) | Hosted | Bundles sender emails into one scheduled digest; strips trackers; **no AI summarization**, just grouping. |
-| Gmail filters / Unroll.me | Manual / hosted | The baseline everyone starts from; Unroll.me has a documented history of selling inbox data. |
+Survey checked 2026-10-30. The table distinguishes direct product overlaps from
+adjacent readers and workflows; “self-hosted” describes the project’s published
+deployment model, while “open source” refers to a public source repository or
+license. Features and availability can change; see [`freshness.json`](freshness.json)
+for the recheck date and sources.
 
-None of the above are self-hosted or open-source. That's the gap this project fills.
+| Project | Deployment / input | What overlaps | Difference from this project’s current scope |
+|---|---|---|---|
+| [Taran](https://github.com/jonhadfield/taran) | Open-source, self-hosted; newsletters forwarded to its managed inbox | Daily AI newsletter summaries, key points, topics, sentiment, dashboard | Very close direct competitor; broader product with a Go backend and Next.js dashboard. Compare setup, cross-source theme synthesis, and output before claiming differentiation. |
+| [AI Daily Summary](https://github.com/AlexisBalayre/ai-daily-summary) | Open-source, self-hosted; Gmail newsletters plus RSS, GitHub trending, and crawlers | Daily AI-enriched newsletter, summaries, semantic deduplication, email delivery | Broad news pipeline with dashboard, audio briefing, API/chat, and MCP server; not limited to newsletters already in a mailbox. |
+| [OpenReader](https://github.com/pengyaoc/openreader) | Open-source, self-hosted; RSS/Atom and read-only IMAP newsletters | Newsletter ingestion, reading, optional AI article summaries | Reader-first, manual refresh and per-article summaries; its README explicitly says it has no scheduler. |
+| [Morning Deck](https://github.com/eschnou/morningdeck) | Open-source, self-hostable; RSS, newsletters, websites, Reddit | AI ranking and scheduled personalized daily briefings | News-intelligence and content-creation platform with many source types and broader scope. |
+| [SummerMail](https://github.com/wanleung/summermail) | Open-source, self-hosted; Gmail/IMAP | Importance scoring, AI email summaries, morning digest, dashboard | General inbox digest, rather than a newsletter-only product with cross-source theme ranking. |
+| [LetterFeed](https://github.com/LeonMusCoden/letterfeed) | Open-source, self-hosted; email newsletters | Turns newsletter mail into RSS | Ingestion/transport bridge; the user supplies a separate feed reader and digest workflow. |
+| [Omnivore](https://github.com/omnivore-app/omnivore) | Open-source, self-hosted read-it-later app; supports newsletter email | Newsletter capture and reading in a self-hosted app | Reading/library workflow rather than a scheduled cross-source digest. |
+| [Readspace](https://github.com/kamui-fin/readspace) | Open-source reader with hosted and self-hosted modes; RSS and newsletter support vary by mode | Daily digest and AI summaries; self-hosted AI can use a user key | General RSS reader; its feature matrix says the hosted newsletter address is unavailable in self-hosted mode. |
+| [Passel](https://www.passel.email/) | Hosted; dedicated forwarding address | AI weekly newsletter digest with cross-source themes | Strong hosted reference for the core experience; verify current details on its product pages. |
+| [Meco](https://meco.app/) | Hosted reader; Gmail/Outlook connection or Meco inbox | Newsletter organization, daily digest, AI summaries and audio | Reader-first multi-device app; its docs list AI summaries/podcasts among Pro features. |
+| [Readless](https://www.readless.app/) | Hosted; inbox, Substack, and RSS | Scheduled AI digest; highlights stories covered by multiple senders | Direct hosted competitor. Its current product page differentiates per-source summaries/Hot Topics from a cross-source Synthesis tier. |
+| [Mailbrew](https://mailbrew.com/) | Hosted | Daily email digest of newsletters and other sources | Broader source aggregation; not self-hosted. |
+| [Leave Me Alone Rollups](https://leavemealone.com/rollups/) | Hosted | Scheduled bundling of subscribed senders | Rollup/cleanup workflow, not AI synthesis. |
+
+This scan disproves the original claim that no self-hosted/open-source option
+exists. The closest code-level comparisons to evaluate next are Taran, AI Daily
+Summary, and OpenReader. A meaningful differentiator must be demonstrated in the
+implemented product—for example, reliable IMAP-first ingestion, transparent
+cross-newsletter synthesis, simple deployment, or modular adapters—not asserted
+from the scaffold alone.
 
 ## Architecture
 
