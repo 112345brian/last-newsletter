@@ -1,0 +1,17 @@
+[project]
+name = "last-newsletter-core"
+version = "0.1.0"
+description = "Entities, use cases, and ports for Last Newsletter. No framework, I/O, or adapter dependencies — this package must never import anything from packages/adapter_* or packages/cli."
+readme = "README.md"
+authors = [
+    { name = "112345brian", email = "11creepman@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "ruff", "ty"]
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

@@ -1,0 +1,22 @@
+[project]
+name = "last-newsletter-adapter-email"
+version = "0.1.0"
+description = "EmailSource adapter: fetches messages over IMAP (or Gmail API) and maps them to core.EmailMessage. Implements the port defined in last-newsletter-core; knows nothing about summarization or digest rendering."
+readme = "README.md"
+authors = [
+    { name = "112345brian", email = "11creepman@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "last-newsletter-core",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "ruff", "ty"]
+
+[tool.uv.sources]
+last-newsletter-core = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

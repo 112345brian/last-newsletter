@@ -1,0 +1,31 @@
+[project]
+name = "last-newsletter-cli"
+version = "0.1.0"
+description = "Composition root. Wires a concrete EmailSource + Summarizer + DigestPublisher into core's BuildDigestUseCase and runs it. The only package allowed to import every other package."
+readme = "README.md"
+authors = [
+    { name = "112345brian", email = "11creepman@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "last-newsletter-core",
+    "last-newsletter-adapter-email",
+    "last-newsletter-adapter-summarizer",
+    "last-newsletter-adapter-publish",
+]
+
+[project.scripts]
+last-newsletter = "last_newsletter_cli:main"
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "ruff", "ty"]
+
+[tool.uv.sources]
+last-newsletter-core = { workspace = true }
+last-newsletter-adapter-email = { workspace = true }
+last-newsletter-adapter-summarizer = { workspace = true }
+last-newsletter-adapter-publish = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
