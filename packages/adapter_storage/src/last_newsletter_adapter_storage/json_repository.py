@@ -9,8 +9,8 @@ directory of files ever stops being enough.
 from __future__ import annotations
 
 import json
-from datetime import datetime
-from typing import TYPE_CHECKING
+from datetime import date, datetime
+from typing import TYPE_CHECKING, Any
 
 from last_newsletter_core.entities import Cadence, Digest, Theme
 
@@ -22,41 +22,57 @@ def _slug_for(digest: Digest) -> str:
     return f"{digest.period_start:%Y-%m-%dT%H%M%S}_{digest.cadence.value}"
 
 
-def _to_dict(digest: Digest) -> dict:
+def _theme_to_dict(theme: Theme) -> dict[str, Any]:
+    return {
+        "title": theme.title,
+        "summary": theme.summary,
+        "source_count": theme.source_count,
+        "source_message_ids": list(theme.source_message_ids),
+        "theme_key": theme.theme_key,
+        "relevant_until": theme.relevant_until.isoformat() if theme.relevant_until else None,
+        "first_seen": theme.first_seen.isoformat() if theme.first_seen else None,
+        "streak": theme.streak,
+        "carried_forward": theme.carried_forward,
+        "personal_weight": theme.personal_weight,
+    }
+
+
+def _theme_from_dict(data: dict[str, Any]) -> Theme:
+    return Theme(
+        title=data["title"],
+        summary=data["summary"],
+        source_count=data["source_count"],
+        source_message_ids=tuple(data["source_message_ids"]),
+        theme_key=data["theme_key"],
+        relevant_until=(
+            date.fromisoformat(data["relevant_until"]) if data["relevant_until"] else None
+        ),
+        first_seen=date.fromisoformat(data["first_seen"]) if data["first_seen"] else None,
+        streak=data["streak"],
+        carried_forward=data["carried_forward"],
+        personal_weight=data["personal_weight"],
+    )
+
+
+def _to_dict(digest: Digest) -> dict[str, Any]:
     return {
         "period_start": digest.period_start.isoformat(),
         "period_end": digest.period_end.isoformat(),
         "cadence": digest.cadence.value,
         "total_messages": digest.total_messages,
         "total_sources": digest.total_sources,
-        "themes": [
-            {
-                "title": theme.title,
-                "summary": theme.summary,
-                "source_count": theme.source_count,
-                "source_message_ids": list(theme.source_message_ids),
-            }
-            for theme in digest.themes
-        ],
+        "themes": [_theme_to_dict(theme) for theme in digest.themes],
     }
 
 
-def _from_dict(data: dict) -> Digest:
+def _from_dict(data: dict[str, Any]) -> Digest:
     return Digest(
         period_start=datetime.fromisoformat(data["period_start"]),
         period_end=datetime.fromisoformat(data["period_end"]),
         cadence=Cadence(data["cadence"]),
         total_messages=data["total_messages"],
         total_sources=data["total_sources"],
-        themes=tuple(
-            Theme(
-                title=t["title"],
-                summary=t["summary"],
-                source_count=t["source_count"],
-                source_message_ids=tuple(t["source_message_ids"]),
-            )
-            for t in data["themes"]
-        ),
+        themes=tuple(_theme_from_dict(t) for t in data["themes"]),
     )
 
 

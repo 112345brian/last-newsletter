@@ -6,7 +6,13 @@ requires-python = ">=3.11"
 dependencies = []
 
 [dependency-groups]
-dev = ["pytest", "pytest-cov", "ruff", "ty"]
+dev = [
+    "import-linter>=2.15",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "ty",
+]
 
 [tool.uv.workspace]
 members = [
@@ -17,6 +23,7 @@ members = [
     "packages/cli",
     "packages/adapter_storage",
     "packages/adapter_web",
+    "packages/adapter_knowledge",
 ]
 
 [tool.ruff]
@@ -29,15 +36,53 @@ select = ["ALL"]
 ignore = ["D", "COM812", "ISC001", "CPY001"]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["S101", "D", "PLR2004", "ARG002"]
+"**/tests/**" = ["S101", "D", "PLR2004", "ARG002", "INP001"]
 "**/adapter_*/**" = ["ARG002"]
 
 [tool.ty.environment]
 python-version = "3.11"
 
+# error-on-warning promotes every warn-level diagnostic to a hard failure, which is most of
+# ty's "strict" posture for free. The rules below are the ones that default to `ignore` (so
+# error-on-warning doesn't touch them) but matter for an actually, not just nominally, strictly
+# typed project: real type-unsoundness (unsound-assignment/-return-statement/-yield), erased
+# generics (missing-type-argument), narrowing past None without checking it, ignore-comments
+# that suppress everything instead of one named rule, and overrides that don't say so.
+[tool.ty.terminal]
+error-on-warning = true
+
 [tool.ty.rules]
 possibly-unresolved-reference = "error"
-unused-ignore-comment = "warn"
+unused-ignore-comment = "error"
+blanket-ignore-comment = "error"
+missing-type-argument = "error"
+unsound-assignment = "error"
+unsound-return-statement = "error"
+unsound-yield = "error"
+possibly-missing-attribute = "error"
+truthiness-test-of-none-union = "error"
+missing-override-decorator = "error"
 
 [tool.pytest.ini_options]
 testpaths = ["packages"]
+
+[tool.importlinter]
+root_packages = [
+    "last_newsletter_core",
+    "last_newsletter_adapter_email",
+    "last_newsletter_adapter_summarizer",
+    "last_newsletter_adapter_publish",
+    "last_newsletter_adapter_storage",
+    "last_newsletter_adapter_web",
+    "last_newsletter_adapter_knowledge",
+    "last_newsletter_cli",
+]
+
+[[tool.importlinter.contracts]]
+name = "Clean Architecture dependency rule (README.md#architecture)"
+type = "layers"
+layers = [
+    "last_newsletter_cli",
+    "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge",
+    "last_newsletter_core",
+]

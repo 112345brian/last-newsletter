@@ -1,0 +1,22 @@
+[project]
+name = "last-newsletter-adapter-knowledge"
+version = "0.1.0"
+description = "Optional personalization: boosts digest themes that match entries in a personal knowledge.db (schema: https://github.com/112345brian/knowledge). Entirely opt-in -- nothing else in this workspace depends on or knows about this package; the CLI wires it in only when a database path is configured."
+readme = "README.md"
+authors = [
+    { name = "112345brian", email = "11creepman@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "last-newsletter-core",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "ruff", "ty"]
+
+[tool.uv.sources]
+last-newsletter-core = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

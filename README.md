@@ -63,35 +63,77 @@ without touching business rules. Dependencies only point inward:
 ```
 packages/
   core/                    entities + use cases + ports (no I/O, no framework deps)
-  adapter_email/           EmailSource  -> IMAP (implements a core port)
-  adapter_summarizer/      Summarizer   -> Claude API (implements a core port)
-  adapter_publish/         DigestPublisher -> Markdown file (implements a core port)
+  adapter_email/           EmailSource      -> IMAP (implements a core port)
+  adapter_summarizer/      Summarizer       -> Claude API (implements a core port)
+  adapter_publish/         DigestPublisher  -> Markdown file (implements a core port)
+  adapter_storage/         DigestRepository -> flat JSON files (implements a core port)
+  adapter_web/             read-only Flask digest browser, consumes DigestRepository
+  adapter_knowledge/       RelevanceWeigher -> a personal knowledge.db (optional, opt-in)
   cli/                     composition root: wires adapters into core's use case
 ```
 
 - `core` depends on nothing else in this repo and must stay that way.
-- Each `adapter_*` package depends only on `core`, never on another adapter.
+- Each `adapter_*` package depends only on `core`, never on another adapter —
+  `adapter_web` depends on the `DigestRepository` port, not on `adapter_storage`.
 - `cli` is the only package allowed to import everything — it's "Main as a plugin":
   swap an adapter by changing `packages/cli/src/last_newsletter_cli/main.py`, not core.
+- This isn't just asserted — `uv run lint-imports` (import-linter) statically checks
+  every import in the repo against the layered contract in `pyproject.toml`
+  (`[tool.importlinter]`) and fails the build if an adapter imports another adapter,
+  or core imports anything. (`tach` was tried first, since it's used for the same
+  purpose elsewhere; its module-boundary checker doesn't correctly resolve imports
+  across a `uv` workspace's multiple per-package `src/` roots in the version
+  available at the time — verified by hand, not assumed — so import-linter, which
+  analyzes the real installed import graph instead of crawling source directories,
+  is what's actually wired in.)
 
-Run `uv run pytest` from the repo root to test `core`'s use cases against fake
-adapters (no network, no mailbox needed).
+**Ranking isn't just "most mentions this week."** A theme can matter for reasons
+a single period's mention count misses entirely:
+
+- **A known future date** (a conference, a deadline) — the Summarizer sets
+  `Theme.relevant_until` when it can extract one, and the digest keeps surfacing
+  it, ranked by proximity to that date, until it passes.
+- **Recurrence across periods** (an ongoing saga) — `BuildDigestUseCase` looks
+  back one digest (via `DigestRepository`), offers still-live prior themes back
+  to the Summarizer, and a theme the Summarizer recognizes as continuing gets
+  its `streak` bumped, which outranks an equally-covered one-off.
+- **Personal relevance** — any number of `RelevanceWeigher`s (zero by default;
+  `adapter_knowledge` is one optional implementation, reading a personal
+  `knowledge.db` read-only) translate their own signal into a float added to a
+  theme's ranking weight. Core never knows what produced that number.
+
+`last-newsletter build` fetches, summarizes, weighs, ranks, and writes a digest.
+`last-newsletter serve` (or double-click `Open Last Newsletter.command`) opens a
+read-only local browser over past digests. Both are deliberately foreground-only
+— no background daemon, no process supervision — because "click an icon, look
+at it, close it" doesn't need a service kept alive in between.
+
+## Verifying this repo
+
+```bash
+uv run --package last-newsletter-cli python -c "import last_newsletter_cli"  # builds the full graph into .venv
+uv run --package last-newsletter-cli pytest   # every package's tests (fakes only — no network, no mailbox)
+uv run ruff check .                           # lint
+uv run ruff format --check .                  # formatting
+uv run ty check packages/*/src                # strict type-checking (see pyproject.toml's [tool.ty.rules])
+uv run lint-imports                            # Clean Architecture boundaries (see pyproject.toml's [tool.importlinter])
+```
+
+The first command matters: `uv sync` alone only installs the root project's own
+dependency groups, not every workspace member — building the `cli` package
+pulls in (and installs) the whole dependency graph, which `ty`, `pytest`, and
+anything that imports across packages need already present in `.venv`.
 
 ## Status
 
-Early scaffolding: the domain model, use case, and port interfaces are implemented
-and tested. The adapters (IMAP fetch, Claude summarization, Markdown rendering) are
-stubbed with `NotImplementedError` — see each adapter package's module docstring for
-what's next.
-
-## Getting started
-
-```bash
-uv sync --all-groups
-uv run pytest
-uv run ruff check .
-uv run ty check packages/*/src
-```
+The domain model, use case (including continuity/ranking), and every port are
+implemented and tested — 25 tests passing, strict `ty`, clean `ruff`, and
+`import-linter`'s architecture contract all green. The adapters that touch real
+external systems (IMAP fetch, Claude summarization, Markdown rendering) are
+still stubbed with `NotImplementedError` — see each adapter package's module
+docstring for what's next. `adapter_knowledge`'s SQL query is grounded in the
+real, versioned `knowledge.db` schema but not yet exercised against a real
+database — see its module docstring.
 
 ## License
 

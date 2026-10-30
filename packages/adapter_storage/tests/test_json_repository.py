@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from last_newsletter_adapter_storage.json_repository import JsonDigestRepository
@@ -21,6 +21,38 @@ def _digest() -> Digest:
 def test_save_then_get_round_trips(tmp_path: Path) -> None:
     repo = JsonDigestRepository(tmp_path)
     digest = _digest()
+
+    slug = repo.save(digest)
+    loaded = repo.get(slug)
+
+    assert loaded == digest
+
+
+def test_round_trip_preserves_every_continuity_and_personalization_field(tmp_path: Path) -> None:
+    """A field added to Theme and forgotten here would silently vanish on the next
+    `build` -- carry-forward and personalization both depend on this repository, not
+    just on the in-memory object, since BuildDigestUseCase reloads prior themes from it."""
+    theme = Theme(
+        title="Ongoing saga",
+        summary="s",
+        source_count=3,
+        source_message_ids=("a", "b"),
+        theme_key="ongoing-saga",
+        relevant_until=date(2026, 2, 1),
+        first_seen=date(2026, 1, 1),
+        streak=4,
+        carried_forward=True,
+        personal_weight=3.5,
+    )
+    digest = Digest(
+        period_start=datetime(2026, 1, 1, tzinfo=UTC),
+        period_end=datetime(2026, 1, 8, tzinfo=UTC),
+        cadence=Cadence.WEEKLY,
+        themes=(theme,),
+        total_messages=1,
+        total_sources=1,
+    )
+    repo = JsonDigestRepository(tmp_path)
 
     slug = repo.save(digest)
     loaded = repo.get(slug)

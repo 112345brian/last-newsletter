@@ -1,7 +1,7 @@
 [project]
 name = "last-newsletter-cli"
 version = "0.1.0"
-description = "Composition root. Wires a concrete EmailSource + Summarizer + DigestPublisher + DigestRepository into core's BuildDigestUseCase, and the digest browser, and runs them. The only package allowed to import every other package."
+description = "Composition root. Wires a concrete EmailSource + Summarizer + DigestPublisher + DigestRepository, and optionally a RelevanceWeigher, into core's BuildDigestUseCase, and the digest browser, and runs them. The only package allowed to import every other package."
 readme = "README.md"
 authors = [
     { name = "112345brian", email = "11creepman@gmail.com" }
@@ -14,6 +14,7 @@ dependencies = [
     "last-newsletter-adapter-publish",
     "last-newsletter-adapter-storage",
     "last-newsletter-adapter-web",
+    "last-newsletter-adapter-knowledge",
 ]
 
 [project.scripts]
@@ -29,6 +30,7 @@ last-newsletter-adapter-summarizer = { workspace = true }
 last-newsletter-adapter-publish = { workspace = true }
 last-newsletter-adapter-storage = { workspace = true }
 last-newsletter-adapter-web = { workspace = true }
+last-newsletter-adapter-knowledge = { workspace = true }
 
 [build-system]
 requires = ["uv_build>=0.12.19,<0.13.0"]

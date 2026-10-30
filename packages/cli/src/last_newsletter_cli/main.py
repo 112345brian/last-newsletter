@@ -12,8 +12,10 @@ import threading
 import webbrowser
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from last_newsletter_adapter_email.imap_source import ImapConfig, ImapEmailSource
+from last_newsletter_adapter_knowledge import SqliteKnowledgeWeigher
 from last_newsletter_adapter_publish.markdown_publisher import MarkdownPublisher
 from last_newsletter_adapter_storage.json_repository import JsonDigestRepository
 from last_newsletter_adapter_summarizer.anthropic_summarizer import AnthropicSummarizer
@@ -21,12 +23,32 @@ from last_newsletter_adapter_web.app import create_app
 from last_newsletter_core.entities import Cadence
 from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
+if TYPE_CHECKING:
+    from last_newsletter_core.ports import RelevanceWeigher
+
 _DATA_DIR = Path.home() / ".last-newsletter"
 _SERVE_PORT = 5317
 
 
 def _digest_repository() -> JsonDigestRepository:
     return JsonDigestRepository(_DATA_DIR / "digests")
+
+
+def _configured_weighers() -> list[RelevanceWeigher]:
+    """Entirely opt-in: the generic program runs with none of these configured,
+    and nothing about BuildDigestUseCase changes either way. Set
+    LAST_NEWSLETTER_KNOWLEDGE_DB_PATH to turn this one on; add another env var
+    and another `if` here for a future weigher, never by changing core."""
+    weighers: list[RelevanceWeigher] = []
+    knowledge_db_path = os.environ.get("LAST_NEWSLETTER_KNOWLEDGE_DB_PATH")
+    if bool(knowledge_db_path):
+        weighers.append(
+            SqliteKnowledgeWeigher(
+                Path(knowledge_db_path).expanduser(),
+                subject_name=os.environ.get("LAST_NEWSLETTER_KNOWLEDGE_SUBJECT"),
+            )
+        )
+    return weighers
 
 
 def _build_use_case() -> BuildDigestUseCase:
@@ -39,7 +61,13 @@ def _build_use_case() -> BuildDigestUseCase:
     )
     summarizer = AnthropicSummarizer()
     publisher = MarkdownPublisher(output_dir=_DATA_DIR / "markdown")
-    return BuildDigestUseCase(email_source, summarizer, publisher)
+    return BuildDigestUseCase(
+        email_source,
+        summarizer,
+        publisher,
+        _digest_repository(),
+        weighers=_configured_weighers(),
+    )
 
 
 def _run_build(cadence_name: str) -> None:
@@ -48,8 +76,7 @@ def _run_build(cadence_name: str) -> None:
     since = until - (timedelta(days=1) if cadence is Cadence.DAILY else timedelta(days=7))
 
     use_case = _build_use_case()
-    digest = use_case.execute(BuildDigestRequest(since=since, until=until, cadence=cadence))
-    _digest_repository().save(digest)
+    use_case.execute(BuildDigestRequest(since=since, until=until, cadence=cadence))
 
 
 def _run_serve() -> None:
