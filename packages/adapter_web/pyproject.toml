@@ -1,0 +1,23 @@
+[project]
+name = "last-newsletter-adapter-web"
+version = "0.1.0"
+description = "Read-only local digest browser. A Flask app, run on localhost via the CLI's `serve` command, same shape as a Flask-tracker-style local tool — no deploy target, no accounts. Consumes the core.DigestRepository port; doesn't know or care how digests are actually stored."
+readme = "README.md"
+authors = [
+    { name = "112345brian", email = "11creepman@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "last-newsletter-core",
+    "flask>=3.0",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "ruff", "ty"]
+
+[tool.uv.sources]
+last-newsletter-core = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

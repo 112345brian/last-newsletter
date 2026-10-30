@@ -8,14 +8,25 @@ from __future__ import annotations
 
 import argparse
 import os
+import threading
+import webbrowser
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from last_newsletter_adapter_email.imap_source import ImapConfig, ImapEmailSource
 from last_newsletter_adapter_publish.markdown_publisher import MarkdownPublisher
+from last_newsletter_adapter_storage.json_repository import JsonDigestRepository
 from last_newsletter_adapter_summarizer.anthropic_summarizer import AnthropicSummarizer
+from last_newsletter_adapter_web.app import create_app
 from last_newsletter_core.entities import Cadence
 from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
+
+_DATA_DIR = Path.home() / ".last-newsletter"
+_SERVE_PORT = 5317
+
+
+def _digest_repository() -> JsonDigestRepository:
+    return JsonDigestRepository(_DATA_DIR / "digests")
 
 
 def _build_use_case() -> BuildDigestUseCase:
@@ -27,21 +38,45 @@ def _build_use_case() -> BuildDigestUseCase:
         )
     )
     summarizer = AnthropicSummarizer()
-    publisher = MarkdownPublisher(output_dir=Path("digests"))
+    publisher = MarkdownPublisher(output_dir=_DATA_DIR / "markdown")
     return BuildDigestUseCase(email_source, summarizer, publisher)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(prog="last-newsletter")
-    parser.add_argument("--cadence", choices=["daily", "weekly"], default="weekly")
-    args = parser.parse_args()
-
-    cadence = Cadence(args.cadence)
+def _run_build(cadence_name: str) -> None:
+    cadence = Cadence(cadence_name)
     until = datetime.now(tz=UTC)
     since = until - (timedelta(days=1) if cadence is Cadence.DAILY else timedelta(days=7))
 
     use_case = _build_use_case()
-    use_case.execute(BuildDigestRequest(since=since, until=until, cadence=cadence))
+    digest = use_case.execute(BuildDigestRequest(since=since, until=until, cadence=cadence))
+    _digest_repository().save(digest)
+
+
+def _run_serve() -> None:
+    """Foreground only: no background daemon, no proclaunch. You launch it (by
+    double-clicking a launcher script or running this command) when you want to
+    look at a digest, and close it when you're done — same as opening any other
+    local app, nothing to keep alive in between."""
+    app = create_app(_digest_repository())
+    url = f"http://127.0.0.1:{_SERVE_PORT}/"
+    threading.Timer(1.0, webbrowser.open, args=(url,)).start()
+    app.run(host="127.0.0.1", port=_SERVE_PORT, debug=False)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(prog="last-newsletter")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    build_parser = subparsers.add_parser("build", help="Fetch mail and write a new digest.")
+    build_parser.add_argument("--cadence", choices=["daily", "weekly"], default="weekly")
+
+    subparsers.add_parser("serve", help="Open the local digest browser in your web browser.")
+
+    args = parser.parse_args()
+    if args.command == "build":
+        _run_build(args.cadence)
+    elif args.command == "serve":
+        _run_serve()
 
 
 if __name__ == "__main__":

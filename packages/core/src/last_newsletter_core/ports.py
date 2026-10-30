@@ -30,3 +30,18 @@ class DigestPublisher(Protocol):
     """Renders a finished Digest somewhere a human will read it."""
 
     def publish(self, digest: Digest) -> None: ...
+
+
+class DigestRepository(Protocol):
+    """Persists digests and makes past ones retrievable, keyed by an opaque slug.
+
+    The slug's format is the repository implementation's own business (a
+    filename, a database id, whatever) — callers only ever get one back from
+    `save` or `list_recent` and pass it back to `get`, never construct one.
+    """
+
+    def save(self, digest: Digest) -> str: ...
+
+    def list_recent(self, limit: int = 20) -> list[tuple[str, Digest]]: ...
+
+    def get(self, slug: str) -> Digest | None: ...

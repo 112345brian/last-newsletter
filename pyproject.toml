@@ -15,6 +15,8 @@ members = [
     "packages/adapter_summarizer",
     "packages/adapter_publish",
     "packages/cli",
+    "packages/adapter_storage",
+    "packages/adapter_web",
 ]
 
 [tool.ruff]
