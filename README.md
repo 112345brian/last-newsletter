@@ -6,13 +6,20 @@ themes ranked by how many sources covered them, not just emails in a list.
 
 ## Why another one of these
 
-There are now self-hosted, open-source readers and AI digest pipelines in this
-space, so self-hosting alone is not a unique differentiator. See the [prior-art
-survey](#prior-art) for the closest overlaps and adjacent tools. The project’s
-current hypothesis is narrower: a small, inspectable tool focused on turning
-newsletters already in your mailbox into one periodic digest, with source
-agreement used to rank shared themes. That hypothesis needs validation against
-projects such as Taran and AI Daily Summary, which already cover parts of it.
+"Self-hosted" alone doesn't differentiate this from [Taran](https://github.com/jonhadfield/taran),
+the closest feature match in the [prior-art survey](#prior-art) — read its source
+before assuming otherwise. Taran *is* self-hostable, but "self-hosted" there means
+running your own copy of a multi-tenant SaaS: Go backend, Next.js dashboard,
+Postgres (Neon), Cloudflare Email Workers for inbound mail, Resend for outbound,
+OAuth. That's real infrastructure to operate for one person's inbox.
+
+The gap, confirmed by reading Taran, OpenReader, and SummerMail's own code —
+not just their descriptions — is a tool with **no infrastructure beyond your own
+mailbox and your own LLM key**: no managed inbox address, no OAuth, no database
+server, no containers to orchestrate, no dashboard. Point it at a mailbox over
+IMAP on a cron schedule, get a markdown digest out. If that stops being true —
+if this grows a database or a web UI to stay competitive — the differentiator
+is gone and this section needs rewriting honestly, not padded with new features.
 
 ## Prior art
 
