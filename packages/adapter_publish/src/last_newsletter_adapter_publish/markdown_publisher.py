@@ -8,14 +8,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from last_newsletter_core.entities import digest_slug
+
 if TYPE_CHECKING:
     from pathlib import Path
 
     from last_newsletter_core.entities import Digest, Theme
-
-
-def _slug_for(digest: Digest) -> str:
-    return f"{digest.period_start:%Y-%m-%dT%H%M%S}_{digest.cadence.value}"
 
 
 def _theme_section(theme: Theme) -> str:
@@ -47,5 +45,5 @@ class MarkdownPublisher:
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
     def publish(self, digest: Digest) -> None:
-        path = self._output_dir / f"{_slug_for(digest)}.md"
+        path = self._output_dir / f"{digest_slug(digest)}.md"
         path.write_text(_render(digest))

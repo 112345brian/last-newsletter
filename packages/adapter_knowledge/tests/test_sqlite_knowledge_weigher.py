@@ -133,3 +133,13 @@ def test_schema_version_mismatch_raises(tmp_path: Path) -> None:
 
     with pytest.raises(SchemaVersionMismatchError):
         weigher.weight_for("Artist X")
+
+
+def test_candidate_with_nothing_to_normalize_returns_zero_not_an_error(tmp_path: Path) -> None:
+    """A blank/symbols-only theme title shouldn't fail the whole digest build -- see
+    text_match.normalize_term, which raises ValueError for exactly these inputs."""
+    db_path = _make_db(tmp_path)
+    weigher = SqliteKnowledgeWeigher(db_path)
+
+    assert weigher.weight_for("   ") == 0.0
+    assert weigher.weight_for("---") == 0.0

@@ -1,0 +1,19 @@
+[project]
+name = "mailtext"
+version = "0.1.0"
+description = "Decode RFC 2047 email headers and extract a plain-text body (preferring text/plain, falling back to HTML-to-text) from a stdlib email.message.Message. Domain-agnostic: no IMAP, no newsletter, no app-specific concept anywhere in it."
+readme = "README.md"
+authors = [
+    { name = "112345brian", email = "11creepman@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "html2text>=2025.4.15",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "ruff", "ty"]
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

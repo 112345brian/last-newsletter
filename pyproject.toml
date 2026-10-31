@@ -24,6 +24,9 @@ members = [
     "packages/adapter_storage",
     "packages/adapter_web",
     "packages/adapter_knowledge",
+    "packages/libraries",
+    "packages/text_match",
+    "packages/mailtext",
 ]
 
 [tool.ruff]
@@ -76,6 +79,8 @@ root_packages = [
     "last_newsletter_adapter_web",
     "last_newsletter_adapter_knowledge",
     "last_newsletter_cli",
+    "text_match",
+    "mailtext",
 ]
 
 [[tool.importlinter.contracts]]
@@ -84,5 +89,5 @@ type = "layers"
 layers = [
     "last_newsletter_cli",
     "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge",
-    "last_newsletter_core",
+    "last_newsletter_core | text_match | mailtext",
 ]

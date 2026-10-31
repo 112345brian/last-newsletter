@@ -70,6 +70,8 @@ packages/
   adapter_web/             read-only Flask digest browser, consumes DigestRepository
   adapter_knowledge/       RelevanceWeigher -> a personal knowledge.db (optional, opt-in)
   cli/                     composition root: wires adapters into core's use case
+  text_match/              standalone, zero-dependency: whole-word term matching
+  mailtext/                standalone: MIME header decoding + body text extraction
 ```
 
 - `core` depends on nothing else in this repo and must stay that way.
@@ -77,6 +79,14 @@ packages/
   `adapter_web` depends on the `DigestRepository` port, not on `adapter_storage`.
 - `cli` is the only package allowed to import everything — it's "Main as a plugin":
   swap an adapter by changing `packages/cli/src/last_newsletter_cli/main.py`, not core.
+- `text_match` and `mailtext` are not about newsletters at all — they're generic
+  utilities (term matching; email MIME parsing) that happen to live in this
+  workspace because that's where they were first needed, written and named as if
+  a stranger might `pip install` just one of them. Neither depends on `core` or
+  any adapter; `core` must never depend on either. `text_match` is a straight port
+  of [`knowledge`](https://github.com/112345brian/knowledge)'s own `textmatch.py`
+  — extracted into its own package once this repo became a second real consumer
+  of the identical logic, rather than copy-pasted a second time.
 - This isn't just asserted — `uv run lint-imports` (import-linter) statically checks
   every import in the repo against the layered contract in `pyproject.toml`
   (`[tool.importlinter]`) and fails the build if an adapter imports another adapter,
@@ -128,7 +138,7 @@ anything that imports across packages need already present in `.venv`.
 
 The domain model, use case (including continuity/ranking), every port, IMAP
 fetch (`adapter_email`, via `imapclient`), and Markdown rendering
-(`adapter_publish`) are implemented and tested — 38 tests passing, strict
+(`adapter_publish`) are implemented and tested — 57 tests passing, strict
 `ty`, clean `ruff`, and `import-linter`'s architecture contract all green.
 `adapter_summarizer` (the actual Claude call) is still stubbed with
 `NotImplementedError` — it's the one piece that needs a real prompt-design

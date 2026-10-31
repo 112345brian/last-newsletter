@@ -8,8 +8,9 @@ for other projects to import. Its *schema* is the stable, versioned contract ins
 own schema.sql: "the single source of truth for the core structure", `PRAGMA user_version`
 bumped on every structural change, enforced by its own test suite). This module reads against
 that contract directly: a normalized exact match against `entities.name_norm`/
-`entity_aliases.alias_norm` (the same literal, case-insensitive whole-name matching the
-`knowledge` project itself uses — see its `textmatch.normalize_term`), counting active,
+`entity_aliases.alias_norm` (the same literal, case-insensitive whole-name matching `knowledge`
+itself uses for this — via the standalone `text-match` package, factored out of `knowledge`'s own
+`textmatch.py` once this became a second real consumer of the identical logic), counting active,
 `kind='preference'` facts linked to that entity. A changed schema is a loud failure
 (`SchemaVersionMismatchError`), never a silent wrong answer.
 
@@ -22,8 +23,9 @@ last_newsletter_core or BuildDigestUseCase needs to change to add one.
 from __future__ import annotations
 
 import sqlite3
-import unicodedata
 from typing import TYPE_CHECKING
+
+from text_match import normalize_term
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -52,13 +54,6 @@ class SchemaVersionMismatchError(RuntimeError):
     schema and risking a wrong (or just-absent) answer."""
 
 
-def _normalize(raw: str) -> str:
-    """The same canonical form `knowledge` stores in name_norm/alias_norm: NFC, whitespace
-    collapsed, casefolded. See its textmatch.normalize_term — not imported from there (that
-    project isn't a library), reproduced here because it's this small and this stable."""
-    return " ".join(unicodedata.normalize("NFC", raw).split()).casefold()
-
-
 class SqliteKnowledgeWeigher:
     """Implements last_newsletter_core.ports.RelevanceWeigher.
 
@@ -81,6 +76,12 @@ class SqliteKnowledgeWeigher:
         self._weight_per_fact = weight_per_fact
 
     def weight_for(self, candidate: str) -> float:
+        try:
+            normalized = normalize_term(candidate)
+        except ValueError:
+            # A candidate with nothing to match on (blank, no letters/digits) -- no personal
+            # signal, not an error worth failing the whole digest build over.
+            return 0.0
         uri = f"file:{self._db_path}?mode=ro"
         with sqlite3.connect(uri, uri=True) as conn:
             version = int(conn.execute("PRAGMA user_version").fetchone()[0])
@@ -92,7 +93,7 @@ class SqliteKnowledgeWeigher:
                 )
                 raise SchemaVersionMismatchError(msg)
             row = conn.execute(
-                _QUERY, {"candidate": _normalize(candidate), "subject_name": self._subject_name}
+                _QUERY, {"candidate": normalized, "subject_name": self._subject_name}
             ).fetchone()
             match_count = int(row[0])
             return match_count * self._weight_per_fact

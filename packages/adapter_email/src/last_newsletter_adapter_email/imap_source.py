@@ -6,27 +6,25 @@ never adds/removes flags or deletes anything in the mailbox it's pointed at.
 
 Uses `imapclient` (parsed responses, real exceptions) instead of the stdlib `imaplib` directly
 (string-keyed, mostly-unparsed responses, return-code checking instead of exceptions), and
-`html2text` for HTML-only newsletters instead of a hand-rolled tag-stripper, which among other
-things correctly drops <script>/<style> *content*, not just the surrounding tags.
+`mailtext` for header decoding and body extraction — generic email-parsing logic with no IMAP
+or newsletter knowledge in it, factored out into its own package rather than kept here.
 """
 
 from __future__ import annotations
 
 import email
 from dataclasses import dataclass
-from email.header import decode_header
 from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING, Protocol, Self, cast
 
-import html2text
 from imapclient import IMAPClient
 
 from last_newsletter_core.entities import EmailMessage
+from mailtext import decode_header_value, extract_body_text
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from datetime import datetime
-    from email.message import Message
     from types import TracebackType
 
 
@@ -48,52 +46,12 @@ class _ImapConnection(Protocol):
     ) -> bool | None: ...
 
 
-_html_converter = html2text.HTML2Text()
-_html_converter.ignore_images = True
-_html_converter.ignore_tables = False
-
-
 @dataclass(frozen=True, slots=True)
 class ImapConfig:
     host: str
     username: str
     password: str
     mailbox: str = "INBOX"
-
-
-def _decode_header_value(raw: str | None) -> str:
-    if not bool(raw):
-        return ""
-    chunks: list[str] = []
-    for part, charset in decode_header(raw):
-        chunks.append(
-            part.decode(charset or "utf-8", errors="replace")
-            if isinstance(part, bytes)
-            else str(part)
-        )
-    return "".join(chunks)
-
-
-def _body_text(msg: Message) -> str:
-    plain: str | None = None
-    html: str | None = None
-    for part in msg.walk():
-        if part.is_multipart() or part.get_content_disposition() == "attachment":
-            continue
-        charset = part.get_content_charset() or "utf-8"
-        payload = part.get_payload(decode=True)
-        if not isinstance(payload, bytes):
-            continue
-        decoded = payload.decode(charset, errors="replace")
-        if part.get_content_type() == "text/plain" and plain is None:
-            plain = decoded
-        elif part.get_content_type() == "text/html" and html is None:
-            html = decoded
-    if plain is not None:
-        return plain.strip()
-    if html is not None:
-        return _html_converter.handle(html).strip()
-    return ""
 
 
 def _to_email_message(raw: bytes) -> EmailMessage | None:
@@ -109,13 +67,13 @@ def _to_email_message(raw: bytes) -> EmailMessage | None:
         # A malformed Date header with no offset -- can't be compared against an aware `since`
         # (and a time without a zone isn't trustworthy for date-based ranking anyway).
         return None
-    sender = _decode_header_value(msg.get("From"))
+    sender = decode_header_value(msg.get("From"))
     return EmailMessage(
         message_id=msg.get("Message-ID", ""),
         sender=sender,
-        subject=_decode_header_value(msg.get("Subject")),
+        subject=decode_header_value(msg.get("Subject")),
         received_at=received_at,
-        body_text=_body_text(msg),
+        body_text=extract_body_text(msg),
         source_label=sender,
     )
 

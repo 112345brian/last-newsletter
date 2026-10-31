@@ -76,3 +76,11 @@ class Digest:
     themes: tuple[Theme, ...]
     total_messages: int
     total_sources: int
+
+
+def digest_slug(digest: Digest) -> str:
+    """The canonical identity a Digest is referred to by: a timestamped, cadence-tagged
+    filesystem-safe name. One definition shared by every adapter that names a Digest on disk
+    (JSON storage, Markdown rendering, ...) — a naming scheme is a rule about the domain, not
+    a detail that gets to differ per output format."""
+    return f"{digest.period_start:%Y-%m-%dT%H%M%S}_{digest.cadence.value}"

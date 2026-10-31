@@ -12,14 +12,10 @@ import json
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
-from last_newsletter_core.entities import Cadence, Digest, Theme
+from last_newsletter_core.entities import Cadence, Digest, Theme, digest_slug
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-
-def _slug_for(digest: Digest) -> str:
-    return f"{digest.period_start:%Y-%m-%dT%H%M%S}_{digest.cadence.value}"
 
 
 def _theme_to_dict(theme: Theme) -> dict[str, Any]:
@@ -84,7 +80,7 @@ class JsonDigestRepository:
         self._base_dir.mkdir(parents=True, exist_ok=True)
 
     def save(self, digest: Digest) -> str:
-        slug = _slug_for(digest)
+        slug = digest_slug(digest)
         path = self._base_dir / f"{slug}.json"
         path.write_text(json.dumps(_to_dict(digest), indent=2))
         return slug
