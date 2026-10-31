@@ -8,6 +8,8 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = [
+    "html2text>=2025.4.15",
+    "imapclient>=4.1.0",
     "last-newsletter-core",
 ]
 
