@@ -24,7 +24,6 @@ members = [
     "packages/adapter_storage",
     "packages/adapter_web",
     "packages/adapter_knowledge",
-    "packages/libraries",
     "packages/text_match",
     "packages/mailtext",
 ]
