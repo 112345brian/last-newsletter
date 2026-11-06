@@ -95,6 +95,16 @@ Importance comes from your knowledge store, per name. If the knowledge store say
 
 The app reads your knowledge; it does not change it. Names it sees often but does not know are listed under **Needs a look** ("artists I don't know yet") so you can decide whether to add them.
 
+## Listen
+
+On an item (and in "artists I don't know yet") there is a **Listen** control. Press it and the artist's sample plays right there, from Mixcloud, Spotify or SoundCloud, whichever has them. Nothing from those services loads until you press it, so opening your issue never contacts them.
+
+- **When there is no sample, it says so.** Many artists, especially in club and underground scenes, have no obvious presence; the page shows "No sample found" rather than something wrong.
+- **When it is not sure it is the same artist,** it shows the candidates ("Is this them?") and waits for you. A wrong artist is treated as worse than none. Your confirmation or "wrong artist" is remembered.
+- A link to the artist in the email itself is used first, since promoters often include one.
+- A section can be built around it: for example **Worth a Listen**, showing nearby shows by artists you don't know yet.
+- Needs accounts with the providers you choose (some are restricted for new developers); with none connected, items simply show no Listen control.
+
 ## Reliable sections
 
 A magazine earns trust because things are where you expect them. A **section** is a standing department with a fixed name, a fixed slot and a fixed rule for what goes in it. "Concerts Coming Up" is on page 6 every issue.

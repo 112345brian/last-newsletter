@@ -48,6 +48,10 @@ Exit: precision and recall on the sample, including how often a clean headliner 
 Needs `DESIGN.md` first (no visual identity exists). One weekly edition, the issue screen, Up next, Item detail, Done and Dismiss and Snooze.
 Exit: you can read last week's issue on a phone and clear an item, and it stays cleared after the next ingest.
 
+### Stage 5b: Listen
+Sample resolver adapters (start with one provider that works without special access), the sample store, the click-to-load player and its content security policy, a "Worth a Listen" section.
+Exit: on a labeled list of about 30 artist names from your own mail, report found, ambiguous and no-match rates and the wrong-artist rate among accepted samples; the embed rule is set from that number, and nothing loads before a click (checked by a test of the rendered page).
+
 ### Stage 6: stop-press alerts
 Notifier adapter (channel to be decided: ntfy or in-app), durable outbox, quiet hours, daily cap.
 Exit: a presale one day out produces exactly one alert, before the sale, outside the weekly issue; a restart does not repeat it.
@@ -57,7 +61,7 @@ Settings screen: multiple editions, sections and tag rules; Correct, Merge, Spli
 Exit: you add a monthly edition and a Concerts section from the screen, and the next issues reflect them.
 
 ### Later (not scheduled)
-Learning importance from behavior (done, dismiss, snooze) and writing it back to knowledge (research not done), urgency bands from the vendored `urgency` survival curve, recurring-event expansion, calendar write-back, non-English mail, attachments beyond calendar files.
+Finding nearby events that are in no email (needs outside event sources and an artist-similarity model), learning importance from behavior (done, dismiss, snooze) and writing it back to knowledge (research not done), urgency bands from the vendored `urgency` survival curve, recurring-event expansion, calendar write-back, non-English mail, attachments beyond calendar files.
 
 ## What each stage lets you demo
 
@@ -82,5 +86,6 @@ Stages 1 and 2 are sequential. After Stage 2, Stage 3 and the `DESIGN.md` work f
 | 3 | none |
 | 4 | which model and budget; sender deny-list for transactional mail; the `important_at` threshold, set after seeing real weights |
 | 5 | visual identity (run the design pass) |
+| 5b | which providers (Spotify needs a Premium developer account; SoundCloud may need Artist Pro); your area as a list of cities |
 | 6 | reminder channel: ntfy or in-app only |
 | 7 | none beyond the open spec items |

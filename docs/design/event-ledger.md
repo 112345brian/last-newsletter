@@ -73,6 +73,8 @@ The normalization used by rungs 2 and 3 is **core code** (stdlib `unicodedata`).
 | `RawMessageStore` | `put(message) -> RawRef`, `get(ref)` | in-memory fake | SQLite blob table in `adapter_ledger` |
 | `ExtractionQueue` | `enqueue`, `claim`, `complete`, `fail(retry_after)` | in-memory fake | SQLite table in `adapter_ledger` |
 | `ModelAdmission` | `admit(request) -> Admitted \| Refused(reason)`; budget and privacy filter | permissive fake | job-repo usage-ledger shape (not yet a lib) |
+| `SampleResolver` | `find(entity, *, now) -> Found(sample, confidence, evidence) \| NoMatch \| Ambiguous(candidates) \| Unavailable(reason)` | scripted fake | Mixcloud, Spotify, SoundCloud adapters (each needs its own account or credentials) |
+| `SampleStore` | `get`, `put`, `put_miss(ttl)`, `override(entity, sample \| WRONG)` | in-memory fake | SQLite in `adapter_ledger` |
 | `RunLog` | `record(SourceOutcome)`; per-source health | in-memory fake | SQLite |
 | `WriterLock` / `Outbox` | single writer; durable "to send" records | in-process fakes | job-repo `libs/process_lock`, `libs/durable_outbox` (adapter side only) |
 | `Notifier` | `send(reminder) -> NotifyResult`, never raises, result must be consumed | recording fake | ntfy, or Apprise |
@@ -164,6 +166,33 @@ Importance is how much the owner cares about what an item is about, for example 
 - **Name drift:** exact matching means "Artist X (Live)" misses. The fix is entity extraction that returns the clean name, plus aliases in knowledge, not a fuzzy weigher.
 - **Tests (against a fake weigher):** headliner weight wins over a support act; a title with no entities falls back to the title; unknown names produce no importance and are listed; the support discount; watch-list floor; importance 0.0 never raises an alert; a weigher that raises is reported and the item is ranked without importance, not dropped.
 - **Not researched yet:** how others learn preferences from behavior (done, dismiss, snooze). That would be a later `PreferenceSink` port; the research is still open.
+
+## 14c. Listen: a sample of the artist's work
+
+Goal: for an event whose artist you may not know, show a sample you can play, so you can decide. Two different things get called "recommend", and only the first is in scope here:
+- **(A) Samples for events already in the ledger.** In scope. Starts with the "artists I don't know yet" list.
+- **(B) Finding events near you that are not in any email.** Not in scope: it needs outside event sources and a similarity model. Listed under Later.
+
+**Model (core).** `Sample`: `provider` (`MIXCLOUD`, `SPOTIFY`, `SOUNDCLOUD`), `provider_id` and canonical `url` for an artist page, track or mix, `kind`, `title`, `confidence`, `evidence`. Core stores a provider id and a link, **never embed HTML**. The `SampleResolver` port returns one typed outcome; `SampleStore` caches results, caches misses with a retry-after, and keeps the owner's overrides (`pin this sample`, `wrong artist`), which win over any later lookup.
+
+**Rules (pure, core).**
+- **Wrong artist is worse than no sample.** Artists share names. A sample is accepted only with corroboration beyond the name: the provider page is linked from the email itself, or the name matches exactly and a second signal agrees (genre, region or an event link on the provider page). Name-only matches are `Ambiguous` and shown as "is this them?" candidates for the owner to confirm, never auto-embedded.
+- **Prefer links already in the email.** Promoter mail often links the artist's page. A link whose host is a known provider is read as-is. **Tracking redirects are not followed automatically** (the survey found nearly all links are tracking redirects), which keeps the product principle that no link is followed; the lookup falls back to a name search.
+- **Validate before use.** A provider id must match that provider's pattern and the host must be on an allow-list; an email-supplied URL is never rendered directly.
+- **Cache misses.** "No sample found" is recorded for a configurable time so a missing artist is not searched on every run. This is common (many artists have no obvious presence), and the UI says so plainly: "No sample found."
+- **Home area:** config `area` (a list of city names matched against the extracted venue city). Out-of-area items are marked "away", not hidden. No geocoding in the first release.
+- **Section selector** gains `importance` (min and max) and `area`, so a section like "Worth a Listen" (unknown headliner, near you, tagged concert) is just configuration.
+
+**Adapters (each behind the port, each optional, none in core).** Verified by search on 2026-11-06, official pages where found:
+- **Mixcloud:** public search (`/search/?q=...&type=...`) and oEmbed (`app.mixcloud.com/oembed/`) documented with no token needed for reads. Best fit for DJ and electronic artists. Rate limits not checked.
+- **Spotify:** since February 2026 a new Development Mode app needs a Premium developer account, is limited to a small number of authorized users and a reduced endpoint set (official post). One self-hosted user fits, but whether artist search is still available to a new app and at what result cap is unverified.
+- **SoundCloud:** official docs say registering an app needs an Artist Pro subscription; unofficial guides say registration is closed (they conflict). oEmbed for a public URL needs no authentication. Whether search is available to a new app is unverified.
+- **Bandcamp** has no public API found; out unless a link is already in the email.
+- Audio is only ever played through the provider's own player. This app never downloads or re-streams audio.
+
+**Security and privacy (the one place the page loads third-party content).** Embeds track viewers and run provider code, so they are **click to load**: the page shows the artist, a provider badge and a play button, and creates the player only when pressed. `Content-Security-Policy: frame-src` lists exactly the allowed provider hosts; no autoplay; minimal iframe permissions. Nothing is loaded for an item you never open.
+
+**Tests (fakes).** Name-only match is `Ambiguous`, not `Found`; email-linked provider page is `Found` with evidence; an unknown host or malformed id is rejected; a miss is cached and not retried before its time; an owner override beats a later lookup; provider `Unavailable` is shown, not hidden, and the item still renders; two artists with the same name never share a cached sample unless confirmed; a tracking redirect is not followed.
 
 ## 14a. Sections and placement
 
