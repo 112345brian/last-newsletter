@@ -23,14 +23,12 @@ __all__ = ["find_terms", "normalize_term"]
 
 
 def normalize_term(raw: str) -> str:
-    """The canonical form of a term. Raises ValueError (clear message) for anything that
-    could never match a whole word: non-string, blank, control characters, or no letters/
-    digits at all."""
+    """The canonical form of a term. Raises ValueError (clear message) when the *content* could
+    never match a whole word: blank, control characters, or no letters/digits at all. A value
+    that is not a string at all is a caller bug, not bad content, and raises TypeError."""
     if not isinstance(raw, str):
-        # One exception type for every "this can't be a term" case, deliberately -- a caller
-        # catches ValueError once, not ValueError-or-TypeError depending on which check failed.
-        msg = f"{raw!r} must be a string"
-        raise ValueError(msg)  # noqa: TRY004
+        msg = f"term must be a string, got {type(raw).__name__}"
+        raise TypeError(msg)
     term = " ".join(unicodedata.normalize("NFC", raw).split()).casefold()
     if not term:
         msg = "is empty or blank"
