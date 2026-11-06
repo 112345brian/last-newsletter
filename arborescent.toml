@@ -1,0 +1,116 @@
+# Layering and effect gate. Run from this directory:
+#   uv run --project ../arborescent arborescent --config arborescent.toml check
+# import-linter (pyproject.toml) still owns the package-level dependency contract; this file adds
+# what it cannot: every module must be in a ring, and the inner ring may not touch the clock,
+# the environment, randomness, sleeping, threads, subprocesses or dynamic imports.
+python = "3.11"
+sources = [
+    "packages/core/src",
+    "packages/text_match/src",
+    "packages/mailtext/src",
+    "packages/adapter_email/src",
+    "packages/adapter_summarizer/src",
+    "packages/adapter_publish/src",
+    "packages/adapter_storage/src",
+    "packages/adapter_web/src",
+    "packages/adapter_knowledge/src",
+    "packages/cli/src",
+    "vendor/urgency/src",
+    "vendor/identity_dedupe/src",
+    "vendor/source_dates/src",
+    "vendor/text_normalize/src",
+    "vendor/notification_port/src",
+    "vendor/usage_ledger_port/src",
+    "vendor/process_lock/src",
+    "vendor/durable_outbox/src",
+    "vendor/tracker_state/src",
+]
+source_roots = [
+    "packages/core/src",
+    "packages/text_match/src",
+    "packages/mailtext/src",
+    "packages/adapter_email/src",
+    "packages/adapter_summarizer/src",
+    "packages/adapter_publish/src",
+    "packages/adapter_storage/src",
+    "packages/adapter_web/src",
+    "packages/adapter_knowledge/src",
+    "packages/cli/src",
+    "vendor/urgency/src",
+    "vendor/identity_dedupe/src",
+    "vendor/source_dates/src",
+    "vendor/text_normalize/src",
+    "vendor/notification_port/src",
+    "vendor/usage_ledger_port/src",
+    "vendor/process_lock/src",
+    "vendor/durable_outbox/src",
+    "vendor/tracker_state/src",
+]
+exclude = ["tests", "docs", ".venv"]
+scan_vendors = true
+type_checkers = ["ty"]
+preset = "relaxed"
+# tach cannot follow several source_roots; import-linter owns package edges here.
+disabled_tools = ["tach"]
+rings = ["core", "libs", "adapters", "cli"]
+
+# core: domain rules and ports plus the standalone pure helpers. No effects at all.
+[ring.core]
+forbid = ["clock", "env", "identity", "randomness", "sleep", "threads", "process", "dynamic-import"]
+external = []
+
+# libs: standalone helpers that sit beside core and may not import it (import-linter keeps them
+# independent siblings). They may use third-party packages, but no effects.
+[ring.libs]
+forbid = ["clock", "env", "identity", "randomness", "sleep", "threads", "process", "dynamic-import"]
+external = ["html2text"]
+
+[ring.adapters]
+may_import = ["core", "libs"]
+# Adapters own their effects (disk, network, clock for sleeping); only core is forbidden them.
+forbid = []
+external = ["imapclient", "anthropic", "flask", "dateparser", "filelock", "tenacity", "psutil"]
+
+[ring.cli]
+may_import = ["*"]
+external = ["*"]
+
+[classify]
+"last_newsletter_core" = "core"
+"last_newsletter_core.*" = "core"
+"text_match" = "libs"
+"text_match.*" = "libs"
+"mailtext" = "libs"
+"mailtext.*" = "libs"
+"urgency" = "core"
+"urgency.*" = "core"
+"identity_dedupe" = "core"
+"identity_dedupe.*" = "core"
+"text_normalize" = "core"
+"text_normalize.*" = "core"
+"notification_port" = "core"
+"notification_port.*" = "core"
+"usage_ledger_port" = "core"
+"usage_ledger_port.*" = "core"
+"tracker_state" = "core"
+"tracker_state.*" = "core"
+"last_newsletter_adapter_email" = "adapters"
+"last_newsletter_adapter_email.*" = "adapters"
+"last_newsletter_adapter_summarizer" = "adapters"
+"last_newsletter_adapter_summarizer.*" = "adapters"
+"last_newsletter_adapter_publish" = "adapters"
+"last_newsletter_adapter_publish.*" = "adapters"
+"last_newsletter_adapter_storage" = "adapters"
+"last_newsletter_adapter_storage.*" = "adapters"
+"last_newsletter_adapter_web" = "adapters"
+"last_newsletter_adapter_web.*" = "adapters"
+"last_newsletter_adapter_knowledge" = "adapters"
+"last_newsletter_adapter_knowledge.*" = "adapters"
+"source_dates" = "adapters"
+"source_dates.*" = "adapters"
+"process_lock" = "adapters"
+"process_lock.*" = "adapters"
+"durable_outbox" = "adapters"
+"durable_outbox.*" = "adapters"
+"last_newsletter_cli" = "cli"
+"last_newsletter_cli.*" = "cli"
