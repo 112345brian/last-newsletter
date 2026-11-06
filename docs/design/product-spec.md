@@ -124,7 +124,7 @@ Recurring-event expansion (store the rule, show the next one only), calendar wri
 1. How "important" is decided for resurfacing: number of mentions, per-sender weight, or the knowledge weigher.
 2. Whether title + date + venue is enough to call two mentions the same event; needs a labeled sample of real repeats.
 3. Reminder channel: ntfy or in-app only.
-4. Whether the Digest and Up next share one page with two tabs or are separate screens.
+4. Whether the issue and Up next stay two screens or become one page where Coming up is the live top of the current issue.
 
 ## Build order (from the design doc)
 
