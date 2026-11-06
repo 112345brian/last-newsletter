@@ -89,6 +89,12 @@ The things the app could not decide, so nothing fails silently.
 - **Reminders and alerts**: see Delivery below. Sent through a durable outbox so a crash neither loses nor repeats one. Channel (ntfy or in-app only) is undecided.
 - **Untrusted input**: no email HTML is rendered, no link is followed or fetched, and the model gets no tools.
 
+## What counts as important
+
+Importance comes from your knowledge store, per name. If the knowledge store says a music artist is high priority, a show with that artist headlining ranks higher: it can become the lead, sort first in its section, trigger an "important new item" alert and bring a lapsed task back once. Support acts count for less. You can also keep a watch list of senders and keywords that always count, with no knowledge store needed.
+
+The app reads your knowledge; it does not change it. Names it sees often but does not know are listed under **Needs a look** ("artists I don't know yet") so you can decide whether to add them.
+
 ## Reliable sections
 
 A magazine earns trust because things are where you expect them. A **section** is a standing department with a fixed name, a fixed slot and a fixed rule for what goes in it. "Concerts Coming Up" is on page 6 every issue.
@@ -135,7 +141,7 @@ Example: **The Week**, Sunday 6 pm, Coming up + Needs you + a short Stories sect
 | Deadline approaching | on, 2 days and 1 day before | "Signup closes Friday" |
 | **Sale opens** (presale or on-sale) | on, 1 day before | "Presale for the Roxy show opens tomorrow at 10 am" |
 | Cancelled or postponed | on | "The Nov 7 show was cancelled" |
-| Important new item | **off** until importance is decided | A watch-listed sender announces something dated within 14 days |
+| Important new item | **off** until measured on real mail (Stage 4) | An artist you rank highly announces a show within 14 days |
 
 Guardrails, all configurable:
 - **One alert per item, per trigger, per lead time.** Re-ingesting the same email never re-alerts.

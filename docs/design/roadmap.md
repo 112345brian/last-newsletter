@@ -11,7 +11,7 @@ Two rules make this safe:
 1. **A port with no adapter yet is bound to a "not available" implementation.** Every port ships with one that returns a typed `Unavailable(reason)` result (the job repo's `PortNotBound` pattern, vendored in `usage_ledger_port`). Use cases handle it as an outcome, and it shows in "Needs a look". So the full flow runs at every stage, with fewer capabilities turned on, and a feature that is not built yet cannot crash or silently do nothing. A test asserts every port has a not-available binding and every use case handles it.
 2. **Features are gated by configuration, not by branches of code.** The composition root in `cli` binds adapters according to the stage; `EditionConfig`, `TriggerConfig` and `SectionSpec` already express what the owner turns on.
 
-**The risk of wiring core all at once** is designing for facts we do not have yet. Three parts of the spec rest on open decisions: how importance works, whether title + date + venue is enough for identity, and the reminder channel. Core therefore builds those as *ports with a simple default* (importance = the owner's watch list, identity = the ladder with every match recorded and re-runnable, reminders = the `Notifier` port), and a later stage replaces the default once measured data exists. Core does not hard-code a guess.
+**The risk of wiring core all at once** is designing for facts we do not have yet. Two parts of the spec rest on open decisions: whether title + date + venue is enough for identity, and the reminder channel. Importance is decided (the owner's knowledge store, per extracted entity, through the existing `RelevanceWeigher` port); only its thresholds wait for real data. Core builds the open parts as *ports with a simple default* (identity = the ladder with every match recorded and re-runnable, reminders = the `Notifier` port), and a later stage replaces the default once measured data exists. Core does not hard-code a guess.
 
 ## Stages
 
@@ -41,8 +41,8 @@ IMAP source (exists), embedded-event reader (calendar attachments, structured da
 Exit: run against the real mailbox; report what share of newsletters carry machine-readable events. That number decides how much Stage 4 must do.
 
 ### Stage 4: model extraction
-Extractor adapter, extraction queue with retry, cost and privacy admission, a small labeled sample of real mail.
-Exit: precision and recall on the sample, and a measured duplicate rate. This is where the identity decision (is title + date + venue enough) is made from data, and importance is revisited.
+Extractor adapter (returns **entities**: headliner, support acts, venue, organizer), extraction queue with retry, cost and privacy admission, a small labeled sample of real mail. The knowledge weigher is wired to the extracted names here.
+Exit: precision and recall on the sample, including how often a clean headliner name is extracted and how often it matches a knowledge entity; and a measured duplicate rate. This is where the identity decision (is title + date + venue enough) is made from data, and importance is revisited.
 
 ### Stage 5: the issue on screen
 Needs `DESIGN.md` first (no visual identity exists). One weekly edition, the issue screen, Up next, Item detail, Done and Dismiss and Snooze.
@@ -57,7 +57,7 @@ Settings screen: multiple editions, sections and tag rules; Correct, Merge, Spli
 Exit: you add a monthly edition and a Concerts section from the screen, and the next issues reflect them.
 
 ### Later (not scheduled)
-Importance scoring beyond the watch list, urgency bands from the vendored `urgency` survival curve, recurring-event expansion, calendar write-back, non-English mail, attachments beyond calendar files.
+Learning importance from behavior (done, dismiss, snooze) and writing it back to knowledge (research not done), urgency bands from the vendored `urgency` survival curve, recurring-event expansion, calendar write-back, non-English mail, attachments beyond calendar files.
 
 ## What each stage lets you demo
 
@@ -80,7 +80,7 @@ Stages 1 and 2 are sequential. After Stage 2, Stage 3 and the `DESIGN.md` work f
 | Before stage | Decision |
 |---|---|
 | 3 | none |
-| 4 | which model and budget; sender deny-list for transactional mail |
+| 4 | which model and budget; sender deny-list for transactional mail; the `important_at` threshold, set after seeing real weights |
 | 5 | visual identity (run the design pass) |
 | 6 | reminder channel: ntfy or in-app only |
 | 7 | none beyond the open spec items |

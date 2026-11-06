@@ -15,7 +15,7 @@ Recorded 2026-11-06 from the owner's answers in session. Status: decided unless 
 - Done and dismissed always win over resurfacing.
 
 ## Open
-- Source of "importance": source count, per-sender weight, or the knowledge weigher (weak on whole titles).
+- ~~Source of "importance"~~ **Decided 2026-11-06:** the owner's knowledge store via `RelevanceWeigher`, applied per extracted entity (design section 14b). Open: thresholds; learning from behavior; write-back to knowledge.
 - Event identity rule: needs a measured dedupe sample from real mail.
 - Where key normalization lives, because `core` cannot import `text_match`.
 - Reminder channel: ntfy or the web page.

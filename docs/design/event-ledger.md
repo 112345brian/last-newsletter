@@ -23,7 +23,8 @@ Consequences, each enforced by a test rather than by prose:
 
 All types are frozen dataclasses with no I/O. Datetimes are timezone-aware; constructors reject naive ones.
 
-- **`Event`**: `id` (surrogate, opaque, assigned by the ledger), `kind` (`EVENT`, `DEADLINE`, `TASK`), `title`, `summary`, `when: ItemTime`, `sale_start: ItemTime | None`, `due_is_default: bool`, `tags: frozenset[Tag]` (each tag records its origin: `OWNER`, `RULE`, `EXTRACTOR`), `state: ItemState`, `mentions: tuple[Mention, ...]`, `first_seen`, `last_seen`, `resurfaced: int`.
+- **`Event`**: `id` (surrogate, opaque, assigned by the ledger), `kind` (`EVENT`, `DEADLINE`, `TASK`), `title`, `summary`, `when: ItemTime`, `sale_start: ItemTime | None`, `due_is_default: bool`, `entities: tuple[EntityRef, ...]`, `tags: frozenset[Tag]` (each tag records its origin: `OWNER`, `RULE`, `EXTRACTOR`), `state: ItemState`, `mentions: tuple[Mention, ...]`, `first_seen`, `last_seen`, `resurfaced: int`.
+- **`EntityRef`**: `name` (as written), `role` (`HEADLINER`, `SUPPORT`, `VENUE`, `ORGANIZER`), `origin` (`OWNER`, `EXTRACTOR`). The named people and places an item is about; what importance is computed from.
 - **`ItemTime`**: `AllDay(date)` or `Timed(start, tz_name, end | None)`; `TASK` items carry an `AllDay` default due date.
 - **`Mention`** (provenance, never overwritten): `message_id`, `seen_at`, `source`, `raw_date_text`, `evidence` (the quoted line the item came from), `match_rule` (which identity rung linked it).
 - **`ItemState`**: `OPEN`, `DONE`, `DISMISSED`, `SNOOZED(until)`, `EXPIRED`. State is separate from extracted fields so a re-extraction never overwrites what the owner did.
@@ -132,7 +133,7 @@ The staged plan, exit tests and decisions per stage are in `roadmap.md`; this li
 
 ## 12. Open decisions and unknowns
 
-- **[D]** Importance source for resurfacing: source count, per-sender weight, or the knowledge weigher (weak on whole titles **[V]**).
+- **Decided (owner, 2026-11-06):** importance comes from the owner's knowledge store through the existing `RelevanceWeigher` port (section 14b). **[D]** still open: the thresholds, and whether the app ever writes back to knowledge.
 - **[D]** Whether title + date + venue is enough for identity; needs a labeled sample from real mail.
 - **[D]** Reminder channel: ntfy or the web page.
 - **[D]** Shared model-client package versus per-adapter clients.
@@ -150,6 +151,19 @@ Each is a decision, a typed outcome and a test in core. None adds a feature.
 4. **Source outcomes and run health.** Every run records one `SourceOutcome` per source (`OK(n)`, `EMPTY`, `FETCH_FAILED(reason)`, `PARSE_FAILED`). Silence is distinguishable from failure: a source that returns nothing for several runs raises a health flag instead of looking like "no events".
 5. **Concurrency and durability.** One writer at a time (`WriterLock`), and reminders go through a durable `Outbox` so a crash between "decide to remind" and "send" neither loses nor duplicates one. Both are ports with in-process fakes in core; the real implementations may use the job repo's `process_lock` and `durable_outbox`.
 6. **Idempotent upserts.** Re-ingesting the same message changes nothing (keyed by message id plus candidate hash). `first_seen` is set once and never moved; `last_seen` and `mentions` only grow; owner state and corrections are never overwritten by extraction. Each is its own test.
+
+## 14b. Importance: from knowledge, per entity
+
+Importance is how much the owner cares about what an item is about, for example which music artists are high priority. It is **read from the owner's knowledge store**, not learned inside this app.
+
+- **Verified [V]:** `RelevanceWeigher.weight_for(candidate: str) -> float` exists in core (`ports.py:54`) and `SqliteKnowledgeWeigher` implements it by **exact match** of the normalized text against an entity name or alias, counting active `preference` facts times `weight_per_fact`. So it answers "how much do I like *Artist X*", and returns 0.0 for a whole event title like "Artist X - Tour - Venue".
+- **Rule (pure, core):** `importance(item, weighers) = max over item.entities with role HEADLINER or SUPPORT of the summed weigher weights for that name`, with support acts discounted by a configured factor; if the item has no entities, fall back to the whole title. The port is unchanged, so no caller of it changes.
+- **So extraction must return entities.** `EventCandidate` gains `entities`: headliner and support acts, venue, organizer. Without them the weigher is asked the wrong question. This is the main new requirement on the extractor and its labeled sample.
+- **Thresholds are config:** `important_at` (weight at or above which an item is "important") and `watch_list` (the owner's explicit senders and keywords, which set a floor and need no knowledge store). Importance feeds: the lead story, section order by importance, the `IMPORTANT_NEW` alert, and resurfacing of lapsed tasks.
+- **Unknown names are surfaced, not guessed.** Names that appear often and have weight 0.0 are listed in "Needs a look" as "artists I do not know", so the owner can add them to knowledge by hand. This app does not write to knowledge in the first release.
+- **Name drift:** exact matching means "Artist X (Live)" misses. The fix is entity extraction that returns the clean name, plus aliases in knowledge, not a fuzzy weigher.
+- **Tests (against a fake weigher):** headliner weight wins over a support act; a title with no entities falls back to the title; unknown names produce no importance and are listed; the support discount; watch-list floor; importance 0.0 never raises an alert; a weigher that raises is reported and the item is ranked without importance, not dropped.
+- **Not researched yet:** how others learn preferences from behavior (done, dismiss, snooze). That would be a later `PreferenceSink` port; the research is still open.
 
 ## 14a. Sections and placement
 
