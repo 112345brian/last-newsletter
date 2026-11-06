@@ -23,7 +23,7 @@ Consequences, each enforced by a test rather than by prose:
 
 All types are frozen dataclasses with no I/O. Datetimes are timezone-aware; constructors reject naive ones.
 
-- **`Event`**: `id` (surrogate, opaque, assigned by the ledger), `kind` (`EVENT`, `DEADLINE`, `TASK`), `title`, `summary`, `when: ItemTime`, `sale_start: ItemTime | None`, `due_is_default: bool`, `state: ItemState`, `mentions: tuple[Mention, ...]`, `first_seen`, `last_seen`, `resurfaced: int`.
+- **`Event`**: `id` (surrogate, opaque, assigned by the ledger), `kind` (`EVENT`, `DEADLINE`, `TASK`), `title`, `summary`, `when: ItemTime`, `sale_start: ItemTime | None`, `due_is_default: bool`, `tags: frozenset[Tag]` (each tag records its origin: `OWNER`, `RULE`, `EXTRACTOR`), `state: ItemState`, `mentions: tuple[Mention, ...]`, `first_seen`, `last_seen`, `resurfaced: int`.
 - **`ItemTime`**: `AllDay(date)` or `Timed(start, tz_name, end | None)`; `TASK` items carry an `AllDay` default due date.
 - **`Mention`** (provenance, never overwritten): `message_id`, `seen_at`, `source`, `raw_date_text`, `evidence` (the quoted line the item came from), `match_rule` (which identity rung linked it).
 - **`ItemState`**: `OPEN`, `DONE`, `DISMISSED`, `SNOOZED(until)`, `EXPIRED`. State is separate from extracted fields so a re-extraction never overwrites what the owner did.
@@ -148,6 +148,15 @@ Each is a decision, a typed outcome and a test in core. None adds a feature.
 4. **Source outcomes and run health.** Every run records one `SourceOutcome` per source (`OK(n)`, `EMPTY`, `FETCH_FAILED(reason)`, `PARSE_FAILED`). Silence is distinguishable from failure: a source that returns nothing for several runs raises a health flag instead of looking like "no events".
 5. **Concurrency and durability.** One writer at a time (`WriterLock`), and reminders go through a durable `Outbox` so a crash between "decide to remind" and "send" neither loses nor duplicates one. Both are ports with in-process fakes in core; the real implementations may use the job repo's `process_lock` and `durable_outbox`.
 6. **Idempotent upserts.** Re-ingesting the same message changes nothing (keyed by message id plus candidate hash). `first_seen` is set once and never moved; `last_seen` and `mentions` only grow; owner state and corrections are never overwritten by extraction. Each is its own test.
+
+## 14a. Sections and placement
+
+Layout is a pure rule in core, like delivery.
+
+- **`SectionSpec`** (frozen, validated): `id`, `title`, `slot`, `selector` (`kinds`, `tags`, `senders`, `venues`, `window_days`), `order` (`DATE`, `IMPORTANCE`, `MENTIONS`), `limit`, `show_when_empty`. Slots within an edition are unique and gap-free; `EditionConfig.sections` is a tuple of these.
+- **`TagRule`** (config): sender, keyword or venue pattern -> tag. `apply_tag_rules(item, rules)` is pure; the extractor's category arrives on `EventCandidate` as a suggested tag with origin `EXTRACTOR`; owner corrections have origin `OWNER` and win.
+- **`place(items, sections) -> Layout`**: each item goes to the lowest-slot section whose selector matches; unmatched items go to the fallback section for their kind; an item is never placed twice. `Layout` lists every section, including empty ones, with `show_when_empty` applied at render time, not here.
+- **Tests:** an item matching two sections lands in the lower slot only; an unmatched item is not dropped; an empty section keeps its slot number; slots stay stable when another section's content changes; owner tag beats rule beats extractor; a section selector with no criteria is rejected at validation; `limit` reports "and N more" rather than truncating silently.
 
 ## 14. Delivery policy: cadence and alerts
 

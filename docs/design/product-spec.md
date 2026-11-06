@@ -89,6 +89,27 @@ The things the app could not decide, so nothing fails silently.
 - **Reminders and alerts**: see Delivery below. Sent through a durable outbox so a crash neither loses nor repeats one. Channel (ntfy or in-app only) is undecided.
 - **Untrusted input**: no email HTML is rendered, no link is followed or fetched, and the model gets no tools.
 
+## Reliable sections
+
+A magazine earns trust because things are where you expect them. A **section** is a standing department with a fixed name, a fixed slot and a fixed rule for what goes in it. "Concerts Coming Up" is on page 6 every issue.
+
+A section is defined by:
+
+| Setting | Meaning |
+|---|---|
+| Title | "Concerts Coming Up" |
+| Slot | its position in the edition; shown as a page or section number, so slot 6 is always page 6 |
+| Selector | what belongs in it: item kind (event, deadline, task), **tags** (concert, meeting, ...), senders or venues, and a date window (next 30 days) |
+| Order | by date, by importance, or by mention count |
+| Limit | most items shown, with "and 4 more" |
+| If empty | **still printed**, with an honest line ("No concerts announced this week"), or hidden. The default is printed, because a slot that vanishes is what makes a magazine unreliable. |
+
+Rules:
+- **Each item appears once per issue**, in the first matching section by slot order. Anything that matches no section lands in the general Coming up, Needs you or Stories section, so nothing is dropped for lack of a home.
+- **Page numbers are slot numbers.** They are stable only because the section list is fixed: sections that vary in length (Stories) go last. The lead and masthead are not numbered pages.
+- **Tags come from three places, in order of trust:** your own correction, your rules (sender, keyword or venue maps to a tag), and the extractor's suggested category. A wrong tag is fixed in Item detail and the correction sticks.
+- **A new install ships with generic sections** (Coming up, Needs you, Stories). Sections like Concerts are ones you add, usually by tagging your first few items.
+
 ## Delivery: issue cadence and stop-press alerts (configurable)
 
 Two separate channels, both set on a fifth screen, **Settings**.
@@ -99,7 +120,7 @@ Two separate channels, both set on a fifth screen, **Settings**.
 |---|---|
 | Name | "The Week", "The Month", anything |
 | Cadence | daily, weekly (day and time), monthly (day of month and time), every N days, or off |
-| Sections | any of: Lead, Coming up, Needs you, Stories |
+| Sections | an ordered list of sections (see Reliable sections below) |
 | Look-ahead | how far Coming up reaches (a weekly edition: 14 days; a monthly one: 6 weeks) |
 | Sources | all newsletters, or only chosen senders or themes |
 | Length | maximum number of stories |
