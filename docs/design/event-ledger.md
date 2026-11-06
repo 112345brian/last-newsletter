@@ -1,6 +1,6 @@
 # Event and task ledger: design
 
-Status: draft 1, 2026-11-06. Inputs: `PRODUCT.md`, `docs/research/*.md`.
+Status: draft 2, 2026-11-06 (adds the six gaps in section 13, the IO-discipline test, and the verified state of job-repo libs). Inputs: `PRODUCT.md`, `docs/research/*.md`.
 Tags: **[V]** verified against the repo or by computation, **[A]** assumed, **[D]** decision still open.
 
 ## 1. Goal
@@ -13,7 +13,7 @@ Add a remembered lane next to the stateless digest. Dated events, deadlines and 
 
 Consequences, each enforced by a test rather than by prose:
 
-1. **Core imports the standard library only.** A test parses every module in `packages/core/src` and fails on any import whose top-level name is not in `sys.stdlib_module_names` or `last_newsletter_core` **[V: attribute exists in Python 3.10+; the repo targets 3.11]**. This is stricter than the import-linter contract, which cannot whitelist.
+1. **Core imports the standard library only.** A test parses every module in `packages/core/src` and fails on any import whose top-level name is not in `sys.stdlib_module_names` or `last_newsletter_core` **[V: attribute exists in Python 3.10+; the repo targets 3.11]**. This is stricter than the import-linter contract, which cannot whitelist. Stdlib-only is still not enough: `sqlite3`, `socket`, `urllib`, `subprocess`, `open()`, `os.environ`, `time` and `random` are all stdlib. A second AST test therefore forbids IO and ambient state in core: imports of `os`, `sys`, `io`, `pathlib`, `sqlite3`, `socket`, `urllib`, `http`, `subprocess`, `shutil`, `tempfile`, `logging`, `threading`, `asyncio`, `time`, `random`, `secrets`; calls to `open`, `print`, `input`, `datetime.now`, `datetime.today`, `date.today`, `os.getenv`; and dynamic imports. Pure stdlib stays allowed (`datetime`, `dataclasses`, `enum`, `unicodedata`, `difflib`, `re`, `zoneinfo`, `typing`, `collections`). Time enters through a `Clock` port or a `now` argument.
 2. **Domain rules live in core, not in an adapter.** What counts as "the same event", how a missing year is resolved, what a default task deadline is, when a task resurfaces and what urgency means are all pure functions in core. A library may help an adapter *produce input* but never decides a rule.
 3. **Every port has a hand-written fake in core's tests** (the repo's existing pattern, `core/tests/test_build_digest.py`), and the complete ingest-to-remind flow runs against fakes with no network, no disk and no clock.
 4. **One contract-test suite per port**, run against the fake and against each real adapter. An adapter is acceptable when the same suite passes. Swapping SQLite for another store, or Instructor for a raw SDK call, is then a new adapter plus a passing suite, with no core change.
@@ -45,7 +45,7 @@ All types are frozen dataclasses with no I/O. Datetimes are timezone-aware; cons
 
 ## 5. Identity (the central rule) **[D]**
 
-Match ladder, stop at the first hit, always against open or recently closed items only. Source: `event-prior-art.md` section 6 and `job_dedupe.py`, which uses the same shape.
+Match ladder, stop at the first hit, always against open or recently closed items only. Source: `event-prior-art.md` section 6 and the job repo's `libs/identity_dedupe` ladder (now a standalone lib with a `Dedupable` protocol and an injected URL normalizer), which uses the same shape. It can serve as an adapter; core keeps its own stdlib default and one contract test runs the same cases against both.
 
 1. iCalendar `UID` (with `RECURRENCE-ID` for one instance); a higher `SEQUENCE` updates, a lower one is ignored.
 2. Canonical URL, when the item has one.
@@ -68,7 +68,12 @@ The normalization used by rungs 2 and 3 is **core code** (stdlib `unicodedata`).
 | `TextSimilarity` | `score(a, b) -> float` | stdlib `difflib` implementation | `rapidfuzz` |
 | `EventRepository` | `upsert`, `find_open`, `get`, `record_mention`, `apply_action` | in-memory fake | SQLite (new `adapter_ledger`) |
 | `RelevanceWeigher` (exists) | importance for resurfacing | fake exists | knowledge weigher (exists) |
-| `UrgencyPolicy` | `band(item, now)` | core default | job-repo `survival_curve` once extracted |
+| `UrgencyPolicy` | `band(item, now)` | core default | job-repo `libs/urgency` (`item_urgency`, `survival_curve`; no deps, ready) |
+| `RawMessageStore` | `put(message) -> RawRef`, `get(ref)` | in-memory fake | SQLite blob table in `adapter_ledger` |
+| `ExtractionQueue` | `enqueue`, `claim`, `complete`, `fail(retry_after)` | in-memory fake | SQLite table in `adapter_ledger` |
+| `ModelAdmission` | `admit(request) -> Admitted \| Refused(reason)`; budget and privacy filter | permissive fake | job-repo usage-ledger shape (not yet a lib) |
+| `RunLog` | `record(SourceOutcome)`; per-source health | in-memory fake | SQLite |
+| `WriterLock` / `Outbox` | single writer; durable "to send" records | in-process fakes | job-repo `libs/process_lock`, `libs/durable_outbox` (adapter side only) |
 | `Notifier` | `send(reminder) -> NotifyResult`, never raises, result must be consumed | recording fake | ntfy, or Apprise |
 | `Clock` | `now()` | fixed fake | system clock, only in `cli` |
 
@@ -104,7 +109,7 @@ Mail is untrusted input. The extractor has no tools and no outbound reach beyond
 
 ## 10. Test plan (written before code)
 
-1. Architecture: core stdlib-only; the three `pyproject` lists agree; the clock appears only in `cli`.
+1. Architecture: core stdlib-only; core has no IO or ambient state (section 2); the three `pyproject` lists agree; the clock appears only in `cli`; no caller discards a use-case result.
 2. Rules: year resolution (weekday pins the year, the Dec to Jan boundary, ambiguity marked), default due date, resurface once, never after done, past-date rejection, cancellation.
 3. Identity ladder: UID update ordering, URL match, title+date+venue match, same title on different dates stays separate, ambiguous stays split and linked.
 4. Use cases against fakes: ingest counts, idempotent re-ingest of the same email, state survives re-extraction, cooldown, `Notifier` failure does not lose the reminder.
@@ -131,4 +136,17 @@ Per the global rule on shared code: before changing `RelevanceWeigher` or `Email
 - **[D]** Shared model-client package versus per-adapter clients.
 - **[A]** The share of mail that carries JSON-LD or `.ics` is unmeasured; it decides how much the LLM extractor must do.
 - **[A]** Library licenses, current versions and Python 3.11 compatibility for `extruct`, `icalendar`, Instructor, `rapidfuzz` were not verified; none is imported until a session checks them.
-- **Not designed here:** the page's visual design (`PRODUCT.md` exists; `DESIGN.md` does not), recurring-event expansion (store the rule, show the next occurrence only), and the job-repo modules, which arrive later as adapters behind `UrgencyPolicy` and identity helpers.
+- **Not designed here:** the page's visual design (`PRODUCT.md` exists; `DESIGN.md` does not) and recurring-event expansion (store the rule, show the next occurrence only).
+
+## 13. Gaps closed in draft 2
+
+Each is a decision, a typed outcome and a test in core. None adds a feature.
+
+1. **Raw message store.** Ingest stores the source message (or a reference to it) before extraction, so a rule change can be re-run and every item traces to its email. Port `RawMessageStore`. Tracking-link query strings are stripped before storage, since they can carry per-recipient IDs.
+2. **Deferred, retryable extraction.** Extraction is a queue, not an inline call. A model failure, refusal or timeout sets `retry_after` and increments attempts; after a cap the message is parked as `EXTRACTION_FAILED` and counted, never dropped and never retried forever. Port `ExtractionQueue`.
+3. **Model cost and privacy admission.** Before any text leaves for a model, `ModelAdmission` checks a spend budget and a privacy filter (URLs and tracking IDs stripped, a sender deny-list for transactional and financial mail). A `Refused` outcome is recorded with its reason, and the message stays queued. The survey saw bank and order mail carrying list headers, so the deny-list is required, not optional.
+4. **Source outcomes and run health.** Every run records one `SourceOutcome` per source (`OK(n)`, `EMPTY`, `FETCH_FAILED(reason)`, `PARSE_FAILED`). Silence is distinguishable from failure: a source that returns nothing for several runs raises a health flag instead of looking like "no events".
+5. **Concurrency and durability.** One writer at a time (`WriterLock`), and reminders go through a durable `Outbox` so a crash between "decide to remind" and "send" neither loses nor duplicates one. Both are ports with in-process fakes in core; the real implementations may use the job repo's `process_lock` and `durable_outbox`.
+6. **Idempotent upserts.** Re-ingesting the same message changes nothing (keyed by message id plus candidate hash). `first_seen` is set once and never moved; `last_seen` and `mentions` only grow; owner state and corrections are never overwritten by extraction. Each is its own test.
+
+**Exhaustive-outcome rule.** Every use case returns a typed result with one variant per outcome (created, mentioned, rejected with reason, deferred, refused, failed). A test scans every caller in `cli` and the adapters and fails if one discards a result, so a new outcome cannot be silently ignored. "Exhaustive" means every decision and failure path is typed and tested, not that the feature set grows.

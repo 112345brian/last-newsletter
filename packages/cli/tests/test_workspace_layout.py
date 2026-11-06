@@ -20,14 +20,19 @@ def _pyproject() -> dict[str, Any]:
 
 def _member_dirs() -> set[str]:
     return {
-        f"packages/{path.name}"
-        for path in (_ROOT / "packages").iterdir()
+        f"{root}/{path.name}"
+        for root in ("packages", "vendor")
+        for path in (_ROOT / root).iterdir()
         if (path / "pyproject.toml").is_file()
     }
 
 
 def _import_names_on_disk() -> set[str]:
-    return {init.parent.name for init in (_ROOT / "packages").glob("*/src/*/__init__.py")}
+    return {
+        init.parent.name
+        for root in ("packages", "vendor")
+        for init in (_ROOT / root).glob("*/src/*/__init__.py")
+    }
 
 
 def _layer_names(pyproject: dict[str, Any]) -> list[str]:

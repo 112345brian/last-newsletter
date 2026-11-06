@@ -4,6 +4,8 @@ Investigated 2026-11-05, read-only. Job repo at `4747cd149`, last-newsletter at 
 Tags: **[V]** verified (command or file named), **[A]** assumed.
 The owner wrote all of this code, so licensing and permission are not questions here. This is only about how each library can be consumed.
 
+> **Superseded in part, 2026-11-06.** This note measured `4747cd149`, which was 25 commits behind `origin/main` (`ede0b7c35`). Urgency, identity and date logic are now installable libs (`libs/urgency`, `libs/identity_dedupe`, `libs/source_dates`). See `job-repo-mining.md` for the current state; statements below about those three being "not consumable" are out of date.
+
 ## Answer
 
 Four of the nine candidates can be consumed today as pinned git dependencies on the owner's machine: `llmhost`, `evalkit`, `text-claims` and `collection_core` (a monorepo subdirectory). They each have a repo and a `pyproject.toml` with a `>=3.11` floor [V]. The other five (`tracker_state`, `records`, `process_lock`, `durable_outbox`, and the urgency pair) exist only inside the job repo, so they need extraction first (#1506, #1543) or a vendored copy. Recommendation: **no imports now; define our own ports in `core`. Once extracted, use pinned git dependencies.**
