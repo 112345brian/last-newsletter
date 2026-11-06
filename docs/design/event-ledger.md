@@ -74,6 +74,8 @@ The normalization used by rungs 2 and 3 is **core code** (stdlib `unicodedata`).
 | `ExtractionQueue` | `enqueue`, `claim`, `complete`, `fail(retry_after)` | in-memory fake | SQLite table in `adapter_ledger` |
 | `ModelAdmission` | `admit(request) -> Admitted \| Refused(reason)`; budget and privacy filter | permissive fake | job-repo usage-ledger shape (not yet a lib) |
 | `SampleResolver` | `find(entity, *, now) -> Found(sample, confidence, evidence) \| NoMatch \| Ambiguous(candidates) \| Unavailable(reason)` | scripted fake | Mixcloud, Spotify, SoundCloud adapters (each needs its own account or credentials) |
+| `ArtistTagSource` | `tags(entity) -> Tags(namespace, weights) \| NoData \| Unavailable(reason)` | scripted fake | Spotify genres, MusicBrainz tags, Last.fm top tags |
+| `SimilarArtistSource` | `similar(entity) -> Similar(names, scores) \| NoData \| Unavailable` | scripted fake | Last.fm getSimilar |
 | `SampleStore` | `get`, `put`, `put_miss(ttl)`, `override(entity, sample \| WRONG)` | in-memory fake | SQLite in `adapter_ledger` |
 | `RunLog` | `record(SourceOutcome)`; per-source health | in-memory fake | SQLite |
 | `WriterLock` / `Outbox` | single writer; durable "to send" records | in-process fakes | job-repo `libs/process_lock`, `libs/durable_outbox` (adapter side only) |
@@ -166,6 +168,19 @@ Importance is how much the owner cares about what an item is about, for example 
 - **Name drift:** exact matching means "Artist X (Live)" misses. The fix is entity extraction that returns the clean name, plus aliases in knowledge, not a fuzzy weigher.
 - **Tests (against a fake weigher):** headliner weight wins over a support act; a title with no entities falls back to the title; unknown names produce no importance and are listed; the support discount; watch-list floor; importance 0.0 never raises an alert; a weigher that raises is reported and the item is ranked without importance, not dropped.
 - **Not researched yet:** how others learn preferences from behavior (done, dismiss, snooze). That would be a later `PreferenceSink` port; the research is still open.
+
+## 14d. Taste: scoring unfamiliar artists from tags and similarity
+
+Goal: rank a show by an artist you have never heard of, using what you already like. Prior art and licensing are in `docs/research/taste-and-genres.md`.
+
+- **Taste profile (pure, core).** Built from the entities knowledge ranks highly: for each liked artist, its tag weights times the knowledge weight, summed into one vector **per namespace** (Spotify genres, MusicBrainz tags and Last.fm tags are not mixed unless an alias map says they are the same). Tags are IDF-weighted over the owner's own artist set, so a rare tag such as "escape room" counts for more than "pop".
+- **Candidate score.** For an unknown artist: `tag_match` = cosine between the artist's tags and the profile, and `similar_match` = the strongest `SimilarArtistSource` link to a liked artist. `taste = max(tag_match, similar_match * s)`. This feeds the same importance number as 14b, below an exact knowledge match.
+- **Always explain.** Every score carries its reason: "Shares escape room and glitch pop with X, Y" or "Similar to X". A recommendation with no explanation is not shown as one.
+- **No data is a result.** `NoData` and `Unavailable` mean the artist gets no taste score, and the item is ranked as unknown; nothing is invented. Coverage per source is reported in "Needs a look".
+- **Identity before tags.** Name to source id mapping uses the same resolver and confirmation rule as Listen (14c); a name-only match is not used to attach tags.
+- **Limits stated:** genres are a coarse notion of similarity; Spotify's own micro-genres do not translate to other sources; and popularity is not used.
+- **Licensing:** Last.fm and MusicBrainz tag data are cached locally only, never committed to this repo, and Last.fm credit links are shown where its data is used. The app is private; it must not serve Last.fm-derived pages publicly.
+- **Tests (fakes):** IDF makes a rare shared tag outweigh a common one; two tags from different namespaces are not mixed; cosine of identical vectors is 1 and of disjoint vectors is 0; `NoData` yields no score, not zero-as-evidence; an unconfirmed same-name artist gets no tags; a source error is reported and scoring continues with the other sources; every score has a non-empty reason.
 
 ## 14c. Listen: a sample of the artist's work
 

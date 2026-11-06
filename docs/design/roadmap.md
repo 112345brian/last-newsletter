@@ -48,6 +48,10 @@ Exit: precision and recall on the sample, including how often a clean headliner 
 Needs `DESIGN.md` first (no visual identity exists). One weekly edition, the issue screen, Up next, Item detail, Done and Dismiss and Snooze.
 Exit: you can read last week's issue on a phone and clear an item, and it stays cleared after the next ingest.
 
+### Stage 4b: taste signals
+Adapters for tag and similarity sources (try Spotify genres, MusicBrainz and Last.fm, each optional), the taste profile and score from design 14d.
+Exit: on about 30 real artist names from the owner's mail, report per source the share with any tags, and for held-out liked artists whether the score ranks them above random unknown artists. The source chain is chosen from these numbers.
+
 ### Stage 5b: Listen
 Sample resolver adapters (start with one provider that works without special access), the sample store, the click-to-load player and its content security policy, a "Worth a Listen" section.
 Exit: on a labeled list of about 30 artist names from your own mail, report found, ambiguous and no-match rates and the wrong-artist rate among accepted samples; the embed rule is set from that number, and nothing loads before a click (checked by a test of the rendered page).
@@ -86,6 +90,7 @@ Stages 1 and 2 are sequential. After Stage 2, Stage 3 and the `DESIGN.md` work f
 | 3 | none |
 | 4 | which model and budget; sender deny-list for transactional mail; the `important_at` threshold, set after seeing real weights |
 | 5 | visual identity (run the design pass) |
+| 4b | a Last.fm API key (personal, non-commercial); whether the Spotify developer app (owner needs Premium) is worth setting up for genres |
 | 5b | which providers (Spotify needs a Premium developer account; SoundCloud may need Artist Pro); your area as a list of cities |
 | 6 | reminder channel: ntfy or in-app only |
 | 7 | none beyond the open spec items |

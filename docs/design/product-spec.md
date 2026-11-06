@@ -93,6 +93,8 @@ The things the app could not decide, so nothing fails silently.
 
 Importance comes from your knowledge store, per name. If the knowledge store says a music artist is high priority, a show with that artist headlining ranks higher: it can become the lead, sort first in its section, trigger an "important new item" alert and bring a lapsed task back once. Support acts count for less. You can also keep a watch list of senders and keywords that always count, with no knowledge store needed.
 
+**Shows like what you like.** For an artist you have never ranked, it compares that artist's genres and similar artists to the ones you rank highly, and says why: "Shares *escape room* and *glitch pop* with X and Y." If it has no information about an artist, it says nothing rather than guess. Niche genre tags count for more than broad ones.
+
 The app reads your knowledge; it does not change it. Names it sees often but does not know are listed under **Needs a look** ("artists I don't know yet") so you can decide whether to add them.
 
 ## Listen
