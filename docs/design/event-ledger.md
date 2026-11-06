@@ -23,7 +23,7 @@ Consequences, each enforced by a test rather than by prose:
 
 All types are frozen dataclasses with no I/O. Datetimes are timezone-aware; constructors reject naive ones.
 
-- **`Event`**: `id` (surrogate, opaque, assigned by the ledger), `kind` (`EVENT`, `DEADLINE`, `TASK`), `title`, `summary`, `when: ItemTime`, `due_is_default: bool`, `state: ItemState`, `mentions: tuple[Mention, ...]`, `first_seen`, `last_seen`, `resurfaced: int`.
+- **`Event`**: `id` (surrogate, opaque, assigned by the ledger), `kind` (`EVENT`, `DEADLINE`, `TASK`), `title`, `summary`, `when: ItemTime`, `sale_start: ItemTime | None`, `due_is_default: bool`, `state: ItemState`, `mentions: tuple[Mention, ...]`, `first_seen`, `last_seen`, `resurfaced: int`.
 - **`ItemTime`**: `AllDay(date)` or `Timed(start, tz_name, end | None)`; `TASK` items carry an `AllDay` default due date.
 - **`Mention`** (provenance, never overwritten): `message_id`, `seen_at`, `source`, `raw_date_text`, `evidence` (the quoted line the item came from), `match_rule` (which identity rung linked it).
 - **`ItemState`**: `OPEN`, `DONE`, `DISMISSED`, `SNOOZED(until)`, `EXPIRED`. State is separate from extracted fields so a re-extraction never overwrites what the owner did.
@@ -148,5 +148,18 @@ Each is a decision, a typed outcome and a test in core. None adds a feature.
 4. **Source outcomes and run health.** Every run records one `SourceOutcome` per source (`OK(n)`, `EMPTY`, `FETCH_FAILED(reason)`, `PARSE_FAILED`). Silence is distinguishable from failure: a source that returns nothing for several runs raises a health flag instead of looking like "no events".
 5. **Concurrency and durability.** One writer at a time (`WriterLock`), and reminders go through a durable `Outbox` so a crash between "decide to remind" and "send" neither loses nor duplicates one. Both are ports with in-process fakes in core; the real implementations may use the job repo's `process_lock` and `durable_outbox`.
 6. **Idempotent upserts.** Re-ingesting the same message changes nothing (keyed by message id plus candidate hash). `first_seen` is set once and never moved; `last_seen` and `mentions` only grow; owner state and corrections are never overwritten by extraction. Each is its own test.
+
+## 14. Delivery policy: cadence and alerts
+
+Everything about *when to tell the owner* is a pure rule in core, configured by data.
+
+- **`DeliveryConfig`** (frozen dataclass, loaded by `cli`, validated in core): `digest` (`off`, `daily(time)`, `weekly(weekday, time)`, timezone), `triggers` (per trigger: enabled, lead times), `quiet_hours`, `daily_cap`, `watch_list` (senders or keywords the owner marks important).
+- **`Event.sale_start`** (optional `ItemTime`): the presale or on-sale moment, kept separate from the event date **[V: gmail-survey, "sale_start (separate field; never start_date)"]**. It is what the `SALE_OPENS` trigger fires on.
+- **Pure functions:** `digest_due(now, config, last_digest) -> bool` and `plan_alerts(items, now, config, delivery_log) -> AlertPlan`, where each planned alert is `(item_id, trigger, lead, due_at, send_at)` and `send_at` is `due_at` moved out of quiet hours (a `SALE_OPENS` alert inside quiet hours is not moved past its sale time).
+- **Ports:** `DeliveryLog` (what was sent or missed per `(item, trigger, lead)`; the idempotency key) and the existing `Notifier` and `Outbox`.
+- **Use cases:** `SendAlerts` (plan, drop what the log already holds, enqueue to the outbox, record) and `SendDigest` (gated by `digest_due`). Outcomes are typed: `Sent`, `Deferred(quiet_hours)`, `Capped`, `Missed(too_late)`, `Suppressed(state)`, `NotifierFailed`.
+- **Suppression order**, first match wins: item `DONE`/`DISMISSED`/`SNOOZED` -> already logged -> assumed date -> trigger disabled -> too late -> quiet hours -> cap.
+- **Importance** is still open **[D]**. Until decided, `IMPORTANT_NEW` is off and the only importance input is the owner's explicit `watch_list`, which needs no model.
+- **Tests:** a clock-driven table per trigger and lead; the quiet-hours boundary; a sale opening inside quiet hours; cap rollover into the digest; re-ingest produces no second alert; down for two days then late send versus missed; assumed date never alerts; weekly digest on the wrong weekday is not due.
 
 **Exhaustive-outcome rule.** Every use case returns a typed result with one variant per outcome (created, mentioned, rejected with reason, deferred, refused, failed). A test scans every caller in `cli` and the adapters and fails if one discards a result, so a new outcome cannot be silently ignored. "Exhaustive" means every decision and failure path is typed and tested, not that the feature set grows.
