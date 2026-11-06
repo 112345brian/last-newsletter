@@ -4,7 +4,21 @@ Status: draft 1, 2026-11-06. Builds on `PRODUCT.md` and `event-ledger.md`. Descr
 
 ## What it is
 
-One person's inbox of newsletters, turned into two things: a **digest** of news you can skim and forget, and a **ledger** of events, deadlines and one-time tasks that it remembers for you. You open it on a phone or desktop, clear what is done, and it never shows you the same event twice.
+A personal magazine made from your own newsletters. On the schedule you set it publishes an **issue**: numbered, dated, finite, written for one reader, with an ending. Between issues, the part of it that remembers (events, deadlines, one-time tasks) stays live as **Coming up**. You open it on a phone or desktop, read the issue, clear what is done, and it never shows you the same event twice.
+
+**An issue**, top to bottom:
+1. **Masthead**: name, issue number, date, and a one-line count ("9 stories, 4 coming up, 2 need you").
+2. **Lead**: one story, chosen by rank, with a short summary and its source.
+3. **Coming up**: the dated items from the ledger, ordered by date, with labeled date states and quick actions.
+4. **Needs you**: one-time tasks, with the assumed-deadline label.
+5. **Stories**: the rest of the news, grouped by theme, each summarized and credited to its newsletter.
+6. **The end**: "That's the issue. Next one Sunday." Nothing infinite below it.
+
+Back issues are kept and can be reopened; the ledger lives between issues.
+
+**Honesty rule.** Magazine voice does not mean invented prose. Summaries are condensed from the email, each credited with sender and a link to the original; extracted dates carry their labels (inferred, assumed); nothing is shown that has no source email.
+
+**Alerts are "stop press"**: the in-voice name for a notice that breaks the issue schedule (a presale opening tomorrow).
 
 ## Screens
 
@@ -50,9 +64,11 @@ Opened from a row. Shows what the app believes and where it came from.
 - Actions: Done, Dismiss, Snooze (tonight, tomorrow, this weekend, pick a date), **Correct** (edit date or title, mark "not an event"), **Merge with...** and **Split**.
 - A correction is kept as an override: later emails update mentions but never undo what you set.
 
-### 3. Digest
+### 3. The issue
 
-The stateless news lane: today's stories in order, one after the next. Nothing here has state or a count, and nothing is remembered between days. Visibly different from Up next (no action buttons, no dates-as-urgency).
+The magazine itself, laid out as in "What it is": masthead, lead, Coming up, Needs you, Stories, the end. Read top to bottom like a magazine, not triaged like a list. The Stories section is the stateless news lane: one story after the next, no state, nothing remembered, no action buttons. Coming up and Needs you are snapshots of the ledger and keep their quick actions. Back issues are listed by number and date.
+
+(Screen 1, Up next, is the same ledger kept live between issues; it is Coming up plus Needs you without the editorial around it.)
 
 ### 4. Needs a look
 
@@ -73,13 +89,13 @@ The things the app could not decide, so nothing fails silently.
 - **Reminders and alerts**: see Delivery below. Sent through a durable outbox so a crash neither loses nor repeats one. Channel (ntfy or in-app only) is undecided.
 - **Untrusted input**: no email HTML is rendered, no link is followed or fetched, and the model gets no tools.
 
-## Delivery: digest cadence and alerts (configurable)
+## Delivery: issue cadence and stop-press alerts (configurable)
 
 Two separate channels, both set on a fifth screen, **Settings**.
 
-**Digest** is scheduled: daily, weekly, or off, with a day and time. A weekly wrap-up is just `weekly, Sunday 6 pm`. It lists everything open, so nothing depends on an alert having been seen.
+**The issue** is scheduled: daily, weekly, or off, with a day and time. A weekly magazine is just `weekly, Sunday 6 pm`; a daily one is a shorter issue. It lists everything open, so nothing depends on an alert having been seen.
 
-**Alerts** break cadence. They are sent when something is time-critical, regardless of the digest schedule. Each trigger is its own on/off switch with its own lead time:
+**Alerts (stop press)** break cadence. They are sent when something is time-critical, regardless of the issue schedule. Each trigger is its own on/off switch with its own lead time:
 
 | Trigger | Default | Example |
 |---|---|---|
@@ -92,11 +108,11 @@ Two separate channels, both set on a fifth screen, **Settings**.
 Guardrails, all configurable:
 - **One alert per item, per trigger, per lead time.** Re-ingesting the same email never re-alerts.
 - **Quiet hours** (default 10 pm to 8 am): alerts wait until morning, except a sale that opens inside the quiet window, which is sent before it.
-- **Daily cap** (default 5): over the cap, alerts roll into the next digest and say so.
+- **Daily cap** (default 5): over the cap, alerts roll into the next issue and say so.
 - **Done, dismissed and snoozed items never alert.**
-- **Assumed dates never alert.** A default one-week task deadline is not a real deadline, so it appears in the digest only.
+- **Assumed dates never alert.** A default one-week task deadline is not a real deadline, so it appears in the next issue only.
 - **Late is better than silent, but only while still useful.** If the app was down when a reminder was due, it sends late if the event or sale has not happened yet; otherwise it records the miss under Needs a look.
-- An alert already sent is marked in the next digest ("alerted Thursday"), so it is not a surprise or a duplicate.
+- An alert already sent is marked in the next issue ("alerted Thursday"), so it is not a surprise or a duplicate.
 - A failed send is retried from the outbox; it is never lost and never sent twice.
 
 ## Out of scope for the first release

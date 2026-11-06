@@ -10,14 +10,14 @@ web
 One person, the owner, who self-hosts the app and opens it on both desktop and phone. They subscribe to many newsletters (venue and promoter mail, member mailers, Substack, hand-written group mail) and want one place that tells them what matters without reading each email.
 
 ## Product Purpose
-Turns newsletters in an inbox into a digest. It separates two kinds of items:
+A personal magazine made from the owner's own newsletter subscriptions. Each **issue** is finite, dated and numbered, with a lead story, sections and an ending, and it is made for one reader. Underneath, it separates two kinds of items:
 - **News and notifications:** stateless. A story, then the next story. Nothing is remembered over time.
 - **Events, deadlines and one-time tasks:** need memory. They have an identity, a date, urgency, and the user's own state (done, dismissed, snoozed). The same event mentioned in several newsletters is one item.
 
 Success: the owner can see what is coming up and what needs action, clear it, and never see the same event twice.
 
 ## Positioning
-Self-hosted and personal: it runs on the owner's machine against their own mailbox and treats events as a ledger with state, not as one more summary.
+A magazine, not a digest or an inbox tool. A digest is a pile you process; a magazine is something you sit down with and finish. It is self-hosted and personal: it runs on the owner's machine against their own mailbox, and unlike a magazine it also remembers (events and tasks are a ledger with state). It never invents content: every story and listing is credited to the newsletter it came from, with a way back to the original.
 
 ## Operating Context
 - Mail arrives by IMAP; a CLI builds the digest and a small web app serves it.
@@ -40,6 +40,7 @@ The product name is "Last Newsletter". No logo, voice or visual identity has bee
 - No screenshots, user testing, or usage data exist. Do not fabricate any.
 
 ## Product Principles
+0. An issue is finite and finishable: it has an end, and reaching it feels like being done.
 1. News is disposable; events are remembered. The two lanes must stay visibly different.
 2. Never present a guess as a fact: assumed dates, inferred years and extraction confidence are shown.
 3. Every item traces back to its source email.
