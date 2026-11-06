@@ -4,7 +4,7 @@ Status: draft 1, 2026-11-06. Builds on `PRODUCT.md` and `event-ledger.md`. Descr
 
 ## What it is
 
-A personal magazine made from your own newsletters. On the schedule you set it publishes an **issue**: numbered, dated, finite, written for one reader, with an ending. Between issues, the part of it that remembers (events, deadlines, one-time tasks) stays live as **Coming up**. You open it on a phone or desktop, read the issue, clear what is done, and it never shows you the same event twice.
+A personal magazine made from your own newsletters. It publishes **editions**, each on its own schedule (a weekly one, a monthly one, as many as you want), and each edition publishes **issues**: numbered, dated, finite, written for one reader, with an ending. Between issues, the part of it that remembers (events, deadlines, one-time tasks) stays live as **Coming up**. You open it on a phone or desktop, read the issue, clear what is done, and it never shows you the same event twice.
 
 **An issue**, top to bottom:
 1. **Masthead**: name, issue number, date, and a one-line count ("9 stories, 4 coming up, 2 need you").
@@ -93,9 +93,20 @@ The things the app could not decide, so nothing fails silently.
 
 Two separate channels, both set on a fifth screen, **Settings**.
 
-**The issue** is scheduled: daily, weekly, or off, with a day and time. A weekly magazine is just `weekly, Sunday 6 pm`; a daily one is a shorter issue. It lists everything open, so nothing depends on an alert having been seen.
+**Editions** are independent publications from the same mailbox and the same ledger. You can run several at once, each with its own cadence and contents:
 
-**Alerts (stop press)** break cadence. They are sent when something is time-critical, regardless of the issue schedule. Each trigger is its own on/off switch with its own lead time:
+| Setting | Options |
+|---|---|
+| Name | "The Week", "The Month", anything |
+| Cadence | daily, weekly (day and time), monthly (day of month and time), every N days, or off |
+| Sections | any of: Lead, Coming up, Needs you, Stories |
+| Look-ahead | how far Coming up reaches (a weekly edition: 14 days; a monthly one: 6 weeks) |
+| Sources | all newsletters, or only chosen senders or themes |
+| Length | maximum number of stories |
+
+Example: **The Week**, Sunday 6 pm, Coming up + Needs you + a short Stories section; **The Month**, the 1st at 8 am, long Stories and a six-week Coming up. Each edition numbers its own issues, and an issue covers everything since that edition's last issue, so editions never steal items from each other. The ledger is shared: mark an event done in one edition and it is done everywhere. An item may appear in more than one edition, but never twice in the same one. A new install starts with one weekly edition; you add the rest.
+
+**Alerts (stop press)** break cadence. They are sent when something is time-critical, regardless of any edition's schedule. Each trigger is its own on/off switch with its own lead time:
 
 | Trigger | Default | Example |
 |---|---|---|
@@ -108,7 +119,7 @@ Two separate channels, both set on a fifth screen, **Settings**.
 Guardrails, all configurable:
 - **One alert per item, per trigger, per lead time.** Re-ingesting the same email never re-alerts.
 - **Quiet hours** (default 10 pm to 8 am): alerts wait until morning, except a sale that opens inside the quiet window, which is sent before it.
-- **Daily cap** (default 5): over the cap, alerts roll into the next issue and say so.
+- **Daily cap** (default 5): over the cap, alerts roll into the next issue of any edition and say so.
 - **Done, dismissed and snoozed items never alert.**
 - **Assumed dates never alert.** A default one-week task deadline is not a real deadline, so it appears in the next issue only.
 - **Late is better than silent, but only while still useful.** If the app was down when a reminder was due, it sends late if the event or sale has not happened yet; otherwise it records the miss under Needs a look.
