@@ -9,6 +9,7 @@ directory of files ever stops being enough.
 from __future__ import annotations
 
 import json
+import re
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
@@ -16,6 +17,10 @@ from last_newsletter_core.entities import Cadence, Digest, Theme, digest_slug
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+# Letters, digits, `_` and `-` only: no separators, no dots, so no path can be spelled with it.
+_SLUG_PATTERN = re.compile(r"[A-Za-z0-9_-]+")
 
 
 def _theme_to_dict(theme: Theme) -> dict[str, Any]:
@@ -90,6 +95,10 @@ class JsonDigestRepository:
         return [(path.stem, _from_dict(json.loads(path.read_text()))) for path in paths]
 
     def get(self, slug: str) -> Digest | None:
+        # A slug is opaque to callers, but adapter_web forwards a URL segment here, so refuse
+        # anything that isn't the shape `digest_slug` produces before it becomes a path.
+        if _SLUG_PATTERN.fullmatch(slug) is None:
+            return None
         path = self._base_dir / f"{slug}.json"
         if not path.is_file():
             return None

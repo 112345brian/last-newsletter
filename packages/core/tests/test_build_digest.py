@@ -270,3 +270,138 @@ def test_execute_with_no_messages_still_publishes_empty_digest() -> None:
     assert digest.themes == ()
     assert digest.total_messages == 0
     assert publisher.published is digest
+
+
+def _theme_citing(ids: tuple[str, ...], source_count: int, *, carried: bool = False) -> Theme:
+    return Theme(
+        title="T",
+        summary="s",
+        source_count=source_count,
+        source_message_ids=ids,
+        carried_forward=carried,
+    )
+
+
+def _build(
+    messages: list[EmailMessage], themes: list[Theme], repo: FakeRepository | None = None
+) -> Digest:
+    return BuildDigestUseCase(
+        email_source=FakeEmailSource(messages),
+        summarizer=FakeSummarizer(themes),
+        publisher=RecordingPublisher(),
+        repository=repo or FakeRepository(),
+    ).execute(_request())
+
+
+def test_source_count_is_derived_from_the_cited_messages_not_the_summarizers_claim() -> None:
+    digest = _build([_message("a")], [_theme_citing(("id-a",), source_count=9)])
+
+    assert digest.themes[0].source_count == 1
+
+
+def test_two_messages_from_one_source_count_as_one_source() -> None:
+    first = _message("a")
+    second = EmailMessage("id-a2", "a@example.com", "s2", _SINCE, "b", "a")
+
+    digest = _build([first, second], [_theme_citing(("id-a", "id-a2"), source_count=2)])
+
+    assert digest.themes[0].source_count == 1
+
+
+def test_hallucinated_message_ids_are_ignored() -> None:
+    digest = _build(
+        [_message("a"), _message("b")],
+        [_theme_citing(("id-a", "id-b", "id-nope"), source_count=3)],
+    )
+
+    assert digest.themes[0].source_count == 2
+
+
+def test_a_blank_source_label_falls_back_to_the_sender() -> None:
+    blank = EmailMessage("id-x", "x@example.com", "s", _SINCE, "b", "")
+    other = EmailMessage("id-y", "y@example.com", "s", _SINCE, "b", "")
+
+    digest = _build([blank, other], [_theme_citing(("id-x", "id-y"), source_count=1)])
+
+    assert digest.themes[0].source_count == 2
+
+
+def test_an_unverifiable_claim_is_capped_at_the_sources_actually_seen() -> None:
+    digest = _build([_message("a")], [_theme_citing((), source_count=9)])
+
+    assert digest.themes[0].source_count == 1
+
+
+def test_a_carried_forward_theme_with_no_new_mentions_keeps_its_count() -> None:
+    digest = _build([_message("a")], [_theme_citing(("old-id",), source_count=4, carried=True)])
+
+    assert digest.themes[0].source_count == 4
+
+
+def test_messages_at_or_after_the_window_end_are_not_part_of_this_digest() -> None:
+    inside = _message("a")
+    at_end = EmailMessage("id-end", "e@example.com", "s", _UNTIL, "b", "e")
+    after = EmailMessage("id-late", "l@example.com", "s", _UNTIL + timedelta(hours=3), "b", "l")
+
+    digest = _build([inside, at_end, after], [])
+
+    assert digest.total_messages == 1
+    assert digest.total_sources == 1
+
+
+def _digest_over(start: datetime, end: datetime, cadence: Cadence, theme: Theme) -> Digest:
+    return Digest(
+        period_start=start,
+        period_end=end,
+        cadence=cadence,
+        themes=(theme,),
+        total_messages=1,
+        total_sources=1,
+    )
+
+
+def test_a_digest_for_the_same_period_is_not_offered_back_as_prior_history() -> None:
+    """Re-running a build for a period must not feed that period's own earlier result
+    back in as 'last period', or every re-run would bump the streak again."""
+    earlier_run = _digest_over(_SINCE, _UNTIL, Cadence.WEEKLY, Theme("Saga", "s", 1, streak=1))
+    summarizer = FakeSummarizer([])
+    BuildDigestUseCase(
+        email_source=FakeEmailSource([]),
+        summarizer=summarizer,
+        publisher=RecordingPublisher(),
+        repository=FakeRepository(seed=[earlier_run]),
+    ).execute(_request())
+
+    assert summarizer.received_prior_themes == []
+
+
+def test_an_overlapping_digest_is_skipped_for_the_most_recent_one_that_tiles() -> None:
+    tiles = _digest_over(_SINCE - timedelta(days=7), _SINCE, Cadence.WEEKLY, Theme("Prior", "s", 1))
+    overlaps = _digest_over(
+        _SINCE + timedelta(days=1),
+        _UNTIL + timedelta(days=1),
+        Cadence.WEEKLY,
+        Theme("Over", "s", 1),
+    )
+    summarizer = FakeSummarizer([])
+    BuildDigestUseCase(
+        email_source=FakeEmailSource([]),
+        summarizer=summarizer,
+        publisher=RecordingPublisher(),
+        repository=FakeRepository(seed=[overlaps, tiles]),
+    ).execute(_request())
+
+    assert [t.title for t in summarizer.received_prior_themes or []] == ["Prior"]
+
+
+def test_a_prior_digest_of_a_different_cadence_is_not_continuity() -> None:
+    daily = _digest_over(_SINCE - timedelta(days=1), _SINCE, Cadence.DAILY, Theme("Daily", "s", 1))
+    summarizer = FakeSummarizer([])
+    BuildDigestUseCase(
+        email_source=FakeEmailSource([]),
+        summarizer=summarizer,
+        publisher=RecordingPublisher(),
+        repository=FakeRepository(seed=[daily]),
+    ).execute(_request())
+
+    assert summarizer.received_prior_themes == []

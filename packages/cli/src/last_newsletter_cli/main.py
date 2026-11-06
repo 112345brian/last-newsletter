@@ -72,7 +72,9 @@ def _build_use_case() -> BuildDigestUseCase:
 
 def _run_build(cadence_name: str) -> None:
     cadence = Cadence(cadence_name)
-    until = datetime.now(tz=UTC)
+    # Aligned to UTC midnight, not "now": a re-run on the same day is the same period (same
+    # slug, overwritten in place) instead of a new overlapping one that double-counts streaks.
+    until = datetime.now(tz=UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     since = until - (timedelta(days=1) if cadence is Cadence.DAILY else timedelta(days=7))
 
     use_case = _build_use_case()

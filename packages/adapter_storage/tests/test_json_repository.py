@@ -90,3 +90,15 @@ def test_list_recent_returns_newest_first(tmp_path: Path) -> None:
     recent = repo.list_recent()
 
     assert [digest for _, digest in recent] == [newer, older]
+
+
+def test_get_rejects_slugs_that_could_escape_the_digest_directory(tmp_path: Path) -> None:
+    """A slug is an opaque token from `save`/`list_recent`; anything else (a URL segment
+    forwarded by adapter_web, say) must never be turned into a filesystem path."""
+    digests_dir = tmp_path / "digests"
+    outside = tmp_path / "secret.json"
+    outside.write_text("{}")
+    repo = JsonDigestRepository(digests_dir)
+
+    for hostile in ("../secret", "..", ".", "", "a/b", "a\\b", "a\0b", "/etc/passwd", str(outside)):
+        assert repo.get(hostile) is None, hostile

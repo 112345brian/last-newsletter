@@ -138,7 +138,7 @@ anything that imports across packages need already present in `.venv`.
 
 The domain model, use case (including continuity/ranking), every port, IMAP
 fetch (`adapter_email`, via `imapclient`), and Markdown rendering
-(`adapter_publish`) are implemented and tested — 57 tests passing, strict
+(`adapter_publish`) are implemented and tested — 68 tests passing, strict
 `ty`, clean `ruff`, and `import-linter`'s architecture contract all green.
 `adapter_summarizer` (the actual Claude call) is still stubbed with
 `NotImplementedError` — it's the one piece that needs a real prompt-design

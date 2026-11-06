@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import date, datetime
 
-    from last_newsletter_core.entities import Cadence, Theme
+    from last_newsletter_core.entities import Cadence, EmailMessage, Theme
     from last_newsletter_core.ports import (
         DigestPublisher,
         DigestRepository,
@@ -34,12 +34,12 @@ if TYPE_CHECKING:
         Summarizer,
     )
 
-# How many of the most recent digest's themes are offered to the summarizer as
-# carry-forward candidates. Bounded to one period back by design: continuity
-# still compounds across a longer run (each saved digest carries its own
-# carried-forward themes into the next), without this use case ever scanning
-# unbounded history.
-_LOOKBACK_LIMIT = 1
+# Only the single most recent *preceding* digest feeds carry-forward candidates to the
+# summarizer. Bounded to one period back by design: continuity still compounds across a longer
+# run (each saved digest carries its own carried-forward themes into the next), without this
+# use case ever scanning unbounded history. `_SCAN_LIMIT` is how many saved digests are looked
+# through to find that one, since re-runs and overlapping windows can sit in front of it.
+_SCAN_LIMIT = 20
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +56,47 @@ def _still_eligible(theme: Theme, today: date) -> bool:
     continuity has no date to expire by, so it's the Summarizer's call whether
     it's still actually recurring or has gone stale."""
     return theme.relevant_until is None or theme.relevant_until >= today
+
+
+def _preceding_digest(digests: Sequence[Digest], request: BuildDigestRequest) -> Digest | None:
+    """The newest saved digest that directly precedes this window: same cadence, and ending
+    at or before this window starts. A digest for this same period (a re-run) or one that
+    overlaps it isn't "last period", and offering it back would bump streaks on every re-run.
+    `digests` is newest-first, as `DigestRepository.list_recent` returns it."""
+    return next(
+        (
+            digest
+            for digest in digests
+            if digest.cadence is request.cadence and digest.period_end <= request.since
+        ),
+        None,
+    )
+
+
+def _source_key(message: EmailMessage) -> str:
+    return message.source_label or message.sender
+
+
+def _verified(theme: Theme, messages: Sequence[EmailMessage]) -> Theme:
+    """Replace the summarizer's own `source_count` with what the messages it cites support.
+
+    "How many sources covered this" is the headline ranking signal, and counting distinct
+    sources is mechanical, so it's derived here rather than taken from an LLM's say-so:
+
+    - Cited ids that match a fetched message count by distinct source; ids that match nothing
+      (a hallucinated id) are ignored.
+    - A carried-forward theme with no new mention keeps its prior count: nothing this period
+      can confirm or deny it.
+    - A claim citing nothing verifiable is capped at the distinct sources actually seen.
+    """
+    by_id = {message.message_id: message for message in messages}
+    cited = [by_id[i] for i in theme.source_message_ids if i in by_id]
+    if cited:
+        return replace(theme, source_count=len({_source_key(m) for m in cited}))
+    if theme.carried_forward or not messages:
+        return theme
+    seen = len({_source_key(m) for m in messages})
+    return replace(theme, source_count=min(theme.source_count, seen))
 
 
 def _rank_key(theme: Theme, today: date) -> tuple[int, float]:
@@ -91,16 +132,24 @@ class BuildDigestUseCase:
 
     def execute(self, request: BuildDigestRequest) -> Digest:
         today = request.until.date()
+        preceding = _preceding_digest(
+            [digest for _, digest in self._repository.list_recent(limit=_SCAN_LIMIT)], request
+        )
         prior_themes = [
             theme
-            for _, prior_digest in self._repository.list_recent(limit=_LOOKBACK_LIMIT)
-            for theme in prior_digest.themes
+            for theme in (preceding.themes if preceding is not None else ())
             if _still_eligible(theme, today)
         ]
 
-        messages = self._email_source.fetch_since(request.since)
+        # `EmailSource` only takes a start; the end of the window is enforced here, so a
+        # message that arrives after `until` belongs to the next digest, not to both.
+        messages = [
+            m
+            for m in self._email_source.fetch_since(request.since)
+            if m.received_at < request.until
+        ]
         themes = self._summarizer.summarize(messages, prior_themes=prior_themes, today=today)
-        weighed = (self._weigh(theme) for theme in themes)
+        weighed = (self._weigh(_verified(theme, messages)) for theme in themes)
         ranked = tuple(sorted(weighed, key=lambda theme: _rank_key(theme, today)))
         sources = {m.source_label for m in messages if m.source_label}
 
