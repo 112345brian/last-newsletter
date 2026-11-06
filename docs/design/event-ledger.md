@@ -120,6 +120,8 @@ Per the global rule on shared code: before changing `RelevanceWeigher` or `Email
 
 ## 11. Build order (vertical slice)
 
+The staged plan, exit tests and decisions per stage are in `roadmap.md`; this list is the short version.
+
 1. Fix the workspace drift and pick the single type-check command **[V: plain `ty check` has 2 test errors, `packages/*/src` is clean]**.
 2. Core: entities, rules, ports, fakes, tests 1 to 3.
 3. Core: use cases and tests 4 to 5 on in-memory fakes. At this point the whole design is exercised with zero dependencies.
