@@ -7,27 +7,25 @@ __arbor__ = {"ring": "adapters"}
 import dataclasses
 from typing import TYPE_CHECKING
 
-from last_newsletter_adapter_events.errors import (
-    EscalationError,
-    ModelBackendError,
-    ModelOutputError,
-)
+from last_newsletter_adapter_events.compat import OllamaClient
+from last_newsletter_adapter_events.errors import EscalationError
 from last_newsletter_adapter_events.prefilter import has_date_signal
 from last_newsletter_adapter_events.prompt import SYSTEM_PROMPT, PromptInput, build_user_prompt
-from last_newsletter_adapter_events.schema import EVENT_SCHEMA, RawEvent, parse_model_output
+from last_newsletter_adapter_events.schema import EVENT_TOOL, RawEvent, parse_events
 from last_newsletter_adapter_events.stats import ExtractionStats
 from last_newsletter_adapter_events.text import clean_text, squash
 from last_newsletter_adapter_events.when import parse_when
 from last_newsletter_core.event_ports import ExtractionFailedError
 from last_newsletter_core.events import EntityRef, EntityRole, EventCandidate, EventKind
+from llmhost import CompletionRequest, LlmError, LlmOutputError, resolve_model
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import datetime
 
     from last_newsletter_adapter_events.escalation import Escalator
-    from last_newsletter_adapter_events.ollama import OllamaClient
     from last_newsletter_core.entities import EmailMessage
+    from llmhost import Provider
 
 _MAX_EVENTS_PER_EMAIL = 60
 _FIELDS = {f.name for f in dataclasses.fields(EventCandidate)}
@@ -45,14 +43,36 @@ class LocalLlmEventExtractor:
 
     def __init__(
         self,
-        client: OllamaClient,
+        provider: Provider | OllamaClient,
+        model: str = "",
         *,
         escalator: Escalator | None = None,
         escalate: bool = False,
     ) -> None:
-        self._client = client
+        """`provider` is any `llmhost.Provider` and `model` the name it should be asked for.
+        (An `OllamaClient` is accepted for compatibility and supplies both.)"""
+        if isinstance(provider, OllamaClient):
+            provider, model = provider.provider, model or provider.model
+        if not model:
+            msg = "a model name is required"
+            raise ValueError(msg)
+        self._provider: Provider = provider
+        self._model = model
         self._escalator = escalator if escalate else None
         self.stats = ExtractionStats()
+
+    @classmethod
+    def from_spec(
+        cls,
+        spec: str,
+        *,
+        escalator: Escalator | None = None,
+        escalate: bool = False,
+    ) -> LocalLlmEventExtractor:
+        """Build from a ``provider:model`` spec such as ``ollama:gpt-oss:120b`` or
+        ``claude:<model id>``: swapping local for cloud is changing this one string."""
+        resolved = resolve_model(spec)
+        return cls(resolved.provider, resolved.model, escalator=escalator, escalate=escalate)
 
     def extract(
         self, messages: Sequence[EmailMessage], *, now: datetime, home_tz: str
@@ -98,11 +118,19 @@ class LocalLlmEventExtractor:
         for _attempt in range(2):  # one repeat for malformed/empty output
             self.stats.model_calls += 1
             try:
-                text = self._client.chat(system=SYSTEM_PROMPT, user=user, schema=EVENT_SCHEMA)
-                return parse_model_output(text)[:_MAX_EVENTS_PER_EMAIL], False
-            except ModelOutputError:
+                result = self._provider.complete_with_tool(
+                    CompletionRequest(
+                        model=self._model,
+                        system=SYSTEM_PROMPT,
+                        user_message=user,
+                        tool_schema=EVENT_TOOL,
+                        tool_name=str(EVENT_TOOL["name"]),
+                    )
+                )
+                return parse_events(result.tool_input)[:_MAX_EVENTS_PER_EMAIL], False
+            except LlmOutputError:
                 self.stats.schema_failures += 1
-            except ModelBackendError as exc:
+            except LlmError as exc:
                 msg = f"local model unavailable: {type(exc).__name__}: {exc}"
                 raise ExtractionFailedError(msg) from exc
         return [], True

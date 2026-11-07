@@ -47,11 +47,10 @@ if TYPE_CHECKING:
     from datetime import datetime
     from typing import TextIO
 
-    from last_newsletter_adapter_events.ollama import Transport
     from last_newsletter_core.event_ports import EventExtractor
+    from llmhost.transport import Transport
 
 DEFAULT_OLLAMA_MODEL = "gpt-oss:120b"
-DEFAULT_OLLAMA_URL = "http://localhost:11434"
 EXTRACTOR_CHOICES = ("dated-lines", "local-llm")
 # Stop after this many consecutive-looking failed batches: an offline model fails every batch.
 _MAX_FAILED_BATCHES = 2
@@ -103,7 +102,7 @@ def ollama_config(environ: Mapping[str, str]) -> OllamaConfig:
     No key, token or cloud endpoint is read: this talks to a model on this machine.
     """
     model = environ.get("LAST_NEWSLETTER_OLLAMA_MODEL", "").strip() or DEFAULT_OLLAMA_MODEL
-    url = environ.get("LAST_NEWSLETTER_OLLAMA_URL", "").strip() or DEFAULT_OLLAMA_URL
+    url = environ.get("LAST_NEWSLETTER_OLLAMA_URL", "").strip() or None  # None: llmhost's default
     # gpt-oss takes an effort level; the qwen3 family needs thinking switched off.
     think: bool | str | None = None
     if model.startswith("gpt-oss"):

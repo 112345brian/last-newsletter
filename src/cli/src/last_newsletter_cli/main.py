@@ -355,7 +355,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         default="dated-lines",
         help="dated-lines: no model (default). local-llm: a model on this machine through "
         "Ollama ($LAST_NEWSLETTER_OLLAMA_MODEL, default gpt-oss:120b; "
-        "$LAST_NEWSLETTER_OLLAMA_URL, default http://localhost:11434). Nothing is sent to a "
+        "$LAST_NEWSLETTER_OLLAMA_URL, default: the local Ollama server). Nothing is sent to a "
         "cloud model.",
     )
     process_parser.add_argument(

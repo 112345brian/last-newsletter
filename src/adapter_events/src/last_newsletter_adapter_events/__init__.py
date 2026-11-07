@@ -1,5 +1,6 @@
 __arbor__ = {"ring": "adapters"}
 
+from last_newsletter_adapter_events.compat import OllamaClient, OllamaConfig
 from last_newsletter_adapter_events.errors import (
     EscalationError,
     ModelBackendError,
@@ -10,7 +11,6 @@ from last_newsletter_adapter_events.errors import (
 )
 from last_newsletter_adapter_events.escalation import Escalator, FakeEscalator
 from last_newsletter_adapter_events.extractor import LocalLlmEventExtractor
-from last_newsletter_adapter_events.ollama import OllamaClient, OllamaConfig
 from last_newsletter_adapter_events.stats import ExtractionStats
 
 __all__ = [

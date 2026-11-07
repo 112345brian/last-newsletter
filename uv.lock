@@ -759,6 +759,7 @@ version = "0.1.0"
 source = { editable = "src/adapter_events" }
 dependencies = [
     { name = "last-newsletter-core" },
+    { name = "llmhost" },
 ]
 
 [package.dev-dependencies]
@@ -770,7 +771,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "last-newsletter-core", editable = "src/core" }]
+requires-dist = [
+    { name = "last-newsletter-core", editable = "src/core" },
+    { name = "llmhost", editable = "libs/llmhost" },
+]
 
 [package.metadata.requires-dev]
 dev = [
