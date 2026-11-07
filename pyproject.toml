@@ -25,16 +25,25 @@ members = [
     "packages/adapter_storage",
     "packages/adapter_web",
     "packages/adapter_knowledge",
-    "packages/libraries",
     "packages/text_match",
     "packages/mailtext",
     "packages/llmhost",
+    "vendor/urgency",
+    "vendor/identity_dedupe",
+    "vendor/source_dates",
+    "vendor/text_normalize",
+    "vendor/notification_port",
+    "vendor/usage_ledger_port",
+    "vendor/process_lock",
+    "vendor/durable_outbox",
+    "vendor/tracker_state",
 ]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
 src = ["packages/*/src"]
+extend-exclude = ["vendor"]
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -43,6 +52,9 @@ ignore = ["D", "COM812", "ISC001", "CPY001"]
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S101", "D", "PLR2004", "ARG002", "INP001", "PLR0913", "S106"]
 "**/adapter_*/**" = ["ARG002"]
+
+[tool.ty.src]
+exclude = ["vendor"]
 
 [tool.ty.environment]
 python-version = "3.11"
@@ -69,7 +81,7 @@ truthiness-test-of-none-union = "error"
 missing-override-decorator = "error"
 
 [tool.pytest.ini_options]
-testpaths = ["packages"]
+testpaths = ["packages", "vendor"]
 
 [tool.importlinter]
 root_packages = [
@@ -84,6 +96,15 @@ root_packages = [
     "text_match",
     "mailtext",
     "llmhost",
+    "urgency",
+    "identity_dedupe",
+    "source_dates",
+    "text_normalize",
+    "notification_port",
+    "usage_ledger_port",
+    "process_lock",
+    "durable_outbox",
+    "tracker_state",
 ]
 
 [[tool.importlinter.contracts]]
@@ -92,5 +113,6 @@ type = "layers"
 layers = [
     "last_newsletter_cli",
     "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge",
-    "last_newsletter_core | text_match | mailtext | llmhost",
+    "last_newsletter_core | text_match | mailtext | llmhost | urgency | identity_dedupe | source_dates | text_normalize | notification_port | usage_ledger_port | durable_outbox | tracker_state",
+    "process_lock",
 ]

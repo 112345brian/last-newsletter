@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 from text_match import find_terms, normalize_term
@@ -7,6 +9,11 @@ from text_match import find_terms, normalize_term
 
 def test_normalize_term_collapses_whitespace_and_casefolds() -> None:
     assert normalize_term("  Brother   Hood  ") == "brother hood"
+
+
+def test_normalize_term_rejects_a_non_string_as_a_type_error_not_bad_content() -> None:
+    with pytest.raises(TypeError, match="must be a string, got NoneType"):
+        normalize_term(cast("str", None))
 
 
 def test_normalize_term_rejects_blank() -> None:

@@ -8,33 +8,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from last_newsletter_adapter_publish.render import render_markdown
 from last_newsletter_core.entities import digest_slug
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from last_newsletter_core.entities import Digest, Theme
-
-
-def _theme_section(theme: Theme) -> str:
-    lines = [f"## {theme.title} ({theme.source_count} sources)", "", theme.summary]
-    if theme.relevant_until is not None:
-        lines += ["", f"*Relevant until {theme.relevant_until.isoformat()}.*"]
-    if theme.streak > 1:
-        lines += ["", f"*Recurring for {theme.streak} periods in a row.*"]
-    return "\n".join(lines)
-
-
-def _render(digest: Digest) -> str:
-    header = (
-        f"# {digest.cadence.value.capitalize()} digest: "
-        f"{digest.period_start.date().isoformat()} to {digest.period_end.date().isoformat()}"
-    )
-    summary_line = f"{digest.total_messages} messages from {digest.total_sources} sources."
-    if not digest.themes:
-        return f"{header}\n\n{summary_line}\n\nNo themes this period.\n"
-    sections = "\n\n".join(_theme_section(theme) for theme in digest.themes)
-    return f"{header}\n\n{summary_line}\n\n{sections}\n"
+    from last_newsletter_core.entities import Digest
 
 
 class MarkdownPublisher:
@@ -46,4 +26,4 @@ class MarkdownPublisher:
 
     def publish(self, digest: Digest) -> None:
         path = self._output_dir / f"{digest_slug(digest)}.md"
-        path.write_text(_render(digest))
+        path.write_text(render_markdown(digest))

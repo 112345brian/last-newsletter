@@ -16,15 +16,23 @@ from typing import TYPE_CHECKING
 
 from last_newsletter_adapter_email.imap_source import ImapConfig, ImapEmailSource
 from last_newsletter_adapter_knowledge import SqliteKnowledgeWeigher
+from last_newsletter_adapter_publish.email_publisher import (
+    CompositePublisher,
+    SmtpConfig,
+    SmtpEmailPublisher,
+)
 from last_newsletter_adapter_publish.markdown_publisher import MarkdownPublisher
 from last_newsletter_adapter_storage.json_repository import JsonDigestRepository
 from last_newsletter_adapter_summarizer.anthropic_summarizer import AnthropicSummarizer
+from last_newsletter_adapter_summarizer.extractive_summarizer import ExtractiveSummarizer
 from last_newsletter_adapter_web.app import create_app
 from last_newsletter_core.entities import Cadence
 from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
 if TYPE_CHECKING:
-    from last_newsletter_core.ports import RelevanceWeigher
+    from collections.abc import Mapping
+
+    from last_newsletter_core.ports import DigestPublisher, RelevanceWeigher, Summarizer
 
 _DATA_DIR = Path.home() / ".last-newsletter"
 _SERVE_PORT = 5317
@@ -51,7 +59,60 @@ def _configured_weighers() -> list[RelevanceWeigher]:
     return weighers
 
 
-def _build_use_case() -> BuildDigestUseCase:
+class ConfigError(Exception):
+    """A setting is missing or invalid. Its message names the variable to fix."""
+
+
+def smtp_config_from_env(environ: Mapping[str, str]) -> SmtpConfig:
+    def required(name: str) -> str:
+        value = environ.get(name, "").strip()
+        if not value:
+            msg = f"{name} is not set"
+            raise ConfigError(msg)
+        return value
+
+    host = required("LAST_NEWSLETTER_SMTP_HOST")
+    username = required("LAST_NEWSLETTER_SMTP_USER")
+    password = required("LAST_NEWSLETTER_SMTP_PASSWORD")
+    port_text = environ.get("LAST_NEWSLETTER_SMTP_PORT", "465")
+    try:
+        port = int(port_text)
+    except ValueError:
+        msg = f"LAST_NEWSLETTER_SMTP_PORT must be a number, got {port_text!r}"
+        raise ConfigError(msg) from None
+    sender = environ.get("LAST_NEWSLETTER_SMTP_FROM", username)
+    try:
+        return SmtpConfig(
+            host=host,
+            port=port,
+            username=username,
+            password=password,
+            sender=sender,
+            recipient=environ.get("LAST_NEWSLETTER_SMTP_TO", sender),
+            use_ssl=environ.get("LAST_NEWSLETTER_SMTP_SSL", "1") != "0",
+        )
+    except ValueError as error:
+        raise ConfigError(str(error)) from error
+
+
+def _summarizer(name: str) -> Summarizer:
+    if name == "anthropic":
+        return AnthropicSummarizer(
+            provider=os.environ.get("LAST_NEWSLETTER_LLM_PROVIDER", "claude"),
+            usage_ledger_path=_DATA_DIR / "usage.jsonl",
+        )
+    return ExtractiveSummarizer()
+
+
+def _publisher(*, send: bool) -> DigestPublisher:
+    markdown = MarkdownPublisher(output_dir=_DATA_DIR / "markdown")
+    if not send:
+        return markdown
+    email = SmtpEmailPublisher(smtp_config_from_env(os.environ), sent_dir=_DATA_DIR / "sent")
+    return CompositePublisher([markdown, email])
+
+
+def _build_use_case(*, send: bool, summarizer: str) -> BuildDigestUseCase:
     email_source = ImapEmailSource(
         ImapConfig(
             host=os.environ["LAST_NEWSLETTER_IMAP_HOST"],
@@ -59,28 +120,23 @@ def _build_use_case() -> BuildDigestUseCase:
             password=os.environ["LAST_NEWSLETTER_IMAP_PASSWORD"],
         )
     )
-    summarizer = AnthropicSummarizer(
-        provider=os.environ.get("LAST_NEWSLETTER_LLM_PROVIDER", "claude"),
-        usage_ledger_path=_DATA_DIR / "usage.jsonl",
-    )
-    publisher = MarkdownPublisher(output_dir=_DATA_DIR / "markdown")
     return BuildDigestUseCase(
         email_source,
-        summarizer,
-        publisher,
+        _summarizer(summarizer),
+        _publisher(send=send),
         _digest_repository(),
         weighers=_configured_weighers(),
     )
 
 
-def _run_build(cadence_name: str) -> None:
+def _run_build(cadence_name: str, *, send: bool, summarizer: str) -> None:
     cadence = Cadence(cadence_name)
     # Aligned to UTC midnight, not "now": a re-run on the same day is the same period (same
     # slug, overwritten in place) instead of a new overlapping one that double-counts streaks.
     until = datetime.now(tz=UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     since = until - (timedelta(days=1) if cadence is Cadence.DAILY else timedelta(days=7))
 
-    use_case = _build_use_case()
+    use_case = _build_use_case(send=send, summarizer=summarizer)
     use_case.execute(BuildDigestRequest(since=since, until=until, cadence=cadence))
 
 
@@ -101,12 +157,27 @@ def main() -> None:
 
     build_parser = subparsers.add_parser("build", help="Fetch mail and write a new digest.")
     build_parser.add_argument("--cadence", choices=["daily", "weekly"], default="weekly")
+    build_parser.add_argument(
+        "--send",
+        action="store_true",
+        help="Also email the digest (needs the LAST_NEWSLETTER_SMTP_* variables). "
+        "A period is emailed at most once.",
+    )
+    build_parser.add_argument(
+        "--summarizer",
+        choices=["extractive", "anthropic"],
+        default="extractive",
+        help="extractive: no model, excerpts of each email (default).",
+    )
 
     subparsers.add_parser("serve", help="Open the local digest browser in your web browser.")
 
     args = parser.parse_args()
     if args.command == "build":
-        _run_build(args.cadence)
+        try:
+            _run_build(args.cadence, send=args.send, summarizer=args.summarizer)
+        except ConfigError as error:
+            parser.exit(2, f"last-newsletter: {error}\n")
     elif args.command == "serve":
         _run_serve()
 

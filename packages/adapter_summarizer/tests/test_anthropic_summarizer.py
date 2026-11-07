@@ -79,7 +79,7 @@ def test_summarize_parses_a_new_theme_from_the_tool_response() -> None:
     assert theme.streak == 1
     assert theme.carried_forward is False
     assert theme.first_seen == date(2026, 1, 5)
-    assert provider.complete_calls[0].model == summarizer._model  # noqa: SLF001
+    assert provider.complete_calls[0].model == "claude-sonnet-5-5"
 
 
 def test_summarize_bumps_streak_for_a_carried_forward_theme() -> None:

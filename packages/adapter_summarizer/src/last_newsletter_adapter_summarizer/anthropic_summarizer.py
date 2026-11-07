@@ -13,7 +13,7 @@ themes exist, which prior ones continue (by matching `theme_key`), and each one'
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from last_newsletter_core.entities import Theme
 from llmhost import CompletionRequest, record_usage, resolve
@@ -203,7 +203,10 @@ class AnthropicSummarizer:
                 at=datetime.now(tz=UTC),
             )
 
-        raw_themes = result.tool_input.get("themes", [])
+        # `tool_input` is `dict[str, object]` -- llmhost's contract is provider-agnostic and
+        # can't know this call's own schema shape. `themes` is this adapter's own tool schema
+        # (above), so it's the one place that gets to assume what's actually in it.
+        raw_themes = cast("list[dict[str, Any]]", result.tool_input.get("themes", []))
         prior_by_key = {
             theme.theme_key: theme for theme in prior_themes if theme.theme_key is not None
         }

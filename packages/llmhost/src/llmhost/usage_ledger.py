@@ -42,5 +42,5 @@ def total_tokens(ledger_path: Path) -> int:
             entry = json.loads(stripped)
             if not entry.get("tokens_available", True):
                 continue
-            total += entry.get("input_tokens", 0) + entry.get("output_tokens", 0)
+            total += int(entry.get("input_tokens", 0)) + int(entry.get("output_tokens", 0))
     return total

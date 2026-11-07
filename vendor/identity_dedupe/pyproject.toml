@@ -1,0 +1,19 @@
+[project]
+name = "identity_dedupe"
+version = "0.0.0"
+description = "Collapse copies of one item by an identity ladder (id, canonical key, URL, then title evidence) without ever hiding a distinct live item."
+requires-python = ">=3.11"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/identity_dedupe"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = ["pytest>=8"]

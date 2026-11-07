@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from llmhost.contracts import CompletionRequest
 from llmhost.provider_claude import ClaudeProvider
+
+if TYPE_CHECKING:
+    from anthropic.types import Message
 
 
 @dataclass
@@ -33,9 +36,10 @@ class FakeMessagesClient:
         self._usage = usage
         self.create_calls: list[dict[str, Any]] = []
 
-    def create(self, **kwargs: Any) -> _FakeMessage:  # noqa: ANN401
+    def create(self, **kwargs: Any) -> Message:  # noqa: ANN401
         self.create_calls.append(kwargs)
-        return _FakeMessage(content=[_FakeToolUseBlock(input=self._tool_input)], usage=self._usage)
+        fake = _FakeMessage(content=[_FakeToolUseBlock(input=self._tool_input)], usage=self._usage)
+        return cast("Message", fake)
 
 
 class FakeAnthropicClient:
