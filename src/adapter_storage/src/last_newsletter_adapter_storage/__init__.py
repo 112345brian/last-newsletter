@@ -5,6 +5,13 @@ from last_newsletter_adapter_storage.raw_message_store import (
     FileRawMessageStore,
     RawMessageStore,
     RawRef,
+    RawStoreEmailSource,
 )
 
-__all__ = ["FileRawMessageStore", "JsonDigestRepository", "RawMessageStore", "RawRef"]
+__all__ = [
+    "FileRawMessageStore",
+    "JsonDigestRepository",
+    "RawMessageStore",
+    "RawRef",
+    "RawStoreEmailSource",
+]

@@ -27,7 +27,10 @@ from last_newsletter_adapter_publish.email_publisher import (
 )
 from last_newsletter_adapter_publish.markdown_publisher import MarkdownPublisher
 from last_newsletter_adapter_storage.json_repository import JsonDigestRepository
-from last_newsletter_adapter_storage.raw_message_store import FileRawMessageStore
+from last_newsletter_adapter_storage.raw_message_store import (
+    FileRawMessageStore,
+    RawStoreEmailSource,
+)
 from last_newsletter_adapter_summarizer.anthropic_summarizer import AnthropicSummarizer
 from last_newsletter_adapter_summarizer.extractive_summarizer import ExtractiveSummarizer
 from last_newsletter_adapter_web.app import create_app
@@ -47,6 +50,7 @@ if TYPE_CHECKING:
 
 _DATA_DIR = Path.home() / ".last-newsletter"
 _SERVE_PORT = 5317
+_FETCH_OVERLAP = timedelta(days=1)
 
 
 def _digest_repository() -> JsonDigestRepository:
@@ -123,13 +127,17 @@ def _publisher(*, send: bool) -> DigestPublisher:
     return CompositePublisher([markdown, email])
 
 
-def _build_use_case(*, send: bool, summarizer: str) -> BuildDigestUseCase:
-    email_source = ImapEmailSource(
-        ImapConfig(
-            host=os.environ["LAST_NEWSLETTER_IMAP_HOST"],
-            username=os.environ["LAST_NEWSLETTER_IMAP_USER"],
-            password=os.environ["LAST_NEWSLETTER_IMAP_PASSWORD"],
-        )
+def _raw_store() -> FileRawMessageStore:
+    return FileRawMessageStore(_DATA_DIR / "raw")
+
+
+def _build_use_case(
+    *, send: bool, summarizer: str, direct_imap: bool = False
+) -> BuildDigestUseCase:
+    """By default the digest reads only the local raw store (filled by `fetch`): no network,
+    no IMAP credentials. `direct_imap` keeps the old fetch-inside-build path."""
+    email_source: EmailSource = (
+        _imap_source_from_env() if direct_imap else RawStoreEmailSource(_raw_store())
     )
     return BuildDigestUseCase(
         email_source,
@@ -153,11 +161,18 @@ def build_window(
     return since, until
 
 
-def _run_build(cadence_name: str, *, send: bool, summarizer: str, force: bool = False) -> None:
+def _run_build(
+    cadence_name: str,
+    *,
+    send: bool,
+    summarizer: str,
+    force: bool = False,
+    direct_imap: bool = False,
+) -> None:
     cadence = Cadence(cadence_name)
     since, until = build_window(cadence, now=datetime.now(tz=UTC), force=force)
 
-    use_case = _build_use_case(send=send, summarizer=summarizer)
+    use_case = _build_use_case(send=send, summarizer=summarizer, direct_imap=direct_imap)
     use_case.execute(BuildDigestRequest(since=since, until=until, cadence=cadence))
 
 
@@ -180,8 +195,16 @@ def fetch_raw(source: EmailSource, store: RawMessageStore, *, since: datetime) -
     return FetchRawResult(fetched=len(messages), new=len(new_refs))
 
 
-def raw_since(*, since: str | None, days: int | None, now: datetime) -> datetime:
-    """`--since YYYY-MM-DD` (UTC midnight) or `--days N` back from `now`; default 7 days."""
+def raw_since(
+    *,
+    since: str | None,
+    days: int | None,
+    now: datetime,
+    watermark: datetime | None = None,
+) -> datetime:
+    """Where a fetch starts. Explicit `--since YYYY-MM-DD` (UTC midnight) or `--days N` win.
+    Otherwise resume from the last successful fetch's start minus a day of overlap (re-fetching
+    is idempotent, a gap is not); with no watermark yet, the last 7 days."""
     if since is not None and days is not None:
         msg = "use either --since or --days, not both"
         raise ConfigError(msg)
@@ -191,6 +214,8 @@ def raw_since(*, since: str | None, days: int | None, now: datetime) -> datetime
         except ValueError:
             msg = f"--since must be YYYY-MM-DD, got {since!r}"
             raise ConfigError(msg) from None
+    if days is None and watermark is not None:
+        return watermark - _FETCH_OVERLAP
     days = 7 if days is None else days
     if days < 1:
         msg = "--days must be at least 1"
@@ -212,13 +237,16 @@ def _imap_source_from_env() -> ImapEmailSource:
         raise ConfigError(msg) from None
 
 
-def _run_fetch_raw(*, since: str | None, days: int | None, out: Path | None) -> None:
-    window_start = raw_since(since=since, days=days, now=datetime.now(tz=UTC))
-    out_dir = out if out is not None else _DATA_DIR / "raw"
-    result = fetch_raw(_imap_source_from_env(), FileRawMessageStore(out_dir), since=window_start)
+def _run_fetch(*, since: str | None, days: int | None, out: Path | None) -> None:
+    started = datetime.now(tz=UTC)
+    store = FileRawMessageStore(out if out is not None else _DATA_DIR / "raw")
+    window_start = raw_since(since=since, days=days, now=started, watermark=store.read_watermark())
+    result = fetch_raw(_imap_source_from_env(), store, since=window_start)
+    # Only after a fully successful fetch: a failure above leaves the old watermark in place.
+    store.write_watermark(started)
     sys.stdout.write(
         f"fetched {result.fetched} message(s) since {window_start.isoformat()}: "
-        f"{result.new} new, {result.already_stored} already stored -> {out_dir}\n"
+        f"{result.new} new, {result.already_stored} already stored\n"
     )
 
 
@@ -252,6 +280,12 @@ def main() -> None:
         help="extractive: no model, excerpts of each email (default).",
     )
     build_parser.add_argument(
+        "--imap",
+        action="store_true",
+        help="Read mail straight from IMAP instead of the local raw store (needs the "
+        "LAST_NEWSLETTER_IMAP_* variables). Default: read the raw store filled by `fetch`.",
+    )
+    build_parser.add_argument(
         "--force",
         action="store_true",
         help="Dev/testing only: also include messages from today, breaking the normal "
@@ -260,12 +294,18 @@ def main() -> None:
     )
 
     raw_parser = subparsers.add_parser(
-        "fetch-raw",
-        help="Download mail over IMAP into local raw storage (no digest, no model). Re-runs "
-        "skip messages already stored.",
+        "fetch",
+        help="Stage 1: append new mail from IMAP to the local raw store (no digest, no model). "
+        "Incremental from the last run; safe to schedule.",
     )
-    raw_parser.add_argument("--since", help="Start date, YYYY-MM-DD (UTC).")
-    raw_parser.add_argument("--days", type=int, help="Look back this many days (default 7).")
+    raw_parser.add_argument(
+        "--since", help="Start date, YYYY-MM-DD (UTC); overrides the watermark."
+    )
+    raw_parser.add_argument(
+        "--days",
+        type=int,
+        help="Look back this many days; overrides the watermark (default: resume, else 7).",
+    )
     raw_parser.add_argument(
         "--out", type=Path, help=f"Directory to write to (default {_DATA_DIR / 'raw'})."
     )
@@ -275,12 +315,18 @@ def main() -> None:
     args = parser.parse_args()
     if args.command == "build":
         try:
-            _run_build(args.cadence, send=args.send, summarizer=args.summarizer, force=args.force)
+            _run_build(
+                args.cadence,
+                send=args.send,
+                summarizer=args.summarizer,
+                force=args.force,
+                direct_imap=args.imap,
+            )
         except ConfigError as error:
             parser.exit(2, f"last-newsletter: {error}\n")
-    elif args.command == "fetch-raw":
+    elif args.command == "fetch":
         try:
-            _run_fetch_raw(since=args.since, days=args.days, out=args.out)
+            _run_fetch(since=args.since, days=args.days, out=args.out)
         except ConfigError as error:
             parser.exit(2, f"last-newsletter: {error}\n")
     elif args.command == "serve":

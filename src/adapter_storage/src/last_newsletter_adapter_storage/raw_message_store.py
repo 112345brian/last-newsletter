@@ -37,6 +37,7 @@ if TYPE_CHECKING:
 
 _LOCK_TIMEOUT_S = 30.0
 _SCHEMA_VERSION = 1
+_WATERMARK = ".watermark"
 _ID_LENGTH = 64  # hex sha256
 
 
@@ -117,6 +118,22 @@ class FileRawMessageStore:
             if self._read(path) is not None:
                 yield ref
 
+    def read_watermark(self) -> datetime | None:
+        """When the last successful fetch started (None if never, or the file is unreadable --
+        a bad watermark only costs a wider re-fetch, which is idempotent)."""
+        try:
+            value = datetime.fromisoformat((self._root / _WATERMARK).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        return value if value.tzinfo is not None else None
+
+    def write_watermark(self, when: datetime) -> None:
+        self._ensure_dirs()
+        with cross_process_file_lock(
+            self._root / ".lock", timeout_s=_LOCK_TIMEOUT_S, label="raw message store"
+        ):
+            self._write_text_atomic(self._root / _WATERMARK, when.isoformat())
+
     def _path(self, ref: RawRef) -> Path:
         self._check_id(ref.id)
         return self._root / f"{ref.id}.json"
@@ -151,7 +168,9 @@ class FileRawMessageStore:
             replace_with_retry(path, target)
 
     def _write_atomic(self, path: Path, message: EmailMessage) -> None:
-        payload = json.dumps(_to_dict(message), ensure_ascii=True, indent=1)
+        self._write_text_atomic(path, json.dumps(_to_dict(message), ensure_ascii=True, indent=1))
+
+    def _write_text_atomic(self, path: Path, payload: str) -> None:
         fd, tmp_name = tempfile.mkstemp(dir=self._root, prefix=".tmp-", suffix=".json")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as handle:
@@ -164,3 +183,14 @@ class FileRawMessageStore:
             with contextlib.suppress(OSError):
                 Path(tmp_name).unlink()
             raise
+
+
+class RawStoreEmailSource:
+    """An `EmailSource` that reads only from the raw store: no network, no credentials."""
+
+    def __init__(self, store: RawMessageStore) -> None:
+        self._store = store
+
+    def fetch_since(self, since: datetime) -> list[EmailMessage]:
+        messages = (self._store.get(ref) for ref in self._store.list())
+        return [m for m in messages if m is not None and m.received_at >= since]
