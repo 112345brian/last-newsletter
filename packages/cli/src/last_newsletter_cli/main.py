@@ -6,6 +6,8 @@ package. Nothing downstream of this file should ever import `last_newsletter_cli
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "cli"}
+
 import argparse
 import os
 import threading
@@ -129,12 +131,22 @@ def _build_use_case(*, send: bool, summarizer: str) -> BuildDigestUseCase:
     )
 
 
-def _run_build(cadence_name: str, *, send: bool, summarizer: str) -> None:
-    cadence = Cadence(cadence_name)
-    # Aligned to UTC midnight, not "now": a re-run on the same day is the same period (same
-    # slug, overwritten in place) instead of a new overlapping one that double-counts streaks.
-    until = datetime.now(tz=UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+def build_window(
+    cadence: Cadence, *, now: datetime, force: bool = False
+) -> tuple[datetime, datetime]:
+    """The `(since, until)` window for one build. Aligned to UTC midnight, not `now`, by
+    default: a re-run later the same day is still the same period (same slug, overwritten
+    in place) instead of a new overlapping one that double-counts streaks. `force` breaks
+    that alignment deliberately -- it's for confirming the pipeline works right now during
+    setup, not for the normal daily/weekly schedule."""
+    until = now if force else now.replace(hour=0, minute=0, second=0, microsecond=0)
     since = until - (timedelta(days=1) if cadence is Cadence.DAILY else timedelta(days=7))
+    return since, until
+
+
+def _run_build(cadence_name: str, *, send: bool, summarizer: str, force: bool = False) -> None:
+    cadence = Cadence(cadence_name)
+    since, until = build_window(cadence, now=datetime.now(tz=UTC), force=force)
 
     use_case = _build_use_case(send=send, summarizer=summarizer)
     use_case.execute(BuildDigestRequest(since=since, until=until, cadence=cadence))
@@ -169,13 +181,20 @@ def main() -> None:
         default="extractive",
         help="extractive: no model, excerpts of each email (default).",
     )
+    build_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Dev/testing only: also include messages from today, breaking the normal "
+        "midnight-aligned period. Use this to confirm the pipeline works right now during "
+        "setup, not for the regular daily/weekly schedule.",
+    )
 
     subparsers.add_parser("serve", help="Open the local digest browser in your web browser.")
 
     args = parser.parse_args()
     if args.command == "build":
         try:
-            _run_build(args.cadence, send=args.send, summarizer=args.summarizer)
+            _run_build(args.cadence, send=args.send, summarizer=args.summarizer, force=args.force)
         except ConfigError as error:
             parser.exit(2, f"last-newsletter: {error}\n")
     elif args.command == "serve":
