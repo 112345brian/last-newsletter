@@ -99,9 +99,6 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def log_message(self, *_a: object) -> None:
-        return None
-
 
 @pytest.fixture
 def server() -> Iterator[tuple[type[_Handler], str]]:

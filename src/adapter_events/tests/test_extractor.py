@@ -9,7 +9,7 @@ import pytest
 from last_newsletter_adapter_events import Escalator, FakeEscalator, LocalLlmEventExtractor
 from last_newsletter_adapter_events.schema import RawEvent
 from last_newsletter_adapter_events.text import MAX_BODY_CHARS, clean_text
-from last_newsletter_core.event_ports import ExtractionFailed
+from last_newsletter_core.event_ports import ExtractionFailedError
 from last_newsletter_core.events import EntityRole, EventCandidate, EventKind
 
 if TYPE_CHECKING:
@@ -46,7 +46,9 @@ def test_happy_path_maps_fields_and_leaves_year_partial() -> None:
         ("The Echo", EntityRole.VENUE),
         ("Mooncrew", EntityRole.ORGANIZER),
     }
-    assert "$10" in c.summary
+    assert c.price == "$10"
+    assert c.city == "LA"
+    assert c.tags == {"house"}
     assert ex.stats.candidates == 1
 
 
@@ -68,7 +70,9 @@ def test_after_midnight_time_kept() -> None:
     assert out[0].when is not None
     assert out[0].when.time is not None
     assert (out[0].when.time.hour, out[0].when.time.minute) == (1, 30)
-    assert "5am" in out[0].when.raw_text
+    assert out[0].when.end_time is not None
+    assert out[0].when.end_time.hour == 5
+    assert out[0].when.late_night
 
 
 def test_evidence_not_in_source_rejected_and_counted() -> None:
@@ -122,7 +126,7 @@ def test_malformed_then_valid_recovers() -> None:
 def test_ollama_down_raises_extraction_failed() -> None:
     t = ScriptedTransport(ConnectionRefusedError())
     ex = LocalLlmEventExtractor(client_for(t, max_retries=1))
-    with pytest.raises(ExtractionFailed):
+    with pytest.raises(ExtractionFailedError):
         ex.extract([msg(BODY)], now=NOW, home_tz="UTC")
 
 

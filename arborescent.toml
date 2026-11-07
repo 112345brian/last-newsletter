@@ -50,7 +50,7 @@ source_roots = [
     "vendor/durable_outbox/src",
     "vendor/tracker_state/src",
 ]
-exclude = ["tests", "docs", ".venv"]
+exclude = ["tests", "docs", ".venv", "scripts"]
 scan_vendors = true
 type_checkers = ["ty"]
 preset = "relaxed"

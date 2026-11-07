@@ -1,4 +1,3 @@
-# ruff: noqa: INP001, T201, BLE001, PLR0914, C901
 """Evaluate local models on synthetic emails (needs a running Ollama; not part of `make check`).
 
     uv run --all-packages python src/adapter_events/scripts/eval_events.py \
@@ -17,18 +16,40 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent))
-
-from eval_corpus import CASES, Case
-from last_newsletter_core.entities import EmailMessage
+from typing import NamedTuple
 
 from last_newsletter_adapter_events import (
     LocalLlmEventExtractor,
     OllamaClient,
     OllamaConfig,
 )
+from last_newsletter_core.entities import EmailMessage
+from last_newsletter_core.event_ports import ExtractionFailedError
 
+
+class Case(NamedTuple):
+    id: str
+    category: str
+    subject: str
+    body: str
+    expected: tuple[tuple[str, int, int], ...]
+
+
+def load_cases() -> tuple[Case, ...]:
+    raw = json.loads((Path(__file__).parent / "eval_corpus.json").read_text(encoding="utf-8"))
+    return tuple(
+        Case(
+            c["id"],
+            c["category"],
+            c["subject"],
+            c["body"],
+            tuple((k, m, d) for k, m, d in c["expected"]),
+        )
+        for c in raw
+    )
+
+
+CASES = load_cases()
 NOW = datetime(2026, 11, 7, 12, 0, tzinfo=UTC)
 HOME_TZ = "America/Los_Angeles"
 THINK = {"gpt-oss": "low"}  # per-model-family thinking effort; others: thinking off
@@ -65,7 +86,7 @@ def run_synthetic(model: str, base_url: str, timeout: float) -> dict[str, object
         start = time.perf_counter()
         try:
             out = extractor.extract([_message(case)], now=NOW, home_tz=HOME_TZ)
-        except Exception:
+        except ExtractionFailedError:
             backend_errors += 1
             out = []
         elapsed = time.perf_counter() - start
@@ -151,7 +172,7 @@ def run_raw_dir(
             continue
         try:
             extractor.extract([message], now=datetime.now(UTC), home_tz=HOME_TZ)
-        except Exception:
+        except ExtractionFailedError:
             backend_errors += 1
     seconds = time.perf_counter() - start
     s = extractor.stats
@@ -185,7 +206,8 @@ def main() -> int:
             res = run_raw_dir(model, args.base_url, args.timeout, raw_dir, args.limit)
         else:
             res = run_synthetic(model, args.base_url, args.timeout)
-        print(json.dumps(res, indent=1), flush=True)
+        sys.stdout.write(json.dumps(res, indent=1) + "\n")
+        sys.stdout.flush()
         results.append(res)
     if args.json:
         args.json.write_text(json.dumps(results, indent=1))

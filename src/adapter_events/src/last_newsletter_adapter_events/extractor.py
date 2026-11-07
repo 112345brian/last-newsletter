@@ -18,7 +18,7 @@ from last_newsletter_adapter_events.schema import EVENT_SCHEMA, RawEvent, parse_
 from last_newsletter_adapter_events.stats import ExtractionStats
 from last_newsletter_adapter_events.text import clean_text, squash
 from last_newsletter_adapter_events.when import parse_when
-from last_newsletter_core.event_ports import ExtractionFailed
+from last_newsletter_core.event_ports import ExtractionFailedError
 from last_newsletter_core.events import EntityRef, EntityRole, EventCandidate, EventKind
 
 if TYPE_CHECKING:
@@ -36,7 +36,7 @@ _FIELDS = {f.name for f in dataclasses.fields(EventCandidate)}
 class LocalLlmEventExtractor:
     """Implements `last_newsletter_core.event_ports.EventExtractor`.
 
-    Backend trouble (Ollama down, timeout) raises `ExtractionFailed` for the batch, so ingest
+    Backend trouble (Ollama down, timeout) raises `ExtractionFailedError` for the batch, so ingest
     leaves those messages unprocessed and retries later. A model answer that stays invalid after
     one repeat is counted in `stats.schema_failures`, and the message is listed in
     `stats.failed_message_ids`. Escalation runs only when an `Escalator` was given AND
@@ -104,7 +104,7 @@ class LocalLlmEventExtractor:
                 self.stats.schema_failures += 1
             except ModelBackendError as exc:
                 msg = f"local model unavailable: {type(exc).__name__}: {exc}"
-                raise ExtractionFailed(msg) from exc
+                raise ExtractionFailedError(msg) from exc
         return [], True
 
     def _escalate(
@@ -144,28 +144,23 @@ def _candidate(event: RawEvent, message_id: str, home_tz: str) -> EventCandidate
     )
     if event.venue.strip():
         entities = (EntityRef(name=event.venue.strip(), role=EntityRole.VENUE), *entities)
-    details = [
-        f"{label}: {value}"
-        for label, value in (
-            ("city", event.city),
-            ("tags", ", ".join(event.tags)),
-            ("price", event.price),
-            ("age", event.age),
-        )
-        if value.strip()
-    ]
+    summary = ""
     if event.cancelled and "is_cancelled" not in _FIELDS:
         # Never let a cancellation look like a live event: say so until core has a flag.
-        details.insert(0, "CANCELLED")
+        summary = "CANCELLED"
     candidate = EventCandidate(
         message_id=message_id,
         title=event.title.strip(),
         kind=EventKind(event.kind),
-        summary="; ".join(details),
+        summary=summary,
         when=parse_when(event.start_text, event.end_text, tz=home_tz),
         evidence=event.evidence.strip(),
         entities=entities,
         url=event.url.strip() or None,
+        city=event.city.strip(),
+        tags=frozenset(t.strip() for t in event.tags if t.strip()),
+        price=event.price.strip(),
+        age=event.age.strip(),
     )
     # Core's candidate has no cancellation flag yet; set one if it ever grows one.
     if "is_cancelled" in _FIELDS:

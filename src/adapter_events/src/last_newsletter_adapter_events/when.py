@@ -52,12 +52,19 @@ def parse_when(start_text: str, end_text: str = "", *, tz: str | None = None) ->
     if day is not None and not 1 <= day <= _MAX_DAY:
         month = day = None
     raw = text if not end_text.strip() else f"{text} - {end_text.strip()}"
+    times = _times(text)
+    end_times = _times(end_text)
+    start = times[0] if times else None
+    end = times[1] if len(times) > 1 else (end_times[0] if end_times else None)
+    late = start is not None and start.hour < _LATE_NIGHT_BEFORE_HOUR and _has_meridiem(text)
     return PartialWhen(
         year=year,
         month=month,
         day=day,
         weekday=_weekday(text),
-        time=_time(text),
+        time=start,
+        end_time=end,
+        late_night=late,
         tz=tz,
         raw_text=raw[:200],
     )
@@ -98,13 +105,20 @@ _FULL_DAYS = frozenset(
 )
 
 
-def _time(text: str) -> clock_time | None:
-    if m := _TIME.search(text):
+_LATE_NIGHT_BEFORE_HOUR = 6
+
+
+def _times(text: str) -> list[clock_time]:
+    found: list[tuple[int, clock_time]] = []
+    for m in _TIME.finditer(text):
         hour, minute, meridiem = int(m[1]), int(m[2] or 0), m[3].lower()
-        if not 1 <= hour <= _MAX_MONTH or minute > _MAX_MINUTE:
-            return None
-        hour = hour % 12 + (12 if meridiem == "pm" else 0)
-        return clock_time(hour, minute)
-    if m := _TIME24.search(text):
-        return clock_time(int(m[1]), int(m[2]))
-    return None
+        if 1 <= hour <= _MAX_MONTH and minute <= _MAX_MINUTE:
+            pm = 12 if meridiem == "pm" else 0
+            found.append((m.start(), clock_time(hour % 12 + pm, minute)))
+    if not found:
+        found = [(m.start(), clock_time(int(m[1]), int(m[2]))) for m in _TIME24.finditer(text)]
+    return [t for _, t in sorted(found)]
+
+
+def _has_meridiem(text: str) -> bool:
+    return _TIME.search(text) is not None

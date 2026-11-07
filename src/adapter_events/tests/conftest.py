@@ -10,11 +10,14 @@ from last_newsletter_core.entities import EmailMessage
 NOW = datetime(2026, 11, 6, 12, 0, tzinfo=UTC)
 
 
+Step = bytes | tuple[int, bytes] | BaseException
+
+
 class ScriptedTransport:
     """Each call pops the next step: bytes (200 body), (status, bytes), or an exception."""
 
-    def __init__(self, *steps: object) -> None:
-        self.steps = list(steps)
+    def __init__(self, *steps: Step) -> None:
+        self.steps: list[Step] = list(steps)
         self.requests: list[dict[str, Any]] = []
 
     def post(self, url: str, body: bytes, *, timeout_s: float) -> tuple[int, bytes]:
@@ -23,8 +26,8 @@ class ScriptedTransport:
         if isinstance(step, BaseException):
             raise step
         if isinstance(step, tuple):
-            return step
-        assert isinstance(step, bytes)
+            status, payload = step
+            return status, payload
         return 200, step
 
 
