@@ -10,6 +10,7 @@ These tests must keep passing unchanged.
 from __future__ import annotations
 
 import pytest
+
 from llmhost import CompletionRequest, CompletionResult, Usage, resolve
 from llmhost.provider_claude import ClaudeProvider
 

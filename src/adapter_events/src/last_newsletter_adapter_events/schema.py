@@ -47,6 +47,13 @@ EVENT_SCHEMA: dict[str, Any] = {
 }
 
 
+EVENT_TOOL: dict[str, Any] = {
+    "name": "report_events",
+    "description": "Report every dated event, deadline or task found in the email.",
+    "input_schema": EVENT_SCHEMA,
+}
+
+
 @dataclass(frozen=True, slots=True)
 class RawEvent:
     """One event as the model reported it: every string is still untrusted."""
@@ -74,6 +81,11 @@ def parse_model_output(text: str) -> list[RawEvent]:
     except ValueError as exc:
         msg = "model output is not JSON"
         raise ModelOutputError(msg) from exc
+    return parse_events(data)
+
+
+def parse_events(data: object) -> list[RawEvent]:
+    """Strictly validate the model's decoded output. Raises `ModelOutputError`."""
     if not isinstance(data, dict) or not isinstance(data.get("events"), list):
         msg = "model output lacks an 'events' list"
         raise ModelOutputError(msg)

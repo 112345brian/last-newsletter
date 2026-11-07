@@ -1,7 +1,7 @@
 [project]
 name = "last-newsletter-adapter-events"
 version = "0.1.0"
-description = "EventExtractor backed by a local Ollama model: pre-filter, schema-constrained extraction, evidence guard, optional (off by default) cloud escalation seam. Standard library only."
+description = "EventExtractor backed by a local Ollama model: pre-filter, schema-constrained extraction, evidence guard, optional (off by default) cloud escalation seam. Every model call goes through llmhost.Provider, so the model is a `provider:model` spec."
 readme = "README.md"
 authors = [
     { name = "112345brian", email = "11creepman@gmail.com" }
@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "last-newsletter-core",
+    "llmhost",
 ]
 
 [dependency-groups]
@@ -16,6 +17,7 @@ dev = ["pytest", "pytest-cov", "ruff", "ty"]
 
 [tool.uv.sources]
 last-newsletter-core = { workspace = true }
+llmhost = { workspace = true }
 
 [build-system]
 requires = ["uv_build>=0.12.19,<0.13.0"]
