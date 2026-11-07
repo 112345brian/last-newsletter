@@ -13,7 +13,7 @@ Install::
 Standard library only; no environment, files or clock of its own.
 """
 
-__arbor__ = {"ring": "core"}
+__arbor__ = {"ring": "adapters"}  # re-exports UrllibNtfyTransport, the concrete adapter
 
 from notification_port.notifier_port import Notifier, NotifyResult
 from notification_port.transport import NtfyTransport, UrllibNtfyTransport
