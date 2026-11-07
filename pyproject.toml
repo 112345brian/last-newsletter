@@ -26,7 +26,6 @@ members = [
     "src/adapter_storage",
     "src/adapter_web",
     "src/adapter_knowledge",
-    "src/adapter_events",
     "src/adapter_semantic",
     "src/adapter_ledger",
     "src/adapter_events",

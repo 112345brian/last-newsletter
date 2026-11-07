@@ -15,7 +15,6 @@ sources = [
     "src/adapter_storage/src",
     "src/adapter_web/src",
     "src/adapter_knowledge/src",
-    "src/adapter_events/src",
     "src/adapter_semantic/src",
     "src/adapter_ledger/src",
     "src/adapter_events/src",
@@ -41,7 +40,6 @@ source_roots = [
     "src/adapter_storage/src",
     "src/adapter_web/src",
     "src/adapter_knowledge/src",
-    "src/adapter_events/src",
     "src/adapter_semantic/src",
     "src/adapter_ledger/src",
     "src/adapter_events/src",
@@ -119,8 +117,6 @@ external = ["*"]
 "last_newsletter_adapter_web.*" = "adapters"
 "last_newsletter_adapter_knowledge" = "adapters"
 "last_newsletter_adapter_knowledge.*" = "adapters"
-"last_newsletter_adapter_events" = "adapters"
-"last_newsletter_adapter_events.*" = "adapters"
 "last_newsletter_adapter_semantic" = "adapters"
 "last_newsletter_adapter_semantic.*" = "adapters"
 "last_newsletter_adapter_ledger" = "adapters"
