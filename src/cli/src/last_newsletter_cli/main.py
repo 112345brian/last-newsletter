@@ -10,8 +10,10 @@ __arbor__ = {"ring": "cli"}
 
 import argparse
 import os
+import sys
 import threading
 import webbrowser
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -25,6 +27,7 @@ from last_newsletter_adapter_publish.email_publisher import (
 )
 from last_newsletter_adapter_publish.markdown_publisher import MarkdownPublisher
 from last_newsletter_adapter_storage.json_repository import JsonDigestRepository
+from last_newsletter_adapter_storage.raw_message_store import FileRawMessageStore
 from last_newsletter_adapter_summarizer.anthropic_summarizer import AnthropicSummarizer
 from last_newsletter_adapter_summarizer.extractive_summarizer import ExtractiveSummarizer
 from last_newsletter_adapter_web.app import create_app
@@ -34,7 +37,13 @@ from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, Buil
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from last_newsletter_core.ports import DigestPublisher, RelevanceWeigher, Summarizer
+    from last_newsletter_adapter_storage.raw_message_store import RawMessageStore
+    from last_newsletter_core.ports import (
+        DigestPublisher,
+        EmailSource,
+        RelevanceWeigher,
+        Summarizer,
+    )
 
 _DATA_DIR = Path.home() / ".last-newsletter"
 _SERVE_PORT = 5317
@@ -152,6 +161,67 @@ def _run_build(cadence_name: str, *, send: bool, summarizer: str, force: bool = 
     use_case.execute(BuildDigestRequest(since=since, until=until, cadence=cadence))
 
 
+@dataclass(frozen=True, slots=True)
+class FetchRawResult:
+    fetched: int
+    new: int
+
+    @property
+    def already_stored(self) -> int:
+        return self.fetched - self.new
+
+
+def fetch_raw(source: EmailSource, store: RawMessageStore, *, since: datetime) -> FetchRawResult:
+    """Copy every message from `source` since `since` into `store`. Idempotent: a message
+    already stored (same id) is left untouched and counted as `already_stored`."""
+    existing = set(store.list())
+    messages = source.fetch_since(since)
+    new_refs = {store.put(message) for message in messages} - existing
+    return FetchRawResult(fetched=len(messages), new=len(new_refs))
+
+
+def raw_since(*, since: str | None, days: int | None, now: datetime) -> datetime:
+    """`--since YYYY-MM-DD` (UTC midnight) or `--days N` back from `now`; default 7 days."""
+    if since is not None and days is not None:
+        msg = "use either --since or --days, not both"
+        raise ConfigError(msg)
+    if since is not None:
+        try:
+            return datetime.fromisoformat(since).replace(tzinfo=UTC)
+        except ValueError:
+            msg = f"--since must be YYYY-MM-DD, got {since!r}"
+            raise ConfigError(msg) from None
+    days = 7 if days is None else days
+    if days < 1:
+        msg = "--days must be at least 1"
+        raise ConfigError(msg)
+    return now - timedelta(days=days)
+
+
+def _imap_source_from_env() -> ImapEmailSource:
+    try:
+        return ImapEmailSource(
+            ImapConfig(
+                host=os.environ["LAST_NEWSLETTER_IMAP_HOST"],
+                username=os.environ["LAST_NEWSLETTER_IMAP_USER"],
+                password=os.environ["LAST_NEWSLETTER_IMAP_PASSWORD"],
+            )
+        )
+    except KeyError as error:
+        msg = f"{error.args[0]} is not set"
+        raise ConfigError(msg) from None
+
+
+def _run_fetch_raw(*, since: str | None, days: int | None, out: Path | None) -> None:
+    window_start = raw_since(since=since, days=days, now=datetime.now(tz=UTC))
+    out_dir = out if out is not None else _DATA_DIR / "raw"
+    result = fetch_raw(_imap_source_from_env(), FileRawMessageStore(out_dir), since=window_start)
+    sys.stdout.write(
+        f"fetched {result.fetched} message(s) since {window_start.isoformat()}: "
+        f"{result.new} new, {result.already_stored} already stored -> {out_dir}\n"
+    )
+
+
 def _run_serve() -> None:
     """Foreground only: no background daemon, no proclaunch. You launch it (by
     double-clicking a launcher script or running this command) when you want to
@@ -189,12 +259,28 @@ def main() -> None:
         "setup, not for the regular daily/weekly schedule.",
     )
 
+    raw_parser = subparsers.add_parser(
+        "fetch-raw",
+        help="Download mail over IMAP into local raw storage (no digest, no model). Re-runs "
+        "skip messages already stored.",
+    )
+    raw_parser.add_argument("--since", help="Start date, YYYY-MM-DD (UTC).")
+    raw_parser.add_argument("--days", type=int, help="Look back this many days (default 7).")
+    raw_parser.add_argument(
+        "--out", type=Path, help=f"Directory to write to (default {_DATA_DIR / 'raw'})."
+    )
+
     subparsers.add_parser("serve", help="Open the local digest browser in your web browser.")
 
     args = parser.parse_args()
     if args.command == "build":
         try:
             _run_build(args.cadence, send=args.send, summarizer=args.summarizer, force=args.force)
+        except ConfigError as error:
+            parser.exit(2, f"last-newsletter: {error}\n")
+    elif args.command == "fetch-raw":
+        try:
+            _run_fetch_raw(since=args.since, days=args.days, out=args.out)
         except ConfigError as error:
             parser.exit(2, f"last-newsletter: {error}\n")
     elif args.command == "serve":
