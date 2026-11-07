@@ -28,7 +28,6 @@ _MAX_CHARS = 2000
 _BUCKETS = 1 << 20
 _NGRAM = 3
 _DATE_UNKNOWN = 0.85
-_DATE_ADJACENT = 0.9
 _DATE_DIFFERENT = 0.45
 _SCHEMA = (
     "CREATE TABLE IF NOT EXISTS event_vectors (id TEXT PRIMARY KEY, day TEXT, vec TEXT NOT NULL)"
@@ -50,12 +49,14 @@ class IndexableEvent(Protocol):
     @property
     def entities(self) -> Sequence[str]: ...
     @property
+    def tags(self) -> Sequence[str]: ...
+    @property
     def day(self) -> date | None: ...
 
 
 def event_text(event: IndexableEvent) -> str:
-    """Title (weighted by repetition) + venue + entities; the date is handled separately."""
-    parts = [event.title, event.title, event.venue, *event.entities]
+    """Title (weighted by repetition) + venue + entities + tags; the date is handled separately."""
+    parts = [event.title, event.title, event.venue, *event.entities, *event.tags]
     return " ".join(p for p in parts if isinstance(p, str))
 
 
@@ -89,10 +90,9 @@ def _cosine(a: Vector, b: Vector) -> float:
 def _date_factor(a: date | None, b: date | None) -> float:
     if a is None or b is None:
         return _DATE_UNKNOWN
-    gap = abs((a - b).days)
-    if gap == 0:
-        return 1.0
-    return _DATE_ADJACENT if gap == 1 else _DATE_DIFFERENT
+    # No +-1 day tolerance: consecutive-night runs of one title are common (19hz snapshot), and
+    # timezone slop is core's identity-ladder concern, not a similarity one.
+    return 1.0 if a == b else _DATE_DIFFERENT
 
 
 class HashedNgramIndex:

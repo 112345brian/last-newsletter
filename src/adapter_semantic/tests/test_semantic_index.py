@@ -6,13 +6,22 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+import pytest
 from semantic_support import Ev
 
 from last_newsletter_adapter_semantic import DEFAULT_THRESHOLD, HashedNgramIndex
 
-FIXTURE = Path(__file__).parent / "fixtures" / "event_pairs.json"
+FIXTURES = {
+    "handwritten": Path(__file__).parent / "fixtures" / "event_pairs.json",
+    "19hz": Path(__file__).parent / "fixtures" / "event_pairs_19hz.json",
+}
 MIN_PRECISION = 0.9
 MIN_RECALL = 0.9
+
+
+def _load(name: str) -> list[dict[str, Any]]:
+    data = json.loads(FIXTURES[name].read_text())
+    return data["pairs"] if isinstance(data, dict) else data
 
 
 def _ev(ident: str, raw: dict[str, Any]) -> Ev:
@@ -20,14 +29,15 @@ def _ev(ident: str, raw: dict[str, Any]) -> Ev:
         ident,
         str(raw["title"]),
         str(raw["venue"]),
-        tuple(str(e) for e in raw["entities"]),
+        tuple(str(e) for e in raw.get("entities", ())),
+        tuple(str(t) for t in raw.get("tags", ())),
         date.fromisoformat(str(raw["day"])),
     )
 
 
-def evaluate(threshold: float) -> tuple[float, float, int]:
+def evaluate(name: str, threshold: float) -> tuple[float, float, int]:
     tp = fp = fn = 0
-    pairs = json.loads(FIXTURE.read_text())
+    pairs = _load(name)
     for pair in pairs:
         idx = HashedNgramIndex(threshold=threshold)
         idx.index(_ev("a", pair["a"]))
@@ -40,12 +50,14 @@ def evaluate(threshold: float) -> tuple[float, float, int]:
     return tp / max(tp + fp, 1), tp / max(tp + fn, 1), len(pairs)
 
 
-def test_fixture_size() -> None:
-    assert evaluate(DEFAULT_THRESHOLD)[2] >= 25
+@pytest.mark.parametrize("name", list(FIXTURES))
+def test_fixture_size(name: str) -> None:
+    assert evaluate(name, DEFAULT_THRESHOLD)[2] >= 25
 
 
-def test_precision_recall_at_default_threshold() -> None:
-    precision, recall, _ = evaluate(DEFAULT_THRESHOLD)
+@pytest.mark.parametrize("name", list(FIXTURES))
+def test_precision_recall_at_default_threshold(name: str) -> None:
+    precision, recall, _ = evaluate(name, DEFAULT_THRESHOLD)
     assert precision >= MIN_PRECISION, precision
     assert recall >= MIN_RECALL, recall
 

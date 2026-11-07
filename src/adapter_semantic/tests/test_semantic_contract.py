@@ -48,8 +48,8 @@ def test_deterministic(make_index: Callable[[], SimilarIndex]) -> None:
 def test_never_raises_on_hostile_text(make_index: Callable[[], SimilarIndex], text: str) -> None:
     idx = make_index()
     idx.index(Ev("1", "Normal Event", "Venue", day=D))
-    idx.index(Ev("2", text, text, (text,), D))
-    hits = idx.similar(Ev("3", text, text, (text,), None))
+    idx.index(Ev("2", text, text, (text,), (text,), D))
+    hits = idx.similar(Ev("3", text, text, (text,), (text,), None))
     assert all(0.0 <= s <= 1.0 for _, s in hits)
 
 

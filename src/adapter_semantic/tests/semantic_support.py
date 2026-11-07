@@ -22,6 +22,7 @@ class Ev:
     title: str
     venue: str = ""
     entities: Sequence[str] = field(default_factory=tuple)
+    tags: Sequence[str] = field(default_factory=tuple)
     day: date | None = None
 
 
