@@ -1,6 +1,6 @@
 # last-newsletter-adapter-events
 
-Implements core's `EventExtractor` with a **local** Ollama model (standard library only).
+Implements core's `EventExtractor` with a **local** Ollama model (through `llmhost`).
 
 Tiers, cheapest first: embedded JSON-LD/.ics (core's `EmbeddedEventReader`, not here) ->
 date-signal pre-filter (no date/time-like text means no model call) -> local model with a
@@ -13,11 +13,17 @@ missing year; `PartialWhen` stays partial for core's rule.
 
 Backend trouble raises `ExtractionFailed`, so ingest leaves the batch unprocessed.
 
-```python
-from last_newsletter_adapter_events import LocalLlmEventExtractor, OllamaClient, OllamaConfig
+The model is reached only through `llmhost.Provider`, so it is one spec string -- local or cloud:
 
-client = OllamaClient(OllamaConfig(model="...", base_url="http://localhost:11434"))
-extractor = LocalLlmEventExtractor(client)
+```python
+from last_newsletter_adapter_events import LocalLlmEventExtractor
+
+extractor = LocalLlmEventExtractor.from_spec("ollama:gpt-oss:120b")  # local
+extractor = LocalLlmEventExtractor.from_spec("claude:<model id>")  # cloud, no other change
 ```
+
+`LocalLlmEventExtractor(provider, model)` takes any `llmhost.Provider`. The old
+`LocalLlmEventExtractor(OllamaClient(OllamaConfig(model=...)))` shape still works (a thin shim
+that builds an `llmhost` Ollama provider); `base_url=None` means the default local server.
 
 Evaluation (needs Ollama, not part of `make check`): `scripts/eval_events.py`.

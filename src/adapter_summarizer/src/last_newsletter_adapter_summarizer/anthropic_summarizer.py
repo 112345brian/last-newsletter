@@ -18,7 +18,7 @@ from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING, Any, cast
 
 from last_newsletter_core.entities import Theme
-from llmhost import CompletionRequest, record_usage, resolve
+from llmhost import CompletionRequest, parse_spec, record_usage, resolve
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -152,9 +152,9 @@ class AnthropicSummarizer:
     """Implements last_newsletter_core.ports.Summarizer.
 
     Named for the default provider, not the mechanism: the actual call goes through
-    `llmhost`'s provider registry (`provider` is a name it resolves, e.g. "claude"),
-    so a future `LAST_NEWSLETTER_LLM_PROVIDER=openai` is a config change here, not a
-    rewrite.
+    `llmhost`'s provider registry (`provider` is a spec it resolves, e.g. "claude"),
+    so any registered provider is a config change here, not a rewrite: `provider` may be a
+    full ``provider:model`` spec (``ollama:gpt-oss:120b``), whose model then wins over `model`.
     """
 
     def __init__(
@@ -168,8 +168,9 @@ class AnthropicSummarizer:
         """`usage_ledger_path`, if given, gets one `llmhost.record_usage` line per call.
         `_provider_override` is test-only -- production code gets its provider from
         `llmhost.resolve(provider)`."""
-        self._model = model
-        self._provider_name = provider
+        spec = parse_spec(provider)
+        self._model = spec.model or model
+        self._provider_name = spec.provider
         self._provider: Provider = (
             _provider_override if _provider_override is not None else resolve(provider)
         )

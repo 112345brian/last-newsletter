@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__arbor__ = {"ring": "libs"}
+__arbor__ = {"ring": "llm"}
 
 from dataclasses import dataclass, field
 
