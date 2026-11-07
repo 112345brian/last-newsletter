@@ -2,9 +2,9 @@
 # For more info see https://dfetch.rtfd.io/en/latest/getting_started.html
 dfetch:
   branch: main
-  hash: 6cf2491f21aeaeb5277a7cf22e648a6b
-  last_fetch: 07/11/2026, 21:33:14
-  patch: patches/usage_ledger_port.patch
+  hash: 9a04148b94bafc3886605f162f6d4632
+  last_fetch: 07/11/2026, 21:44:03
+  patch: ''
   remote_url: https://github.com/112345brian/usage-ledger-port.git
   revision: ''
   tag: v0.1.0

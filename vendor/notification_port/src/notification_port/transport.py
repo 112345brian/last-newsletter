@@ -9,8 +9,6 @@ best-effort try/except), and ``is_healthy`` swallows all exceptions and reports 
 """
 from __future__ import annotations
 
-__arbor__ = {"ring": "adapters"}
-
 import urllib.request
 from typing import Protocol
 

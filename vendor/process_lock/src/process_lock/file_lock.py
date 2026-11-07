@@ -23,8 +23,6 @@ Windows); the rename retry is ``tenacity``. This module keeps only the policy ab
 """
 from __future__ import annotations
 
-__arbor__ = {"ring": "adapters"}
-
 import logging
 import os
 import threading

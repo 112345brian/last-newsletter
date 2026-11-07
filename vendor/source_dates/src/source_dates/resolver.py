@@ -8,8 +8,6 @@ Freshness: checked 2026-09-28; recheck by 2027-01-28. See freshness.json.
 """
 from __future__ import annotations
 
-__arbor__ = {"ring": "adapters"}
-
 import re
 from datetime import date, datetime
 
