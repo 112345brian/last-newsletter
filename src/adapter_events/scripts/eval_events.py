@@ -193,7 +193,7 @@ def run_raw_dir(
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", action="append", required=True)
-    ap.add_argument("--base-url", default="http://localhost:11434")
+    ap.add_argument("--base-url", default=None, help="Ollama URL (default: llmhost's)")
     ap.add_argument("--timeout", type=float, default=600.0)
     ap.add_argument("--raw-dir", type=Path)
     ap.add_argument("--limit", type=int, default=200)

@@ -60,7 +60,7 @@ type_checkers = ["ty"]
 preset = "relaxed"
 # tach cannot follow several source_roots; import-linter owns package edges here.
 disabled_tools = ["tach"]
-rings = ["core", "libs", "adapters", "cli"]
+rings = ["core", "libs", "llm", "adapters", "cli"]
 
 # core: domain rules and ports plus the standalone pure helpers. No effects at all.
 [ring.core]
@@ -71,10 +71,17 @@ external = []
 # independent siblings). They may use third-party packages, but no effects.
 [ring.libs]
 forbid = ["clock", "env", "identity", "randomness", "sleep", "threads", "process", "dynamic-import"]
-external = ["html2text", "anthropic"]
+external = ["html2text"]
+
+# llm: the ONE ring allowed to talk to a model (SDKs, HTTP, retry sleeps, API keys from the
+# environment). Only libs/llmhost lives here, and only this ring lists `anthropic`; every other
+# module reaches a model through `llmhost.Provider` (enforced by test_single_llm_interface.py).
+[ring.llm]
+forbid = ["randomness", "threads", "process", "dynamic-import"]
+external = ["anthropic"]
 
 [ring.adapters]
-may_import = ["core", "libs"]
+may_import = ["core", "libs", "llm"]
 # Adapters own their effects (disk, network, clock for sleeping); only core is forbidden them.
 forbid = []
 external = ["imapclient", "flask", "dateparser", "filelock", "tenacity", "psutil"]
@@ -90,8 +97,8 @@ external = ["*"]
 "text_match.*" = "libs"
 "mailtext" = "libs"
 "mailtext.*" = "libs"
-"llmhost" = "libs"
-"llmhost.*" = "libs"
+"llmhost" = "llm"
+"llmhost.*" = "llm"
 "urgency" = "core"
 "urgency.*" = "core"
 "identity_dedupe" = "core"

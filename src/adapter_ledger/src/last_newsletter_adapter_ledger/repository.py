@@ -142,6 +142,12 @@ class SqliteEventRepository:
         ).fetchall()
         return [self._hydrate(r) for r in rows]
 
+    def list_all(self) -> list[Event]:
+        """Every event whatever its state, oldest listed date first (for read-side views and
+        for rebuilding derived indexes)."""
+        rows = self._conn.execute("SELECT * FROM events ORDER BY local_date, id").fetchall()
+        return [self._hydrate(r) for r in rows]
+
     # -- writes ---------------------------------------------------------------------------
 
     def upsert(self, event: Event) -> None:

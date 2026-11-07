@@ -422,3 +422,20 @@ def test_wal_mode_and_foreign_keys_are_on(repo: SqliteEventRepository, db: Path)
     assert sqlite3.connect(db).execute("PRAGMA journal_mode").fetchone()[0] == "wal"
     with pytest.raises(sqlite3.IntegrityError):  # foreign keys are enforced on our connection
         repo.upsert(_event(_B, mentions=(_mention(_B),), possible_duplicates=(_C,)))
+
+
+# -- list_all -----------------------------------------------------------------------------------
+
+
+def test_list_all_returns_every_state_in_date_order(repo: SqliteEventRepository) -> None:
+    later = _event(_B, when=AllDay(date(2027, 1, 1)), mentions=(_mention(_B),))
+    earlier = _event(_A)
+    repo.upsert(later)
+    repo.upsert(earlier)
+    repo.set_owner_state(_A, ItemState.DISMISSED)
+    assert [e.id for e in repo.list_all()] == [_A, _B]
+    assert [e.id for e in repo.list_open()] == [_B]
+
+
+def test_list_all_on_an_empty_database(repo: SqliteEventRepository) -> None:
+    assert repo.list_all() == []

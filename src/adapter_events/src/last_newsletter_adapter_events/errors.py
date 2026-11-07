@@ -1,28 +1,23 @@
-"""Typed errors of the local-model backend. None of them carries email text."""
+"""Typed errors of the model backend. The `Model*` names are llmhost's errors under their old
+names, so callers that catch them keep working; none of them carries email text."""
 
 from __future__ import annotations
 
 __arbor__ = {"ring": "adapters"}
 
+from llmhost import (
+    LlmError,
+    LlmOutputError,
+    LlmProtocolError,
+    LlmTimeoutError,
+    LlmUnavailableError,
+)
 
-class ModelBackendError(Exception):
-    """Base class: the model could not give an answer for this request."""
-
-
-class ModelUnavailableError(ModelBackendError):
-    """Connection refused / host unreachable / HTTP 5xx after all retries (Ollama down)."""
-
-
-class ModelTimeoutError(ModelBackendError):
-    """No answer within the timeout on every attempt."""
-
-
-class ModelProtocolError(ModelBackendError):
-    """The server answered, but not with the envelope we expect (bad HTTP status, not JSON)."""
-
-
-class ModelOutputError(ModelBackendError):
-    """The model's text is empty, not JSON, or violates the requested schema."""
+ModelBackendError = LlmError
+ModelUnavailableError = LlmUnavailableError
+ModelTimeoutError = LlmTimeoutError
+ModelProtocolError = LlmProtocolError
+ModelOutputError = LlmOutputError
 
 
 class EscalationError(Exception):

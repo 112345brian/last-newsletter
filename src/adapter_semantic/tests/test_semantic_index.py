@@ -100,3 +100,17 @@ def test_cold_start_and_query_are_fast_for_thousands(tmp_path: Path) -> None:
     idx = HashedNgramIndex(path)
     idx.similar(Ev("q", "Event number 42 with act 294", "Venue 42", day=date(2026, 1, 1)))
     assert time.perf_counter() - t0 < 5
+
+
+def test_ids_and_clear_track_what_is_indexed(tmp_path: Path) -> None:
+    path = tmp_path / "idx.sqlite"
+    index = HashedNgramIndex(path)
+    index.index(Ev("a", "Band at Venue", day=date(2026, 12, 12)))
+    index.index(Ev("b", "Quiz Night", day=date(2026, 12, 13)))
+    assert index.ids() == {"a", "b"}
+    index.clear()
+    assert index.ids() == set()
+    index.close()
+    reopened = HashedNgramIndex(path)
+    assert reopened.ids() == set()  # the clear was persisted, not just cached
+    reopened.close()

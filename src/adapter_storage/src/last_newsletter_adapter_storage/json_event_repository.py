@@ -182,6 +182,10 @@ class JsonEventRepository:
             or query.date_from <= local_date(e.when) <= query.date_to
         ]
 
+    def all_events(self) -> list[Event]:
+        """Every stored event whatever its state (used by the one-time import into SQLite)."""
+        return list(self._events.values())
+
     def list_open(self) -> list[Event]:
         return [e for e in self._events.values() if e.state in {ItemState.OPEN, ItemState.SNOOZED}]
 
