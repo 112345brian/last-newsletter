@@ -13,8 +13,6 @@ a few days wide (the checker's cadence), which moves a median by about half of i
 """
 from __future__ import annotations
 
-__arbor__ = {"ring": "core"}
-
 from bisect import bisect_left, bisect_right
 from collections.abc import Sequence
 from dataclasses import dataclass

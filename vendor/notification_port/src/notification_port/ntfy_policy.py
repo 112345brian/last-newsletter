@@ -6,8 +6,6 @@ logging).
 """
 from __future__ import annotations
 
-__arbor__ = {"ring": "core"}
-
 import json
 import urllib.request
 from collections.abc import Callable, Mapping, Sequence
