@@ -7,9 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from last_newsletter_adapter_storage import FileRawMessageStore, RawRef
+from last_newsletter_adapter_storage import FileRawMessageStore
 from last_newsletter_adapter_storage.raw_message_store import raw_ref_for
 from last_newsletter_core.entities import EmailMessage
+from last_newsletter_core.events import RawRef
 
 
 def _msg(message_id: str = "<a@x>", body: str = "hello", subject: str = "s") -> EmailMessage:
@@ -32,7 +33,7 @@ def test_put_get_roundtrip(tmp_path: Path) -> None:
 def test_re_put_is_a_noop_and_does_not_rewrite(tmp_path: Path) -> None:
     store = FileRawMessageStore(tmp_path)
     ref = store.put(_msg())
-    path = tmp_path / f"{ref.id}.json"
+    path = tmp_path / f"{ref.removeprefix('raw:')}.json"
     before = path.stat().st_mtime_ns
     assert store.put(_msg(body="different body, same id")) == ref
     assert path.stat().st_mtime_ns == before
@@ -43,7 +44,7 @@ def test_re_put_is_a_noop_and_does_not_rewrite(tmp_path: Path) -> None:
 def test_files_are_private_and_no_temp_files_left(tmp_path: Path) -> None:
     store = FileRawMessageStore(tmp_path / "raw")
     ref = store.put(_msg())
-    path = tmp_path / "raw" / f"{ref.id}.json"
+    path = tmp_path / "raw" / f"{ref.removeprefix('raw:')}.json"
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
     assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
     assert not list(path.parent.glob(".tmp-*"))
@@ -53,7 +54,7 @@ def test_corrupt_file_is_quarantined_not_fatal(tmp_path: Path) -> None:
     store = FileRawMessageStore(tmp_path)
     good = store.put(_msg("<good@x>"))
     bad = store.put(_msg("<bad@x>"))
-    (tmp_path / f"{bad.id}.json").write_text("{not json", encoding="utf-8")
+    (tmp_path / f"{bad.removeprefix('raw:')}.json").write_text("{not json", encoding="utf-8")
     assert list(store.list()) == [good]
     assert store.get(bad) is None
     assert len(list((tmp_path / "quarantine").iterdir())) == 1
@@ -66,7 +67,7 @@ def test_corrupt_file_is_quarantined_not_fatal(tmp_path: Path) -> None:
 def test_wrong_shape_files_are_quarantined(tmp_path: Path, payload: str) -> None:
     store = FileRawMessageStore(tmp_path)
     ref = store.put(_msg())
-    (tmp_path / f"{ref.id}.json").write_text(payload, encoding="utf-8")
+    (tmp_path / f"{ref.removeprefix('raw:')}.json").write_text(payload, encoding="utf-8")
     assert store.get(ref) is None
     assert list(store.list()) == []
 
@@ -74,7 +75,7 @@ def test_wrong_shape_files_are_quarantined(tmp_path: Path, payload: str) -> None
 def test_binary_garbage_is_quarantined(tmp_path: Path) -> None:
     store = FileRawMessageStore(tmp_path)
     ref = store.put(_msg())
-    (tmp_path / f"{ref.id}.json").write_bytes(b"\xff\xfe\x00bad")
+    (tmp_path / f"{ref.removeprefix('raw:')}.json").write_bytes(b"\xff\xfe\x00bad")
     assert store.get(ref) is None
 
 
@@ -89,7 +90,7 @@ def test_nul_and_very_long_bodies_roundtrip(tmp_path: Path) -> None:
 def test_empty_store_and_missing_dir(tmp_path: Path) -> None:
     store = FileRawMessageStore(tmp_path / "does-not-exist")
     assert list(store.list()) == []
-    assert store.get(RawRef("0" * 64)) is None
+    assert store.get(RawRef("raw:" + "0" * 64)) is None
     assert not (tmp_path / "does-not-exist").exists()  # reading never creates it
 
 
@@ -105,7 +106,7 @@ def test_message_without_message_id_gets_content_derived_id(tmp_path: Path) -> N
 def test_path_traversal_ids_are_rejected(tmp_path: Path) -> None:
     store = FileRawMessageStore(tmp_path)
     with pytest.raises(ValueError, match="not a raw message id"):
-        store.get(RawRef("../../etc/passwd"))
+        store.get(RawRef("raw:../../etc/passwd"))
 
 
 def _put_many(root: str, start: int) -> None:

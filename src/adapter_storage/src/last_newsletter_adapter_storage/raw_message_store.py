@@ -1,8 +1,7 @@
 """File-backed raw message store: one JSON file per source email, keyed by a stable id.
 
-Shaped as the event-ledger design's `RawMessageStore` port (`put(message) -> RawRef`,
-`get(ref)`, plus `list` for iteration). Until core's port lands on main, `RawMessageStore`
-below is a local Protocol with that exact shape; switch the import then.
+Implements core's `RawMessageStore` port (`put(message) -> RawRef`, `get(ref)`), plus `list`
+for iteration (`ListableRawMessageStore`).
 
 Guarantees:
 - Idempotent: the id is a hash of the Message-ID (or, when missing, of the message's
@@ -22,15 +21,16 @@ import contextlib
 import hashlib
 import json
 import os
-import tempfile
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
 from process_lock.file_lock import cross_process_file_lock, replace_with_retry
 
+from last_newsletter_adapter_storage.atomic_file import write_text_atomic
 from last_newsletter_core.entities import EmailMessage
+from last_newsletter_core.event_ports import RawMessageStore
+from last_newsletter_core.events import RawRef
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -41,16 +41,12 @@ _WATERMARK = ".watermark"
 _ID_LENGTH = 64  # hex sha256
 
 
-@dataclass(frozen=True, slots=True)
-class RawRef:
-    """Opaque stable handle to a stored message (hex sha256, safe as a file name)."""
-
-    id: str
+_PREFIX = "raw:"
 
 
-class RawMessageStore(Protocol):
-    def put(self, message: EmailMessage) -> RawRef: ...
-    def get(self, ref: RawRef) -> EmailMessage | None: ...
+class ListableRawMessageStore(RawMessageStore, Protocol):
+    """Core's `RawMessageStore` plus iteration, which the `process` stage needs."""
+
     def list(self) -> Iterator[RawRef]: ...
 
 
@@ -60,7 +56,7 @@ def raw_ref_for(message: EmailMessage) -> RawRef:
     if not key:
         stamp = message.received_at.isoformat()
         key = f"{message.sender}\x00{message.subject}\x00{stamp}\x00{message.body_text}"
-    return RawRef(hashlib.sha256(key.encode("utf-8", "surrogatepass")).hexdigest())
+    return RawRef(_PREFIX + hashlib.sha256(key.encode("utf-8", "surrogatepass")).hexdigest())
 
 
 def _to_dict(message: EmailMessage) -> dict[str, Any]:
@@ -107,16 +103,15 @@ class FileRawMessageStore:
         return ref
 
     def get(self, ref: RawRef) -> EmailMessage | None:
-        self._check_id(ref.id)
+        self._check_id(ref)
         return self._read(self._path(ref))
 
     def list(self) -> Iterator[RawRef]:
         if not self._root.is_dir():
             return
         for path in sorted(self._root.glob("*.json")):
-            ref = RawRef(path.stem)
             if self._read(path) is not None:
-                yield ref
+                yield RawRef(_PREFIX + path.stem)
 
     def read_watermark(self) -> datetime | None:
         """When the last successful fetch started (None if never, or the file is unreadable --
@@ -135,13 +130,18 @@ class FileRawMessageStore:
             self._write_text_atomic(self._root / _WATERMARK, when.isoformat())
 
     def _path(self, ref: RawRef) -> Path:
-        self._check_id(ref.id)
-        return self._root / f"{ref.id}.json"
+        self._check_id(ref)
+        return self._root / f"{ref.removeprefix(_PREFIX)}.json"
 
     @staticmethod
-    def _check_id(raw_id: str) -> None:
-        if len(raw_id) != _ID_LENGTH or any(c not in "0123456789abcdef" for c in raw_id):
-            msg = f"not a raw message id: {raw_id!r}"
+    def _check_id(ref: str) -> None:
+        raw_id = ref.removeprefix(_PREFIX)
+        if (
+            not ref.startswith(_PREFIX)
+            or len(raw_id) != _ID_LENGTH
+            or any(c not in "0123456789abcdef" for c in raw_id)
+        ):
+            msg = f"not a raw message id: {ref!r}"
             raise ValueError(msg)
 
     def _ensure_dirs(self) -> None:
@@ -171,24 +171,13 @@ class FileRawMessageStore:
         self._write_text_atomic(path, json.dumps(_to_dict(message), ensure_ascii=True, indent=1))
 
     def _write_text_atomic(self, path: Path, payload: str) -> None:
-        fd, tmp_name = tempfile.mkstemp(dir=self._root, prefix=".tmp-", suffix=".json")
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                os.fchmod(handle.fileno(), 0o600)
-                handle.write(payload)
-                handle.flush()
-                os.fsync(handle.fileno())
-            replace_with_retry(tmp_name, path)
-        except BaseException:
-            with contextlib.suppress(OSError):
-                Path(tmp_name).unlink()
-            raise
+        write_text_atomic(path, payload)
 
 
 class RawStoreEmailSource:
     """An `EmailSource` that reads only from the raw store: no network, no credentials."""
 
-    def __init__(self, store: RawMessageStore) -> None:
+    def __init__(self, store: ListableRawMessageStore) -> None:
         self._store = store
 
     def fetch_since(self, since: datetime) -> list[EmailMessage]:

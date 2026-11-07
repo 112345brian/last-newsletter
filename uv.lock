@@ -913,6 +913,7 @@ dependencies = [
     { name = "last-newsletter-adapter-summarizer" },
     { name = "last-newsletter-adapter-web" },
     { name = "last-newsletter-core" },
+    { name = "process-lock" },
 ]
 
 [package.dev-dependencies]
@@ -932,6 +933,7 @@ requires-dist = [
     { name = "last-newsletter-adapter-summarizer", editable = "src/adapter_summarizer" },
     { name = "last-newsletter-adapter-web", editable = "src/adapter_web" },
     { name = "last-newsletter-core", editable = "src/core" },
+    { name = "process-lock", editable = "vendor/process_lock" },
 ]
 
 [package.metadata.requires-dev]

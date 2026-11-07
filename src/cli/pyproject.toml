@@ -15,6 +15,7 @@ dependencies = [
     "last-newsletter-adapter-storage",
     "last-newsletter-adapter-web",
     "last-newsletter-adapter-knowledge",
+    "process-lock",
 ]
 
 [project.scripts]
@@ -31,6 +32,7 @@ last-newsletter-adapter-publish = { workspace = true }
 last-newsletter-adapter-storage = { workspace = true }
 last-newsletter-adapter-web = { workspace = true }
 last-newsletter-adapter-knowledge = { workspace = true }
+process-lock = { workspace = true }
 
 [build-system]
 requires = ["uv_build>=0.12.19,<0.13.0"]
