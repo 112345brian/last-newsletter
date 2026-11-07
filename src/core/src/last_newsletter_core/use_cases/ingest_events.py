@@ -237,6 +237,7 @@ class IngestEvents:
             price=draft.price,
             age=draft.age,
             night_of=draft.night_of,
+            showtimes=draft.showtimes,
         )
         self._repository.upsert(event)
         run.index.index(event)
@@ -284,6 +285,7 @@ class IngestEvents:
                 price=draft.price,
                 age=draft.age,
                 night_of=draft.night_of,
+                showtimes=draft.showtimes,
                 sequence=draft.sequence,
                 mentions=(*existing.mentions, mention),
                 last_seen=max(existing.last_seen, mention.seen_at),

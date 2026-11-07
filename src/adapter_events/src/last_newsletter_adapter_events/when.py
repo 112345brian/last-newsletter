@@ -10,6 +10,7 @@ __arbor__ = {"ring": "adapters"}
 
 import re
 from datetime import time as clock_time
+from itertools import pairwise
 
 from last_newsletter_core.events import PartialWhen
 
@@ -52,10 +53,11 @@ def parse_when(start_text: str, end_text: str = "", *, tz: str | None = None) ->
     if day is not None and not 1 <= day <= _MAX_DAY:
         month = day = None
     raw = text if not end_text.strip() else f"{text} - {end_text.strip()}"
-    times = _times(text)
-    end_times = _times(end_text)
+    times, ranged = _times(text)
+    end_times = _times(end_text)[0]
     start = times[0] if times else None
-    end = times[1] if len(times) > 1 else (end_times[0] if end_times else None)
+    end = times[1] if ranged and len(times) > 1 else (end_times[0] if end_times else None)
+    showtimes = tuple(times) if not ranged and len(times) > 1 else ()
     late = start is not None and start.hour < _LATE_NIGHT_BEFORE_HOUR and _has_meridiem(text)
     return PartialWhen(
         year=year,
@@ -65,6 +67,7 @@ def parse_when(start_text: str, end_text: str = "", *, tz: str | None = None) ->
         time=start,
         end_time=end,
         late_night=late,
+        showtimes=showtimes,
         tz=tz,
         raw_text=raw[:200],
     )
@@ -108,16 +111,51 @@ _FULL_DAYS = frozenset(
 _LATE_NIGHT_BEFORE_HOUR = 6
 
 
-def _times(text: str) -> list[clock_time]:
-    found: list[tuple[int, clock_time]] = []
+_RANGE_GAP = re.compile(r"^\s*(?:[-\u2013\u2014]|to|until|till)\s*$", re.IGNORECASE)
+
+
+def _times(text: str) -> tuple[list[clock_time], bool]:
+    """The clock times in `text`, in order, and whether the first two form a range ("9pm-2am",
+    "9pm to 2am") rather than a list of start times ("12PM, 3:30PM, 7PM")."""
+    found: list[tuple[int, int, clock_time]] = []
     for m in _TIME.finditer(text):
         hour, minute, meridiem = int(m[1]), int(m[2] or 0), m[3].lower()
         if 1 <= hour <= _MAX_MONTH and minute <= _MAX_MINUTE:
             pm = 12 if meridiem == "pm" else 0
-            found.append((m.start(), clock_time(hour % 12 + pm, minute)))
+            found.append((m.start(), m.end(), clock_time(hour % 12 + pm, minute)))
     if not found:
-        found = [(m.start(), clock_time(int(m[1]), int(m[2]))) for m in _TIME24.finditer(text)]
-    return [t for _, t in sorted(found)]
+        found = [
+            (m.start(), m.end(), clock_time(int(m[1]), int(m[2]))) for m in _TIME24.finditer(text)
+        ]
+    found.sort()
+    ranged = len(found) > 1 and _RANGE_GAP.match(text[found[0][1] : found[1][0]]) is not None
+    return [t for _, _, t in found], ranged
+
+
+_LISTED_DAY = re.compile(
+    r"\b(?:mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:rs?|rsday)?|fri(?:day)?"
+    r"|sat(?:urday)?|sun(?:day)?)\b\.?,?\s+"
+    r"(?:the\s+)?(?:[a-z]{3,9}\.?\s+\d{1,2}|\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?[a-z]{3,9}|\d{1,2}/\d{1,2})",
+    re.IGNORECASE,
+)
+
+
+def split_listing(start_text: str) -> list[str]:
+    """Cut one listing that names several dated days ("Friday, November 13th - 12PM, 7PM Saturday,
+    November 14th - 12PM") into one text per day. Text with fewer than two such days is returned
+    whole. Only a weekday followed by a month and day starts a segment."""
+    starts = [
+        m.start()
+        for m in _LISTED_DAY.finditer(start_text)
+        if _month_day(m.group(0)) is not None or "/" in m.group(0)
+    ]
+    if len(starts) < _MIN_LISTED_DAYS:
+        return [start_text]
+    bounds = [*starts, len(start_text)]
+    return [start_text[a:b].strip() for a, b in pairwise(bounds)]
+
+
+_MIN_LISTED_DAYS = 2
 
 
 def _has_meridiem(text: str) -> bool:

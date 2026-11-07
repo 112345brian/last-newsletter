@@ -1,5 +1,5 @@
 from dataclasses import replace
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, time
 from uuid import UUID
 
 import pytest
@@ -27,6 +27,7 @@ from last_newsletter_core.events import (
     MatchRule,
     PartialWhen,
     RawRef,
+    local_date,
 )
 from last_newsletter_core.raw_store import InMemoryRawMessageStore
 from last_newsletter_core.use_cases import IngestEvents, IngestPorts, IngestResult
@@ -341,3 +342,45 @@ def test_listing_fields_reach_the_stored_event() -> None:
         "$20",
         "21+",
     )
+
+
+def test_showtimes_reach_the_stored_event_in_order_without_duplicates() -> None:
+    when = PartialWhen(
+        year=2026,
+        month=12,
+        day=12,
+        time=time(12),
+        showtimes=(time(12), time(19), time(15, 30), time(19)),
+        raw_text="Sat Dec 12 - 12PM, 3:30PM, 7PM",
+    )
+    use_case, repo = _use_case(extractor=ScriptedExtractor([_candidate(when=when)]))
+    assert use_case.ingest([_message()], now=_NOW).created == 1
+    (event,) = repo.events.values()
+    assert event.showtimes == (time(12), time(15, 30), time(19))
+
+
+def test_a_single_time_is_not_a_showtime_list() -> None:
+    when = PartialWhen(year=2026, month=12, day=12, time=time(12), showtimes=(time(12),))
+    use_case, repo = _use_case(extractor=ScriptedExtractor([_candidate(when=when)]))
+    assert use_case.ingest([_message()], now=_NOW).created == 1
+    (event,) = repo.events.values()
+    assert event.showtimes == ()
+
+
+def test_consecutive_days_of_one_title_become_separate_events() -> None:
+    """Sunday's and Monday's screenings of one film are two UUIDs; each is cited by its own
+    mention, and re-ingesting changes nothing."""
+    sunday = PartialWhen(year=2026, month=11, day=15, time=time(10), raw_text="Sun Nov 15 - 10AM")
+    monday = PartialWhen(year=2026, month=11, day=16, time=time(12, 30), raw_text="Mon Nov 16")
+    candidates = [
+        _candidate(when=sunday, evidence="Band at Venue, Dec 12"),
+        _candidate(when=monday, evidence="Band at Venue, Dec 12"),
+    ]
+    use_case, repo = _use_case(extractor=ScriptedExtractor(candidates))
+    result = use_case.ingest([_message()], now=_NOW)
+    assert (result.created, result.mentioned) == (2, 0)
+    assert {local_date(e.when) for e in repo.events.values()} == {
+        date(2026, 11, 15),
+        date(2026, 11, 16),
+    }
+    assert all(len(e.mentions) == 1 for e in repo.events.values())

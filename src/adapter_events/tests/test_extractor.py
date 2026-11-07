@@ -241,3 +241,35 @@ def _raw() -> RawEvent:
         confidence="high",
         evidence="Moon Party Sat Dec 12, 9pm",
     )
+
+
+_LISTING = (
+    "Friday, November 13th - 12PM, 3:30PM, 7PM Saturday, November 14th - 12PM, 3:30PM, 7PM "
+    "Sunday, November 15th - 10AM"
+)
+
+
+def test_a_multi_day_listing_becomes_one_candidate_per_date() -> None:
+    body = f"Screening: Night Film\n{_LISTING}\nTickets at the door"
+    ev = event(title="Night Film", start_text=_LISTING, evidence=_LISTING)
+    _, out = _run(ScriptedTransport(answer(ev)), msg(body))
+    assert [c.when.day for c in out if c.when] == [13, 14, 15]
+    assert {c.title for c in out} == {"Night Film"}
+    assert {c.evidence for c in out} == {_LISTING}
+    assert [len(c.when.showtimes) for c in out if c.when] == [3, 3, 0]
+
+
+def test_the_request_is_deterministic() -> None:
+    transport = ScriptedTransport(answer(event()))
+    _run(transport, msg(BODY))
+    options = transport.requests[0]["body"]["options"]
+    assert options["temperature"] == 0
+    assert isinstance(options["seed"], int)
+
+
+def test_the_prompt_keeps_weekdays_and_every_listed_day() -> None:
+    transport = ScriptedTransport(answer(event()))
+    _run(transport, msg(BODY))
+    system = transport.requests[0]["body"]["messages"][0]["content"]
+    assert "ALWAYS keep the weekday" in system
+    assert "never keep only the first" in system

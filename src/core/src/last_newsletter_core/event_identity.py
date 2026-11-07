@@ -6,7 +6,9 @@ Rungs, stopping at the first hit:
 1. `uid`: the iCalendar UID.
 2. canonical URL (must have a path; a bare homepage identifies nothing) and a date within one
    day, since a venue reuses one page for a whole series.
-3. normalized title + venue, on the same local date, else within one day.
+3. normalized title + venue, on the same local date. One day off counts only when a listed date
+   is uncertain (an after-midnight listing, `night_of`): a title listed on two consecutive days
+   is two events, never one cited twice.
 4. optional: a `SimilarEventIndex` score, consulted only if rungs 1 to 3 found nothing.
 
 Failure policy: when a draft could be several existing events, or a rung found something
@@ -56,12 +58,18 @@ def _days_apart(draft: EventDraft, event: Event) -> int:
     return abs((local_date(event.when) - local_date(draft.when)).days)
 
 
+def _same_day(draft: EventDraft, event: Event) -> bool:
+    """Same listed date, or one day off when either side's date is uncertain (after midnight)."""
+    apart = _days_apart(draft, event)
+    if apart == 0:
+        return True
+    return apart <= _WINDOW_DAYS and (draft.night_of is not None or event.night_of is not None)
+
+
 def _closest(draft: EventDraft, events: Sequence[Event]) -> list[Event]:
     """Events on the draft's own date if any, else those one day off."""
     exact = [e for e in events if _days_apart(draft, e) == 0]
-    if exact:
-        return exact
-    return [e for e in events if _days_apart(draft, e) <= _WINDOW_DAYS]
+    return exact or list(events)
 
 
 def _linked(events: Sequence[Event]) -> tuple[EventId, ...]:
@@ -71,6 +79,15 @@ def _linked(events: Sequence[Event]) -> tuple[EventId, ...]:
 def _venues_conflict(draft: EventDraft, event: Event) -> bool:
     a, b = normalize_text(draft.venue), normalize_text(event.venue)
     return bool(a and b and a != b)
+
+
+def _is_dated_sibling(draft: EventDraft, event: Event) -> bool:
+    """Same title and venue, different listed date: separate by design, so not a duplicate."""
+    return (
+        normalize_text(event.title) == normalize_text(draft.title)
+        and normalize_text(event.venue) == normalize_text(draft.venue)
+        and not _same_day(draft, event)
+    )
 
 
 def _decide(rule: MatchRule, found: Sequence[Event], soft: dict[EventId, Event]) -> Decision:
@@ -105,24 +122,24 @@ def identify(
 
     title = normalize_text(draft.title)
     venue = normalize_text(draft.venue)
-    same_title = [
-        e
-        for e in pool
-        if normalize_text(e.title) == title and _days_apart(draft, e) <= _WINDOW_DAYS
-    ]
+    same_title = [e for e in pool if normalize_text(e.title) == title and _same_day(draft, e)]
     same_venue = [e for e in same_title if normalize_text(e.venue) == venue]
     if same_venue:
         return _decide(MatchRule.TITLE_DATE_VENUE, _closest(draft, same_venue), soft)
     soft.update({e.id: e for e in same_title if not _venues_conflict(draft, e)})
 
     if similar is not None:
+        # Any date may be linked (the index already discounts a date mismatch), but an event
+        # with the very same title and venue on another date is a known-separate sibling.
         hits = [
             (e, score)
             for e, score in similar()
-            if _days_apart(draft, e) <= _WINDOW_DAYS and score >= policy.link_at
+            if score >= policy.link_at and not _is_dated_sibling(draft, e)
         ]
         mergeable = [
-            e for e, score in hits if score >= policy.merge_at and not _venues_conflict(draft, e)
+            e
+            for e, score in hits
+            if score >= policy.merge_at and _same_day(draft, e) and not _venues_conflict(draft, e)
         ]
         if mergeable:
             return _decide(MatchRule.SIMILAR, mergeable, soft)

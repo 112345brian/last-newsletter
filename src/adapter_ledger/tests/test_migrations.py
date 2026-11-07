@@ -108,3 +108,26 @@ def test_a_database_from_a_newer_program_is_refused_untouched(tmp_path: Path) ->
     assert _version(conn) == len(MIGRATIONS) + 5
     assert _tables(conn) == {"marker"}
     conn.close()
+
+
+def test_a_v1_ledger_upgrades_and_its_events_have_no_showtimes(tmp_path: Path) -> None:
+    """The owner's existing ledger predates `showtimes`: it must open, keep its rows, and read
+    them back with an empty list."""
+    db = tmp_path / "ledger.db"
+    conn = _connect(db)
+    assert migrate(conn, MIGRATIONS[:1]) == 1
+    conn.execute(
+        "INSERT INTO events (id, kind, title, summary, when_kind, when_day, local_date,"
+        " first_seen, last_seen) VALUES ('00000000-0000-0000-0000-000000000001', 'event', 'T',"
+        " '', 'all_day', '2026-12-12', '2026-12-12', '2026-11-06T00:00:00+00:00',"
+        " '2026-11-06T00:00:00+00:00')"
+    )
+    conn.execute(
+        "INSERT INTO mentions (event_id, message_id, seen_at, source, evidence, match_rule)"
+        " VALUES ('00000000-0000-0000-0000-000000000001', 'm', '2026-11-06T00:00:00+00:00',"
+        " 's', 'e', 'new')"
+    )
+    conn.close()
+    with SqliteEventRepository(db) as repo:
+        (event,) = repo.list_all()
+    assert event.showtimes == ()

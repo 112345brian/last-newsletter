@@ -94,6 +94,7 @@ class ProcessOptions:
     home_tz: str = "UTC"
     batch_size: int = DEFAULT_BATCH_SIZE
     dry_run: bool = False
+    reprocess: bool = False  # back up the ledger, index and markers, then start from scratch
 
 
 def ollama_config(environ: Mapping[str, str]) -> OllamaConfig:
@@ -157,6 +158,30 @@ def _copy_for_dry_run(events_dir: Path, scratch: Path) -> Path:
     return target
 
 
+def _reset_state(events_dir: Path, *, now: datetime, keep_backup: bool) -> Path | None:
+    """Clear the ledger, the index and the processed markers so the raw store is processed anew.
+
+    With `keep_backup` the files are moved (never deleted) into `backup-<timestamp>/` beside them
+    and that folder is returned; a dry run works on a scratch copy and just drops the files.
+    """
+    names = sorted(
+        p.name
+        for pattern in (f"{LEDGER_NAME}*", f"{INDEX_NAME}*", "processed.json")
+        for p in events_dir.glob(pattern)
+        if not p.name.endswith(".lock")
+    )
+    backup = events_dir / f"backup-{now:%Y%m%dT%H%M%S}" if keep_backup and names else None
+    with ledger_write_lock(events_dir / LEDGER_NAME, timeout_s=5.0):
+        if backup is not None:
+            backup.mkdir()
+        for name in names:
+            if backup is not None:
+                shutil.move(events_dir / name, backup / name)
+            else:
+                (events_dir / name).unlink()
+    return backup
+
+
 def _describe_stats(extractor: EventExtractor) -> list[str]:
     if not isinstance(extractor, LocalLlmEventExtractor):
         return []
@@ -184,6 +209,12 @@ def execute_process(ctx: ProcessContext, options: ProcessOptions) -> int:
         else:
             events_dir = ctx.data_dir / "events"
             events_dir.mkdir(parents=True, exist_ok=True)
+        if options.reprocess:
+            backup = _reset_state(events_dir, now=ctx.now, keep_backup=not options.dry_run)
+            if backup is not None:
+                notes.append(f"backed up the previous ledger to {backup}; processing from scratch")
+            else:
+                notes.append("--reprocess: started from an empty ledger")
         extractor = _extractor(options.extractor, ctx.environ, ctx.transport, ctx.sleep)
         ledger = stack.enter_context(SqliteEventRepository(events_dir / LEDGER_NAME))
         index = HashedNgramIndex(events_dir / INDEX_NAME)

@@ -54,6 +54,40 @@ def test_weekday_that_fits_no_nearby_year_is_rejected() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("month", "day", "weekday", "expected"),
+    [
+        (11, 13, 4, date(2026, 11, 13)),
+        (11, 15, 6, date(2026, 11, 15)),
+        (11, 18, 2, date(2026, 11, 18)),
+    ],
+)
+def test_listing_lines_with_weekday_resolve_to_their_year(
+    month: int, day: int, weekday: int, expected: date
+) -> None:
+    """ "Friday, November 13th - 12PM": the weekday pins 2026; nothing else may be guessed."""
+    now = datetime(2026, 11, 7, 15, tzinfo=UTC)
+    when = resolve_when(
+        PartialWhen(month=month, day=day, weekday=weekday, time=time(12)), now=now, home_tz=_TZ
+    )
+    assert isinstance(when, Timed)
+    assert local_date(when) == expected
+
+
+def test_past_weekday_date_is_past_not_ambiguous() -> None:
+    """Oct 30 is a Friday in 2026 only, and 2026-10-30 is behind us: that is a past date. It
+    used to be reported as `ambiguous_year` because the past candidate was filtered out first."""
+    when = resolve_when(PartialWhen(month=10, day=30, weekday=4), now=_NOW, home_tz=_TZ)
+    assert when is RejectReason.PAST_DATE
+
+
+def test_past_weekday_date_is_allowed_for_recaps() -> None:
+    when = resolve_when(
+        PartialWhen(month=10, day=30, weekday=4), now=_NOW, home_tz=_TZ, allow_past=True
+    )
+    assert when == AllDay(date(2026, 10, 30))
+
+
 def test_explicit_year_is_used_as_written() -> None:
     when = resolve_when(PartialWhen(year=2027, month=3, day=1), now=_NOW, home_tz=_TZ)
     assert when == AllDay(date(2027, 3, 1))

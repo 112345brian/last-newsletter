@@ -97,7 +97,10 @@ _V1 = (
     """,
 )
 
-MIGRATIONS: tuple[tuple[str, ...], ...] = (_V1,)
+# Several start times on one date (a film at 12PM, 3:30PM and 7PM): a JSON list of "HH:MM".
+_V2 = ("ALTER TABLE events ADD COLUMN showtimes TEXT NOT NULL DEFAULT '[]'",)
+
+MIGRATIONS: tuple[tuple[str, ...], ...] = (_V1, _V2)
 
 
 def migrate(conn: sqlite3.Connection, migrations: Sequence[Sequence[str]] = MIGRATIONS) -> int:

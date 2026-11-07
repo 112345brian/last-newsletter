@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import replace
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -117,6 +117,7 @@ def test_every_field_round_trips(repo: SqliteEventRepository) -> None:
         price="$20 | 21+",
         age="21+",
         night_of=date(2026, 12, 12),
+        showtimes=(time(12), time(15, 30), time(19)),
         snoozed_until=_T + timedelta(days=1),
         state=ItemState.SNOOZED,
     )

@@ -44,6 +44,7 @@ class OllamaSettings:
     backoff_s: float = 1.0
     num_ctx: int = 16384
     think: bool | str | None = None
+    seed: int | None = 0  # fixed sampling seed so the same prompt gives the same answer
 
 
 class OllamaProvider:
@@ -75,10 +76,13 @@ class OllamaProvider:
             "format": input_schema(request) or "json",
             "options": {
                 "temperature": 0,
+                "seed": self._cfg.seed,
                 "num_ctx": self._cfg.num_ctx,
                 "num_predict": request.max_tokens,
             },
         }
+        if self._cfg.seed is None:
+            del payload["options"]["seed"]
         if self._cfg.think is not None:
             payload["think"] = self._cfg.think
         body = json.dumps(payload).encode("utf-8")

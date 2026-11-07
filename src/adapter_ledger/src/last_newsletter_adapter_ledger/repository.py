@@ -16,7 +16,7 @@ __arbor__ = {"ring": "adapters"}
 import json
 import sqlite3
 from contextlib import contextmanager
-from datetime import date, datetime
+from datetime import date, datetime, time
 from pathlib import Path
 from typing import TYPE_CHECKING, Self
 from uuid import UUID
@@ -337,15 +337,17 @@ class SqliteEventRepository:
             price=row["price"],
             age=row["age"],
             night_of=None if row["night_of"] is None else date.fromisoformat(row["night_of"]),
+            showtimes=tuple(time.fromisoformat(t) for t in json.loads(row["showtimes"])),
         )
 
 
 _UPSERT_EVENT = """
 INSERT INTO events (id, kind, title, summary, when_kind, when_day, when_start, when_end, when_tz,
-    local_date, first_seen, last_seen, uid, sequence, url, city, tags, price, age, night_of)
+    local_date, first_seen, last_seen, uid, sequence, url, city, tags, price, age, night_of,
+    showtimes)
 VALUES (:id, :kind, :title, :summary, :when_kind, :when_day, :when_start, :when_end, :when_tz,
     :local_date, :first_seen, :last_seen, :uid, :sequence, :url, :city, :tags, :price, :age,
-    :night_of)
+    :night_of, :showtimes)
 ON CONFLICT (id) DO UPDATE SET
     kind = excluded.kind, title = excluded.title, summary = excluded.summary,
     when_kind = excluded.when_kind, when_day = excluded.when_day,
@@ -353,7 +355,8 @@ ON CONFLICT (id) DO UPDATE SET
     local_date = excluded.local_date, first_seen = excluded.first_seen,
     last_seen = excluded.last_seen, uid = excluded.uid, sequence = excluded.sequence,
     url = excluded.url, city = excluded.city, tags = excluded.tags, price = excluded.price,
-    age = excluded.age, night_of = excluded.night_of
+    age = excluded.age, night_of = excluded.night_of,
+    showtimes = excluded.showtimes
 """
 
 
@@ -380,6 +383,7 @@ def _event_params(event: Event) -> dict[str, object]:
         "price": event.price,
         "age": event.age,
         "night_of": None if event.night_of is None else event.night_of.isoformat(),
+        "showtimes": json.dumps([t.strftime("%H:%M") for t in event.showtimes]),
     }
 
 
