@@ -16,6 +16,8 @@ sources = [
     "src/adapter_web/src",
     "src/adapter_knowledge/src",
     "src/adapter_semantic/src",
+    "src/adapter_ledger/src",
+    "src/adapter_events/src",
     "src/cli/src",
     "vendor/urgency/src",
     "vendor/identity_dedupe/src",
@@ -39,6 +41,8 @@ source_roots = [
     "src/adapter_web/src",
     "src/adapter_knowledge/src",
     "src/adapter_semantic/src",
+    "src/adapter_ledger/src",
+    "src/adapter_events/src",
     "src/cli/src",
     "vendor/urgency/src",
     "vendor/identity_dedupe/src",
@@ -50,7 +54,7 @@ source_roots = [
     "vendor/durable_outbox/src",
     "vendor/tracker_state/src",
 ]
-exclude = ["tests", "docs", ".venv"]
+exclude = ["tests", "docs", ".venv", "scripts"]
 scan_vendors = true
 type_checkers = ["ty"]
 preset = "relaxed"
@@ -115,6 +119,10 @@ external = ["*"]
 "last_newsletter_adapter_knowledge.*" = "adapters"
 "last_newsletter_adapter_semantic" = "adapters"
 "last_newsletter_adapter_semantic.*" = "adapters"
+"last_newsletter_adapter_ledger" = "adapters"
+"last_newsletter_adapter_ledger.*" = "adapters"
+"last_newsletter_adapter_events" = "adapters"
+"last_newsletter_adapter_events.*" = "adapters"
 "source_dates" = "adapters"
 "source_dates.*" = "adapters"
 "process_lock" = "adapters"
