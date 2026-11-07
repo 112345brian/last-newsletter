@@ -26,6 +26,7 @@ members = [
     "src/adapter_storage",
     "src/adapter_web",
     "src/adapter_knowledge",
+    "src/adapter_semantic",
     "libs/text_match",
     "libs/mailtext",
     "libs/llmhost",
@@ -93,6 +94,7 @@ root_packages = [
     "last_newsletter_adapter_storage",
     "last_newsletter_adapter_web",
     "last_newsletter_adapter_knowledge",
+    "last_newsletter_adapter_semantic",
     "last_newsletter_cli",
     "text_match",
     "mailtext",
@@ -113,7 +115,7 @@ name = "Clean Architecture dependency rule (README.md#architecture)"
 type = "layers"
 layers = [
     "last_newsletter_cli",
-    "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge",
+    "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge | last_newsletter_adapter_semantic",
     "last_newsletter_core | text_match | mailtext | llmhost | urgency | identity_dedupe | source_dates | text_normalize | notification_port | usage_ledger_port | durable_outbox | tracker_state",
     "process_lock",
 ]

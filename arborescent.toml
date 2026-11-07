@@ -15,6 +15,7 @@ sources = [
     "src/adapter_storage/src",
     "src/adapter_web/src",
     "src/adapter_knowledge/src",
+    "src/adapter_semantic/src",
     "src/cli/src",
     "vendor/urgency/src",
     "vendor/identity_dedupe/src",
@@ -37,6 +38,7 @@ source_roots = [
     "src/adapter_storage/src",
     "src/adapter_web/src",
     "src/adapter_knowledge/src",
+    "src/adapter_semantic/src",
     "src/cli/src",
     "vendor/urgency/src",
     "vendor/identity_dedupe/src",
@@ -111,6 +113,8 @@ external = ["*"]
 "last_newsletter_adapter_web.*" = "adapters"
 "last_newsletter_adapter_knowledge" = "adapters"
 "last_newsletter_adapter_knowledge.*" = "adapters"
+"last_newsletter_adapter_semantic" = "adapters"
+"last_newsletter_adapter_semantic.*" = "adapters"
 "source_dates" = "adapters"
 "source_dates.*" = "adapters"
 "process_lock" = "adapters"

@@ -15,6 +15,7 @@ members = [
     "last-newsletter-adapter-email",
     "last-newsletter-adapter-knowledge",
     "last-newsletter-adapter-publish",
+    "last-newsletter-adapter-semantic",
     "last-newsletter-adapter-storage",
     "last-newsletter-adapter-summarizer",
     "last-newsletter-adapter-web",
@@ -799,6 +800,29 @@ dev = [
 
 [package.metadata]
 requires-dist = [{ name = "last-newsletter-core", editable = "src/core" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[[package]]
+name = "last-newsletter-adapter-semantic"
+version = "0.1.0"
+source = { editable = "src/adapter_semantic" }
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
 
 [package.metadata.requires-dev]
 dev = [

@@ -1,0 +1,531 @@
+[
+ {
+  "label": "same",
+  "a": {
+   "title": "Jon Hopkins live",
+   "venue": "Brooklyn Steel",
+   "entities": [
+    "Jon Hopkins"
+   ],
+   "day": "2026-12-12"
+  },
+  "b": {
+   "title": "Jon Hopkins: Live at Brooklyn Steel",
+   "venue": "Brooklyn Steel",
+   "entities": [
+    "Jon Hopkins"
+   ],
+   "day": "2026-12-12"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Four Tet + Floating Points",
+   "venue": "Printworks",
+   "entities": [
+    "Four Tet",
+    "Floating Points"
+   ],
+   "day": "2026-11-20"
+  },
+  "b": {
+   "title": "Four Tet & Floating Points at Printworks",
+   "venue": "Printworks",
+   "entities": [
+    "Four Tet",
+    "Floating Points"
+   ],
+   "day": "2026-11-20"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Warehouse Project Opening Night",
+   "venue": "Depot Mayfield",
+   "entities": [],
+   "day": "2026-10-02"
+  },
+  "b": {
+   "title": "The Warehouse Project - opening night!",
+   "venue": "Depot Mayfield",
+   "entities": [],
+   "day": "2026-10-02"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Bonobo DJ set",
+   "venue": "Fabric",
+   "entities": [
+    "Bonobo"
+   ],
+   "day": "2026-12-05"
+  },
+  "b": {
+   "title": "Bonobo (DJ Set) at Fabric London",
+   "venue": "Fabric",
+   "entities": [
+    "Bonobo"
+   ],
+   "day": "2026-12-05"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Annual Holiday Market",
+   "venue": "Union Square",
+   "entities": [],
+   "day": "2026-12-14"
+  },
+  "b": {
+   "title": "Union Square Holiday Market 2026",
+   "venue": "Union Square",
+   "entities": [],
+   "day": "2026-12-14"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Tame Impala tickets on sale",
+   "venue": "Madison Square Garden",
+   "entities": [
+    "Tame Impala"
+   ],
+   "day": "2027-02-10"
+  },
+  "b": {
+   "title": "Tame Impala at MSG",
+   "venue": "Madison Square Garden",
+   "entities": [
+    "Tame Impala"
+   ],
+   "day": "2027-02-10"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Carl Craig presents Detroit Love",
+   "venue": "Movement Hall",
+   "entities": [
+    "Carl Craig"
+   ],
+   "day": "2026-11-28"
+  },
+  "b": {
+   "title": "Detroit Love with Carl Craig",
+   "venue": "Movement Hall",
+   "entities": [
+    "Carl Craig"
+   ],
+   "day": "2026-11-28"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Jazz Night: Kamasi Washington",
+   "venue": "Blue Note",
+   "entities": [
+    "Kamasi Washington"
+   ],
+   "day": "2026-11-15"
+  },
+  "b": {
+   "title": "Kamasi Washington at the Blue Note jazz night",
+   "venue": "Blue Note",
+   "entities": [
+    "Kamasi Washington"
+   ],
+   "day": "2026-11-15"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Berghain Klubnacht",
+   "venue": "Berghain",
+   "entities": [],
+   "day": "2026-11-22"
+  },
+  "b": {
+   "title": "Klubnacht @ Berghain",
+   "venue": "Berghain",
+   "entities": [],
+   "day": "2026-11-22"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Boiler Room NYC: Overmono",
+   "venue": "Knockdown Center",
+   "entities": [
+    "Overmono"
+   ],
+   "day": "2026-12-01"
+  },
+  "b": {
+   "title": "Overmono - Boiler Room New York",
+   "venue": "Knockdown Center",
+   "entities": [
+    "Overmono"
+   ],
+   "day": "2026-12-02"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Rufus Du Sol Sunset Session",
+   "venue": "Hollywood Bowl",
+   "entities": [
+    "Rufus Du Sol"
+   ],
+   "day": "2026-09-19"
+  },
+  "b": {
+   "title": "RÜFÜS DU SOL sunset session at Hollywood Bowl",
+   "venue": "Hollywood Bowl",
+   "entities": [
+    "Rufus Du Sol"
+   ],
+   "day": "2026-09-19"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Midnight Run Club 5k",
+   "venue": "Prospect Park",
+   "entities": [],
+   "day": "2026-11-14"
+  },
+  "b": {
+   "title": "Midnight Run Club 5K at Prospect Park",
+   "venue": "Prospect Park",
+   "entities": [],
+   "day": "2026-11-14"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Caribou album release show",
+   "venue": "Webster Hall",
+   "entities": [
+    "Caribou"
+   ],
+   "day": "2026-11-30"
+  },
+  "b": {
+   "title": "Caribou - album release show, Webster Hall",
+   "venue": "Webster Hall",
+   "entities": [
+    "Caribou"
+   ],
+   "day": "2026-11-30"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Rooftop Cinema: Blade Runner",
+   "venue": "Roof at Pier 17",
+   "entities": [],
+   "day": "2026-08-08"
+  },
+  "b": {
+   "title": "Blade Runner rooftop cinema screening",
+   "venue": "Roof at Pier 17",
+   "entities": [],
+   "day": "2026-08-08"
+  }
+ },
+ {
+  "label": "same",
+  "a": {
+   "title": "Peggy Gou DJ set",
+   "venue": "Output",
+   "entities": [
+    "Peggy Gou"
+   ],
+   "day": "2026-12-31"
+  },
+  "b": {
+   "title": "NYE with Peggy Gou at Output",
+   "venue": "Output",
+   "entities": [
+    "Peggy Gou"
+   ],
+   "day": "2026-12-31"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Jon Hopkins live",
+   "venue": "Brooklyn Steel",
+   "entities": [
+    "Jon Hopkins"
+   ],
+   "day": "2026-12-12"
+  },
+  "b": {
+   "title": "Jon Hopkins live",
+   "venue": "Brooklyn Steel",
+   "entities": [
+    "Jon Hopkins"
+   ],
+   "day": "2027-03-20"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Fabric Saturday",
+   "venue": "Fabric",
+   "entities": [],
+   "day": "2026-11-07"
+  },
+  "b": {
+   "title": "Fabric Saturday",
+   "venue": "Fabric",
+   "entities": [],
+   "day": "2026-11-14"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Midnight Run Club 5k",
+   "venue": "Prospect Park",
+   "entities": [],
+   "day": "2026-11-14"
+  },
+  "b": {
+   "title": "Midnight Run Club 5k",
+   "venue": "Prospect Park",
+   "entities": [],
+   "day": "2026-12-12"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Four Tet + Floating Points",
+   "venue": "Printworks",
+   "entities": [
+    "Four Tet",
+    "Floating Points"
+   ],
+   "day": "2026-11-20"
+  },
+  "b": {
+   "title": "Four Tet DJ set",
+   "venue": "Warehouse Project",
+   "entities": [
+    "Four Tet"
+   ],
+   "day": "2026-12-19"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Annual Holiday Market",
+   "venue": "Union Square",
+   "entities": [],
+   "day": "2026-12-14"
+  },
+  "b": {
+   "title": "Annual Book Fair",
+   "venue": "Union Square",
+   "entities": [],
+   "day": "2026-12-14"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Tame Impala tickets on sale",
+   "venue": "Madison Square Garden",
+   "entities": [
+    "Tame Impala"
+   ],
+   "day": "2027-02-10"
+  },
+  "b": {
+   "title": "Billie Eilish tickets on sale",
+   "venue": "Madison Square Garden",
+   "entities": [
+    "Billie Eilish"
+   ],
+   "day": "2027-02-10"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Jazz Night: Kamasi Washington",
+   "venue": "Blue Note",
+   "entities": [
+    "Kamasi Washington"
+   ],
+   "day": "2026-11-15"
+  },
+  "b": {
+   "title": "Jazz Night: Robert Glasper",
+   "venue": "Blue Note",
+   "entities": [
+    "Robert Glasper"
+   ],
+   "day": "2026-11-15"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Berghain Klubnacht",
+   "venue": "Berghain",
+   "entities": [],
+   "day": "2026-11-22"
+  },
+  "b": {
+   "title": "Panorama Bar Open Air",
+   "venue": "Panorama Bar",
+   "entities": [],
+   "day": "2026-11-22"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Bonobo DJ set",
+   "venue": "Fabric",
+   "entities": [
+    "Bonobo"
+   ],
+   "day": "2026-12-05"
+  },
+  "b": {
+   "title": "Caribou DJ set",
+   "venue": "Fabric",
+   "entities": [
+    "Caribou"
+   ],
+   "day": "2026-12-05"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Rooftop Cinema: Blade Runner",
+   "venue": "Roof at Pier 17",
+   "entities": [],
+   "day": "2026-08-08"
+  },
+  "b": {
+   "title": "Rooftop Cinema: Alien",
+   "venue": "Roof at Pier 17",
+   "entities": [],
+   "day": "2026-08-15"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Peggy Gou DJ set",
+   "venue": "Output",
+   "entities": [
+    "Peggy Gou"
+   ],
+   "day": "2026-12-31"
+  },
+  "b": {
+   "title": "Peggy Gou DJ set",
+   "venue": "Output",
+   "entities": [
+    "Peggy Gou"
+   ],
+   "day": "2027-01-15"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Carl Craig presents Detroit Love",
+   "venue": "Movement Hall",
+   "entities": [
+    "Carl Craig"
+   ],
+   "day": "2026-11-28"
+  },
+  "b": {
+   "title": "Boiler Room NYC: Overmono",
+   "venue": "Knockdown Center",
+   "entities": [
+    "Overmono"
+   ],
+   "day": "2026-12-01"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Caribou album release show",
+   "venue": "Webster Hall",
+   "entities": [
+    "Caribou"
+   ],
+   "day": "2026-11-30"
+  },
+  "b": {
+   "title": "Caribou album release show",
+   "venue": "Fonda Theatre",
+   "entities": [
+    "Caribou"
+   ],
+   "day": "2026-12-03"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Warehouse Project Opening Night",
+   "venue": "Depot Mayfield",
+   "entities": [],
+   "day": "2026-10-02"
+  },
+  "b": {
+   "title": "Warehouse Project Closing Party",
+   "venue": "Depot Mayfield",
+   "entities": [],
+   "day": "2027-01-02"
+  }
+ },
+ {
+  "label": "different",
+  "a": {
+   "title": "Overmono live",
+   "venue": "Knockdown Center",
+   "entities": [
+    "Overmono"
+   ],
+   "day": "2026-12-01"
+  },
+  "b": {
+   "title": "Overmono live",
+   "venue": "Knockdown Center",
+   "entities": [
+    "Overmono"
+   ],
+   "day": "2026-12-20"
+  }
+ }
+]
