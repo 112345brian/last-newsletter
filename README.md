@@ -129,6 +129,13 @@ at it, close it" doesn't need a service kept alive in between.
 
 ```bash
 uv run --package last-newsletter-cli python -c "import last_newsletter_cli"  # builds the full graph into .venv
+make check   # test, lint, format-check, types, import-boundaries, arch — see Makefile
+```
+
+Each check also runs on its own (`make test`, `make lint`, `make format-check`, `make types`,
+`make import-boundaries`, `make arch`), which is what `make check` runs under the hood:
+
+```bash
 uv run --package last-newsletter-cli pytest   # every package's tests (fakes only — no network, no mailbox)
 uv run ruff check .                           # lint
 uv run ruff format --check .                  # formatting
