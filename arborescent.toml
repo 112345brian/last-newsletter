@@ -1,5 +1,5 @@
 # Layering and effect gate. Run from this directory:
-#   uv run --project ../arborescent arborescent --config arborescent.toml check
+#   uv sync --group arborescent && uv run --group arborescent arborescent --config arborescent.toml check
 # import-linter (pyproject.toml) still owns the package-level dependency contract; this file adds
 # what it cannot: every module must be in a ring, and the inner ring may not touch the clock,
 # the environment, randomness, sleeping, threads, subprocesses or dynamic imports.

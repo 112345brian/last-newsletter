@@ -13,6 +13,13 @@ dev = [
     "ruff",
     "ty",
 ]
+# Compiles arborescent.toml and enforces it: `uv run --group arborescent arborescent --config
+# arborescent.toml check`. Its own group, not part of `dev`, so the plain `uv sync --frozen` CI
+# runs stays unchanged. Install with `uv sync --group arborescent`.
+arborescent = ["arborescent[importlinter,ty,ruff]>=0.5"]
+
+[tool.uv.sources]
+arborescent = { git = "https://github.com/112345brian/arborescent.git", rev = "aff305fde7741f7f3ce2ca8dd5648f0e9963fd8c" }
 
 [tool.uv.workspace]
 members = [
