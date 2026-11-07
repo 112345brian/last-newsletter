@@ -14,6 +14,7 @@ members = [
     "last-newsletter",
     "last-newsletter-adapter-email",
     "last-newsletter-adapter-knowledge",
+    "last-newsletter-adapter-ledger",
     "last-newsletter-adapter-publish",
     "last-newsletter-adapter-semantic",
     "last-newsletter-adapter-storage",
@@ -772,6 +773,37 @@ dev = [
 requires-dist = [
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "text-match", editable = "libs/text_match" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[[package]]
+name = "last-newsletter-adapter-ledger"
+version = "0.1.0"
+source = { editable = "src/adapter_ledger" }
+dependencies = [
+    { name = "last-newsletter-core" },
+    { name = "process-lock" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "last-newsletter-core", editable = "src/core" },
+    { name = "process-lock", editable = "vendor/process_lock" },
 ]
 
 [package.metadata.requires-dev]
