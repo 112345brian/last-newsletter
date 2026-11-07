@@ -1,0 +1,928 @@
+{
+ "_source": "Snapshot of https://19hz.info/eventlisting_LosAngeles.php fetched 2026-11-07 (575 rows). Different-event pairs are real rows (recurring nights, same venue+day, same title other venue). Same-event pairs are real rows with a deterministic mechanical title paraphrase (not independently observed duplicates).",
+ "pairs": [
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Shikkoku Sunrise III - Scorpio Birthday Bash: Solypsis, Soiled Doilies, Rookestar, Terrn, Insufficient Despair, Stoned a",
+    "venue": "Coaxial",
+    "tags": [
+     "noise",
+     "live hardward",
+     "techno",
+     "experimental"
+    ],
+    "day": "2026-11-07"
+   },
+   "b": {
+    "title": "Shikkoku Sunrise III - Scorpio Birthday Bash: Solypsis, Soiled Doilies, Rookestar, Terrn, Insufficient Despair, Stoned at the Wake, las Marikas, DJ Hollywood Johnny",
+    "venue": "Coaxial",
+    "tags": [
+     "noise",
+     "live hardward",
+     "techno"
+    ],
+    "day": "2026-11-07"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Darude: The Hype Tour w/DJ Ideal, Nico Hartt, Xxxtina, Seekwl",
+    "venue": "Rich's",
+    "tags": [
+     "trance",
+     "progressive house"
+    ],
+    "day": "2026-11-07"
+   },
+   "b": {
+    "title": "DARUDE: THE HYPE TOUR W/DJ IDEAL, NICO HARTT, XXXTINA, SEEKWL",
+    "venue": "Rich's",
+    "tags": [
+     "trance",
+     "progressive house"
+    ],
+    "day": "2026-11-07"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Thomas Dolby - Iconic 80's Recollections Tour 2026 w/ DJ Vaughn Avakian",
+    "venue": "Music Box",
+    "tags": [
+     "synthpop"
+    ],
+    "day": "2026-11-09"
+   },
+   "b": {
+    "title": "Thomas Dolby - Iconic 80's Recollections Tour 2026 w/ DJ Vaughn Avakian at Music Box",
+    "venue": "Music Box",
+    "tags": [
+     "synthpop"
+    ],
+    "day": "2026-11-09"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Orsay, Charliee, G L'e P, Jmz, Shafa",
+    "venue": "7627 Sunset Boulevard",
+    "tags": [
+     "progressive house",
+     "tech house",
+     "indie dance"
+    ],
+    "day": "2026-11-12"
+   },
+   "b": {
+    "title": "Orsay, Charliee, G L'e P, Jmz, Shafa (tickets)",
+    "venue": "7627 Sunset Boulevard",
+    "tags": [
+     "progressive house",
+     "tech house"
+    ],
+    "day": "2026-11-12"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "DJ Soulslinger, DJ Wednesday, Lo!, Apx1, Bc Rydah, Drowncast",
+    "venue": "Soulwerks Studio",
+    "tags": [
+     "drum and bass",
+     "jungle"
+    ],
+    "day": "2026-11-13"
+   },
+   "b": {
+    "title": "Live: DJ Soulslinger, DJ Wednesday, Lo!, Apx1, Bc Rydah, Drowncast",
+    "venue": "Soulwerks Studio",
+    "tags": [
+     "drum and bass",
+     "jungle"
+    ],
+    "day": "2026-11-13"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Deorro, Alacranes Musical, Juos",
+    "venue": "North Island Credit Union Amphitheatre",
+    "tags": [
+     "latin club",
+     "big room house"
+    ],
+    "day": "2026-11-14"
+   },
+   "b": {
+    "title": "Deorro + Alacranes Musical + Juos",
+    "venue": "North Island Credit Union Amphitheatre",
+    "tags": [
+     "latin club",
+     "big room house"
+    ],
+    "day": "2026-11-14"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Domination",
+    "venue": "Drachaus",
+    "tags": [
+     "industrial",
+     "witch house",
+     "dark electro",
+     "darkwave",
+     "post-punk",
+     "goth rock",
+     "EBM"
+    ],
+    "day": "2026-11-14"
+   },
+   "b": {
+    "title": "Domination 2026",
+    "venue": "Drachaus",
+    "tags": [
+     "industrial",
+     "witch house",
+     "dark electro",
+     "darkwave",
+     "post-punk",
+     "goth rock"
+    ],
+    "day": "2026-11-14"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Dreamstate Socal 2026",
+    "venue": "Queen Mary Waterfront",
+    "tags": [
+     "trance",
+     "psytrance"
+    ],
+    "day": "2026-11-20"
+   },
+   "b": {
+    "title": "Dreamstate Socal 2026",
+    "venue": "Queen Mary Waterfront",
+    "tags": [
+     "trance",
+     "psytrance"
+    ],
+    "day": "2026-11-20"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Panic Room Feat. Shane Thomas, Rob Aquino & DJ Domke",
+    "venue": "TBA Silverlake",
+    "tags": [
+     "house",
+     "techno",
+     "club music",
+     "breaks"
+    ],
+    "day": "2026-11-20"
+   },
+   "b": {
+    "title": "PANIC ROOM FEAT. SHANE THOMAS, ROB AQUINO & DJ DOMKE",
+    "venue": "TBA Silverlake",
+    "tags": [
+     "house",
+     "techno",
+     "club music",
+     "breaks"
+    ],
+    "day": "2026-11-20"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Josh Baker, Sebs",
+    "venue": "Beach House",
+    "tags": [
+     "tech house"
+    ],
+    "day": "2026-11-22"
+   },
+   "b": {
+    "title": "Josh Baker, Sebs at Beach House",
+    "venue": "Beach House",
+    "tags": [
+     "tech house"
+    ],
+    "day": "2026-11-22"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Black House Radio",
+    "venue": "Camille's At The Bellwether",
+    "tags": [
+     "house"
+    ],
+    "day": "2026-11-27"
+   },
+   "b": {
+    "title": "Black House Radio (tickets)",
+    "venue": "Camille's At The Bellwether",
+    "tags": [
+     "house"
+    ],
+    "day": "2026-11-27"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "O'flynn",
+    "venue": "Sound Nightclub",
+    "tags": [
+     "house",
+     "uk garage",
+     "breaks",
+     "techno"
+    ],
+    "day": "2026-11-28"
+   },
+   "b": {
+    "title": "Live: O'flynn",
+    "venue": "Sound Nightclub",
+    "tags": [
+     "house",
+     "uk garage",
+     "breaks",
+     "techno"
+    ],
+    "day": "2026-11-28"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Hans Glader",
+    "venue": "Spin",
+    "tags": [
+     "uk garage"
+    ],
+    "day": "2026-12-05"
+   },
+   "b": {
+    "title": "Hans Glader !!",
+    "venue": "Spin",
+    "tags": [
+     "uk garage"
+    ],
+    "day": "2026-12-05"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Cyberpunk 2077 : Resist and Disorder",
+    "venue": "1720",
+    "tags": [
+     "synthwave",
+     "dubstep",
+     "pop EDM"
+    ],
+    "day": "2026-12-11"
+   },
+   "b": {
+    "title": "Cyberpunk 2077 : Resist and Disorder 2026",
+    "venue": "1720",
+    "tags": [
+     "synthwave",
+     "dubstep",
+     "pop EDM"
+    ],
+    "day": "2026-12-11"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Palms Beach Club w/ Rossi., Blaise Bracic, TA.",
+    "venue": "Beach House",
+    "tags": [
+     "house",
+     "tech house"
+    ],
+    "day": "2026-12-13"
+   },
+   "b": {
+    "title": "Palms Beach Club with Rossi., Blaise Bracic, TA.",
+    "venue": "Beach House",
+    "tags": [
+     "house",
+     "tech house"
+    ],
+    "day": "2026-12-13"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Svdden Death",
+    "venue": "Nova Sd",
+    "tags": [
+     "dubstep"
+    ],
+    "day": "2026-12-20"
+   },
+   "b": {
+    "title": "SVDDEN DEATH",
+    "venue": "Nova Sd",
+    "tags": [
+     "dubstep"
+    ],
+    "day": "2026-12-20"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "ARMNHMR",
+    "venue": "House Of Blues",
+    "tags": [
+     "pop EDM",
+     "big room house",
+     "trap",
+     "hip-hop"
+    ],
+    "day": "2027-01-02"
+   },
+   "b": {
+    "title": "ARMNHMR at House Of Blues",
+    "venue": "House Of Blues",
+    "tags": [
+     "pop EDM",
+     "big room house",
+     "trap",
+     "hip-hop"
+    ],
+    "day": "2027-01-02"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Swimming Paul",
+    "venue": "Shrine Expo Hall",
+    "tags": [
+     "house",
+     "uk garage"
+    ],
+    "day": "2027-01-23"
+   },
+   "b": {
+    "title": "Swimming Paul (tickets)",
+    "venue": "Shrine Expo Hall",
+    "tags": [
+     "house",
+     "uk garage"
+    ],
+    "day": "2027-01-23"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Carlita",
+    "venue": "Reframe Studios Indoors",
+    "tags": [
+     "house"
+    ],
+    "day": "2027-02-19"
+   },
+   "b": {
+    "title": "Live: Carlita",
+    "venue": "Reframe Studios Indoors",
+    "tags": [
+     "house"
+    ],
+    "day": "2027-02-19"
+   }
+  },
+  {
+   "label": "same",
+   "kind": "mechanical_paraphrase",
+   "a": {
+    "title": "Calvin Harris - North America Tour",
+    "venue": "Honda Center",
+    "tags": [
+     "house",
+     "pop EDM"
+    ],
+    "day": "2027-05-20"
+   },
+   "b": {
+    "title": "Calvin Harris - North America Tour !!",
+    "venue": "Honda Center",
+    "tags": [
+     "house",
+     "pop EDM"
+    ],
+    "day": "2027-05-20"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "recurring_night",
+   "a": {
+    "title": "Paradisco",
+    "venue": "Kiss Kiss Bang Bang",
+    "tags": [
+     "house",
+     "disco"
+    ],
+    "day": "2026-11-07"
+   },
+   "b": {
+    "title": "Paradisco",
+    "venue": "Kiss Kiss Bang Bang",
+    "tags": [
+     "house",
+     "disco"
+    ],
+    "day": "2026-12-12"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "recurring_night",
+   "a": {
+    "title": "Nightshift After Hours",
+    "venue": "The Lexington",
+    "tags": [
+     "tech house",
+     "minimal"
+    ],
+    "day": "2026-11-07"
+   },
+   "b": {
+    "title": "Nightshift After Hours",
+    "venue": "The Lexington",
+    "tags": [
+     "tech house",
+     "minimal"
+    ],
+    "day": "2026-11-08"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "recurring_night",
+   "a": {
+    "title": "Bonobo",
+    "venue": "The Wiltern",
+    "tags": [
+     "house",
+     "downtempo",
+     "uk garage"
+    ],
+    "day": "2026-11-11"
+   },
+   "b": {
+    "title": "Bonobo",
+    "venue": "The Wiltern",
+    "tags": [
+     "house",
+     "downtempo",
+     "uk garage"
+    ],
+    "day": "2026-11-12"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "recurring_night",
+   "a": {
+    "title": "Ninajirachi, Mgna Crrrta",
+    "venue": "Fonda Theatre",
+    "tags": [
+     "EDM",
+     "house",
+     "dubstep",
+     "drum and bass"
+    ],
+    "day": "2026-11-11"
+   },
+   "b": {
+    "title": "Ninajirachi, Mgna Crrrta",
+    "venue": "Fonda Theatre",
+    "tags": [
+     "EDM",
+     "house",
+     "dubstep",
+     "drum and bass"
+    ],
+    "day": "2026-11-12"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "recurring_night",
+   "a": {
+    "title": "Dance Electric",
+    "venue": "Kitsch Bar",
+    "tags": [
+     "future house",
+     "bass house",
+     "EDM"
+    ],
+    "day": "2026-11-12"
+   },
+   "b": {
+    "title": "Dance Electric",
+    "venue": "Kitsch Bar",
+    "tags": [
+     "future house",
+     "bass house",
+     "EDM"
+    ],
+    "day": "2026-12-10"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "recurring_night",
+   "a": {
+    "title": "Bolo",
+    "venue": "Hollywood Palladium",
+    "tags": [
+     "tech house"
+    ],
+    "day": "2026-11-19"
+   },
+   "b": {
+    "title": "Bolo",
+    "venue": "Hollywood Palladium",
+    "tags": [
+     "tech house"
+    ],
+    "day": "2026-11-21"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "recurring_night",
+   "a": {
+    "title": "Electric Ave.",
+    "venue": "Los Globos",
+    "tags": [
+     "house",
+     "tech house",
+     "EDM"
+    ],
+    "day": "2026-11-20"
+   },
+   "b": {
+    "title": "Electric Ave.",
+    "venue": "Los Globos",
+    "tags": [
+     "house",
+     "tech house",
+     "EDM"
+    ],
+    "day": "2026-11-27"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "recurring_night",
+   "a": {
+    "title": "Zhu",
+    "venue": "Reframe Studios Indoors",
+    "tags": [
+     "house",
+     "synthpop",
+     "downtempo"
+    ],
+    "day": "2026-12-04"
+   },
+   "b": {
+    "title": "Zhu",
+    "venue": "Reframe Studios Indoors",
+    "tags": [
+     "house",
+     "synthpop",
+     "downtempo"
+    ],
+    "day": "2026-12-05"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "recurring_night",
+   "a": {
+    "title": "Deorro Botas Y Rave",
+    "venue": "Grand Park",
+    "tags": [
+     "latin club",
+     "big room house",
+     "pop EDM"
+    ],
+    "day": "2026-12-05"
+   },
+   "b": {
+    "title": "Deorro Botas Y Rave",
+    "venue": "Grand Park",
+    "tags": [
+     "latin club",
+     "big room house",
+     "pop EDM"
+    ],
+    "day": "2026-12-06"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "recurring_night",
+   "a": {
+    "title": "Satin Jackets",
+    "venue": "The Venice West",
+    "tags": [
+     "house",
+     "nu-disco"
+    ],
+    "day": "2026-12-18"
+   },
+   "b": {
+    "title": "Satin Jackets",
+    "venue": "The Venice West",
+    "tags": [
+     "house",
+     "nu-disco"
+    ],
+    "day": "2026-12-19"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "recurring_night",
+   "a": {
+    "title": "Svdden Death",
+    "venue": "Nova Sd",
+    "tags": [
+     "dubstep"
+    ],
+    "day": "2026-12-19"
+   },
+   "b": {
+    "title": "Svdden Death",
+    "venue": "Nova Sd",
+    "tags": [
+     "dubstep"
+    ],
+    "day": "2026-12-20"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "recurring_night",
+   "a": {
+    "title": "ARMNHMR",
+    "venue": "House Of Blues",
+    "tags": [
+     "pop EDM",
+     "big room house",
+     "trap",
+     "hip-hop"
+    ],
+    "day": "2027-01-01"
+   },
+   "b": {
+    "title": "ARMNHMR",
+    "venue": "House Of Blues",
+    "tags": [
+     "pop EDM",
+     "big room house",
+     "trap",
+     "hip-hop"
+    ],
+    "day": "2027-01-02"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "same_venue_day",
+   "a": {
+    "title": "Clinic Wednesdays: Normalize, Electric Blaq, Bless Karl, Lunique, Supernova, Darius, Macheko",
+    "venue": "Jungle Hollywood",
+    "tags": [
+     "tech house"
+    ],
+    "day": "2026-11-11"
+   },
+   "b": {
+    "title": "Vertical: Oliver Koletzki, Niko Schwind",
+    "venue": "Jungle Hollywood",
+    "tags": [
+     "progressive house",
+     "afro house"
+    ],
+    "day": "2026-11-11"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "same_venue_day",
+   "a": {
+    "title": "Suzy Sheer, Patch+",
+    "venue": "1720",
+    "tags": [
+     "electropop",
+     "synthpop",
+     "electroclash",
+     "synthwave"
+    ],
+    "day": "2026-11-14"
+   },
+   "b": {
+    "title": "Sisto: Devour, Muerte",
+    "venue": "1720",
+    "tags": [
+     "dubstep",
+     "bass music"
+    ],
+    "day": "2026-11-14"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "same_venue_day",
+   "a": {
+    "title": "House Worx (High Octane House Anthems - All Nite Long)",
+    "venue": "Catch One",
+    "tags": [
+     "tech house",
+     "big room house",
+     "EDM"
+    ],
+    "day": "2026-11-20"
+   },
+   "b": {
+    "title": "Iheartwubz",
+    "venue": "Catch One",
+    "tags": [
+     "dubstep",
+     "bass music",
+     "riddim",
+     "melodic dubstep"
+    ],
+    "day": "2026-11-20"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "same_venue_day",
+   "a": {
+    "title": "Boy2000",
+    "venue": "El Cid",
+    "tags": [
+     "lofi house",
+     "synthwave",
+     "breaks"
+    ],
+    "day": "2026-12-03"
+   },
+   "b": {
+    "title": "Anna Luna",
+    "venue": "El Cid",
+    "tags": [
+     "synthpop",
+     "witch house",
+     "ambient",
+     "shoegaze",
+     "leftfield"
+    ],
+    "day": "2026-12-03"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "same_title_other_venue",
+   "a": {
+    "title": "Electrik Seoul",
+    "venue": "Exchange",
+    "tags": [
+     "kpop",
+     "EDM"
+    ],
+    "day": "2026-11-07"
+   },
+   "b": {
+    "title": "Electrik Seoul",
+    "venue": "Nova Sd",
+    "tags": [
+     "kpop",
+     "EDM"
+    ],
+    "day": "2026-11-21"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "same_title_other_venue",
+   "a": {
+    "title": "Diplo Run Club",
+    "venue": "LA River",
+    "tags": [
+     "big room",
+     "pop EDM",
+     "house",
+     "trap",
+     "hip-hop"
+    ],
+    "day": "2026-11-08"
+   },
+   "b": {
+    "title": "Diplo Run Club",
+    "venue": "Gallagher Square at Petco Park",
+    "tags": [
+     "big room",
+     "pop EDM",
+     "house",
+     "trap",
+     "hip-hop"
+    ],
+    "day": "2026-11-21"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "same_title_other_venue",
+   "a": {
+    "title": "Rave Jesus - Rave Revival Fall Tour",
+    "venue": "House Of Blues",
+    "tags": [
+     "house",
+     "christian EDM"
+    ],
+    "day": "2026-11-12"
+   },
+   "b": {
+    "title": "Rave Jesus - Rave Revival Fall Tour",
+    "venue": "Teragram Ballroom",
+    "tags": [
+     "house",
+     "christian EDM"
+    ],
+    "day": "2026-12-19"
+   }
+  },
+  {
+   "label": "different",
+   "kind": "same_title_other_venue",
+   "a": {
+    "title": "Sina Bathaie",
+    "venue": "The Vermont",
+    "tags": [
+     "live electronic",
+     "world music"
+    ],
+    "day": "2026-11-12"
+   },
+   "b": {
+    "title": "Sina Bathaie",
+    "venue": "Quartyard",
+    "tags": [
+     "live electronic",
+     "world music"
+    ],
+    "day": "2026-11-14"
+   }
+  }
+ ]
+}
