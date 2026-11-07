@@ -28,6 +28,7 @@ members = [
     "packages/libraries",
     "packages/text_match",
     "packages/mailtext",
+    "packages/llmhost",
 ]
 
 [tool.ruff]
@@ -82,6 +83,7 @@ root_packages = [
     "last_newsletter_cli",
     "text_match",
     "mailtext",
+    "llmhost",
 ]
 
 [[tool.importlinter.contracts]]
@@ -90,5 +92,5 @@ type = "layers"
 layers = [
     "last_newsletter_cli",
     "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge",
-    "last_newsletter_core | text_match | mailtext",
+    "last_newsletter_core | text_match | mailtext | llmhost",
 ]

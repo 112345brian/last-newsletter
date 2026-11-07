@@ -1,39 +1,39 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from last_newsletter_adapter_summarizer.anthropic_summarizer import AnthropicSummarizer
 from last_newsletter_core.entities import EmailMessage, Theme
+from llmhost import CompletionResult, Usage
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from llmhost import CompletionRequest
 
 
-@dataclass
-class _FakeToolUseBlock:
-    input: dict[str, Any]
-    type: str = "tool_use"
-
-
-@dataclass
-class _FakeMessage:
-    content: list[_FakeToolUseBlock]
-
-
-class FakeMessagesClient:
-    """A fake matching _MessagesClient's interface: no network, no real API call."""
+class FakeProvider:
+    """A fake matching llmhost.Provider's interface: no network, no real API call."""
 
     def __init__(self, themes: list[dict[str, Any]]) -> None:
         self._themes = themes
-        self.create_calls: list[dict[str, Any]] = []
+        self.complete_calls: list[CompletionRequest] = []
 
-    def create(self, **kwargs: Any) -> _FakeMessage:  # noqa: ANN401
-        self.create_calls.append(kwargs)
-        return _FakeMessage(content=[_FakeToolUseBlock(input={"themes": self._themes})])
+    def complete_with_tool(self, request: CompletionRequest) -> CompletionResult:
+        self.complete_calls.append(request)
+        return CompletionResult(
+            tool_input={"themes": self._themes},
+            usage=Usage(model="fake-model", input_tokens=10, output_tokens=5),
+        )
 
 
-class FakeAnthropicClient:
-    def __init__(self, themes: list[dict[str, Any]]) -> None:
-        self.messages = FakeMessagesClient(themes)
+def _summarizer(
+    themes: list[dict[str, Any]],
+    **kwargs: Any,  # noqa: ANN401
+) -> tuple[AnthropicSummarizer, FakeProvider]:
+    provider = FakeProvider(themes)
+    return AnthropicSummarizer(_provider_override=provider, **kwargs), provider
 
 
 def _message(message_id: str = "<1@example.com>") -> EmailMessage:
@@ -48,17 +48,16 @@ def _message(message_id: str = "<1@example.com>") -> EmailMessage:
 
 
 def test_summarize_with_no_messages_and_no_prior_themes_skips_the_api_call() -> None:
-    client = FakeAnthropicClient(themes=[])
-    summarizer = AnthropicSummarizer(client=client)
+    summarizer, provider = _summarizer(themes=[])
 
     result = summarizer.summarize([], prior_themes=[], today=date(2026, 1, 5))
 
     assert result == []
-    assert client.messages.create_calls == []
+    assert provider.complete_calls == []
 
 
 def test_summarize_parses_a_new_theme_from_the_tool_response() -> None:
-    client = FakeAnthropicClient(
+    summarizer, provider = _summarizer(
         themes=[
             {
                 "title": "Rust 2.0 released",
@@ -70,7 +69,6 @@ def test_summarize_parses_a_new_theme_from_the_tool_response() -> None:
             }
         ]
     )
-    summarizer = AnthropicSummarizer(client=client)
     message = _message()
 
     [theme] = summarizer.summarize([message], prior_themes=[], today=date(2026, 1, 5))
@@ -81,7 +79,7 @@ def test_summarize_parses_a_new_theme_from_the_tool_response() -> None:
     assert theme.streak == 1
     assert theme.carried_forward is False
     assert theme.first_seen == date(2026, 1, 5)
-    assert client.messages.create_calls[0]["model"] == summarizer._model  # noqa: SLF001
+    assert provider.complete_calls[0].model == summarizer._model  # noqa: SLF001
 
 
 def test_summarize_bumps_streak_for_a_carried_forward_theme() -> None:
@@ -93,7 +91,7 @@ def test_summarize_bumps_streak_for_a_carried_forward_theme() -> None:
         first_seen=date(2025, 12, 29),
         streak=2,
     )
-    client = FakeAnthropicClient(
+    summarizer, _provider = _summarizer(
         themes=[
             {
                 "title": "Rust 2.0 adoption",
@@ -105,7 +103,6 @@ def test_summarize_bumps_streak_for_a_carried_forward_theme() -> None:
             }
         ]
     )
-    summarizer = AnthropicSummarizer(client=client)
 
     [theme] = summarizer.summarize([], prior_themes=[prior], today=date(2026, 1, 5))
 
@@ -115,7 +112,7 @@ def test_summarize_bumps_streak_for_a_carried_forward_theme() -> None:
 
 
 def test_summarize_parses_relevant_until() -> None:
-    client = FakeAnthropicClient(
+    summarizer, _provider = _summarizer(
         themes=[
             {
                 "title": "PyCon 2026",
@@ -127,7 +124,6 @@ def test_summarize_parses_relevant_until() -> None:
             }
         ]
     )
-    summarizer = AnthropicSummarizer(client=client)
 
     [theme] = summarizer.summarize([_message()], prior_themes=[], today=date(2026, 1, 5))
 
@@ -135,7 +131,7 @@ def test_summarize_parses_relevant_until() -> None:
 
 
 def test_summarize_ignores_an_unparseable_relevant_until() -> None:
-    client = FakeAnthropicClient(
+    summarizer, _provider = _summarizer(
         themes=[
             {
                 "title": "Something",
@@ -147,8 +143,29 @@ def test_summarize_ignores_an_unparseable_relevant_until() -> None:
             }
         ]
     )
-    summarizer = AnthropicSummarizer(client=client)
 
     [theme] = summarizer.summarize([_message()], prior_themes=[], today=date(2026, 1, 5))
 
     assert theme.relevant_until is None
+
+
+def test_summarize_records_usage_when_a_ledger_path_is_given(tmp_path: Path) -> None:
+    ledger_path = tmp_path / "usage.jsonl"
+    summarizer, _provider = _summarizer(
+        themes=[
+            {
+                "title": "Something",
+                "summary": "Summary.",
+                "source_message_ids": ["<1@example.com>"],
+                "theme_key": None,
+                "relevant_until": None,
+                "carried_forward": False,
+            }
+        ],
+        usage_ledger_path=ledger_path,
+    )
+
+    summarizer.summarize([_message()], prior_themes=[], today=date(2026, 1, 5))
+
+    assert ledger_path.exists()
+    assert "fake-model" in ledger_path.read_text()

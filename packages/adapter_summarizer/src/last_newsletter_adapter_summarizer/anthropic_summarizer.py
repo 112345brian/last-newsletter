@@ -1,42 +1,28 @@
-"""Concrete Summarizer: groups messages into cross-source themes via the Claude API.
+"""Concrete Summarizer: groups messages into cross-source themes via an LLM.
 
-Bring-your-own API key (ANTHROPIC_API_KEY env var) — nothing is sent to a third-party
-SaaS backend other than the model provider the user configures.
-
-The model is forced (via `tool_choice`) to call a single tool whose schema mirrors the
-themes we need back, so the response is structured JSON rather than prose we'd have to
-parse. Everything the use case computes mechanically (`source_count` via `_verified`,
-ranking) is left to it; this adapter only resolves what's semantic: which themes exist,
-which prior ones continue (by matching `theme_key`), and each one's `streak`/`first_seen`.
+The actual provider call, and recording what it cost, is `llmhost`'s job (provider
+chosen by name, Claude by default, bring-your-own-key, nothing sent to a third-party
+SaaS backend other than the model provider the user configures) — this module is the
+newsletter-specific half: the tool schema to ask for, and resolving what comes back
+into `Theme`s. Everything the use case computes mechanically (`source_count` via
+`_verified`, ranking) is left to it; this adapter only resolves what's semantic: which
+themes exist, which prior ones continue (by matching `theme_key`), and each one's
+`streak`/`first_seen`.
 """
 
 from __future__ import annotations
 
-import json
-from datetime import date
-from typing import TYPE_CHECKING, Any, Protocol, cast
-
-import anthropic
+from datetime import UTC, date, datetime
+from typing import TYPE_CHECKING, Any
 
 from last_newsletter_core.entities import Theme
+from llmhost import CompletionRequest, record_usage, resolve
 
 if TYPE_CHECKING:
-    from anthropic.types import Message, ToolParam
+    from pathlib import Path
 
     from last_newsletter_core.entities import EmailMessage
-
-
-class _MessagesClient(Protocol):
-    def create(self, **kwargs: Any) -> Message: ...  # noqa: ANN401
-
-
-class _AnthropicClient(Protocol):
-    """The subset of anthropic.Anthropic's interface this adapter needs -- small enough to
-    fake in tests instead of calling the real API."""
-
-    @property
-    def messages(self) -> _MessagesClient: ...
-
+    from llmhost import Provider
 
 _TOOL_NAME = "record_themes"
 _BODY_EXCERPT_CHARS = 1500
@@ -161,17 +147,31 @@ def _to_theme(raw: dict[str, Any], prior_by_key: dict[str, Theme], today: date) 
 
 
 class AnthropicSummarizer:
-    """Implements last_newsletter_core.ports.Summarizer."""
+    """Implements last_newsletter_core.ports.Summarizer.
+
+    Named for the default provider, not the mechanism: the actual call goes through
+    `llmhost`'s provider registry (`provider` is a name it resolves, e.g. "claude"),
+    so a future `LAST_NEWSLETTER_LLM_PROVIDER=openai` is a config change here, not a
+    rewrite.
+    """
 
     def __init__(
-        self, model: str = "claude-sonnet-5-5", *, client: _AnthropicClient | None = None
+        self,
+        model: str = "claude-sonnet-5-5",
+        *,
+        provider: str = "claude",
+        usage_ledger_path: Path | None = None,
+        _provider_override: Provider | None = None,
     ) -> None:
-        """`client` defaults to a real `anthropic.Anthropic()` (reads `ANTHROPIC_API_KEY` from
-        the environment); tests pass a fake instead."""
+        """`usage_ledger_path`, if given, gets one `llmhost.record_usage` line per call.
+        `_provider_override` is test-only -- production code gets its provider from
+        `llmhost.resolve(provider)`."""
         self._model = model
-        self._client: _AnthropicClient = (
-            client if client is not None else cast("_AnthropicClient", anthropic.Anthropic())
+        self._provider_name = provider
+        self._provider: Provider = (
+            _provider_override if _provider_override is not None else resolve(provider)
         )
+        self._usage_ledger_path = usage_ledger_path
 
     def summarize(
         self, messages: list[EmailMessage], *, prior_themes: list[Theme], today: date
@@ -184,17 +184,26 @@ class AnthropicSummarizer:
             f"Prior period's still-eligible themes:\n{_format_prior_themes(prior_themes)}\n\n"
             f"This period's fetched messages:\n{_format_messages(messages)}"
         )
-        response = self._client.messages.create(
-            model=self._model,
-            max_tokens=4096,
-            system=_SYSTEM_PROMPT,
-            tools=[cast("ToolParam", _TOOL_SCHEMA)],
-            tool_choice={"type": "tool", "name": _TOOL_NAME},
-            messages=[{"role": "user", "content": user_prompt}],
+        result = self._provider.complete_with_tool(
+            CompletionRequest(
+                model=self._model,
+                system=_SYSTEM_PROMPT,
+                user_message=user_prompt,
+                tool_schema=_TOOL_SCHEMA,
+                tool_name=_TOOL_NAME,
+                max_tokens=4096,
+            )
         )
+        if self._usage_ledger_path is not None:
+            record_usage(
+                self._usage_ledger_path,
+                provider=self._provider_name,
+                purpose="summarize",
+                usage=result.usage,
+                at=datetime.now(tz=UTC),
+            )
 
-        tool_use = next(block for block in response.content if block.type == "tool_use")
-        raw_themes = json.loads(json.dumps(tool_use.input)).get("themes", [])
+        raw_themes = result.tool_input.get("themes", [])
         prior_by_key = {
             theme.theme_key: theme for theme in prior_themes if theme.theme_key is not None
         }

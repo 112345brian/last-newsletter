@@ -59,7 +59,10 @@ def _build_use_case() -> BuildDigestUseCase:
             password=os.environ["LAST_NEWSLETTER_IMAP_PASSWORD"],
         )
     )
-    summarizer = AnthropicSummarizer()
+    summarizer = AnthropicSummarizer(
+        provider=os.environ.get("LAST_NEWSLETTER_LLM_PROVIDER", "claude"),
+        usage_ledger_path=_DATA_DIR / "usage.jsonl",
+    )
     publisher = MarkdownPublisher(output_dir=_DATA_DIR / "markdown")
     return BuildDigestUseCase(
         email_source,

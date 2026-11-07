@@ -18,6 +18,7 @@ members = [
     "last-newsletter-adapter-web",
     "last-newsletter-cli",
     "last-newsletter-core",
+    "llmhost",
     "mailtext",
     "text-match",
 ]
@@ -769,8 +770,8 @@ name = "last-newsletter-adapter-summarizer"
 version = "0.1.0"
 source = { editable = "packages/adapter_summarizer" }
 dependencies = [
-    { name = "anthropic" },
     { name = "last-newsletter-core" },
+    { name = "llmhost" },
 ]
 
 [package.dev-dependencies]
@@ -783,8 +784,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anthropic", specifier = ">=0.40" },
     { name = "last-newsletter-core", editable = "packages/core" },
+    { name = "llmhost", editable = "packages/llmhost" },
 ]
 
 [package.metadata.requires-dev]
@@ -881,6 +882,33 @@ dev = [
 ]
 
 [package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[[package]]
+name = "llmhost"
+version = "0.1.0"
+source = { editable = "packages/llmhost" }
+dependencies = [
+    { name = "anthropic" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "anthropic", specifier = ">=0.40" }]
 
 [package.metadata.requires-dev]
 dev = [
