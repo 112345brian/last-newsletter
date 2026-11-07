@@ -154,6 +154,9 @@ def _candidate(event: RawEvent, message_id: str, home_tz: str) -> EventCandidate
         )
         if value.strip()
     ]
+    if event.cancelled and "is_cancelled" not in _FIELDS:
+        # Never let a cancellation look like a live event: say so until core has a flag.
+        details.insert(0, "CANCELLED")
     candidate = EventCandidate(
         message_id=message_id,
         title=event.title.strip(),
