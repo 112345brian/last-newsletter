@@ -1,16 +1,7 @@
 # text_normalize
 
-Stable comparison keys for free text and organisation names. Standard library only.
+Normalize free text and organisation names into stable comparison keys (text, space, fold, words, slug, org).
 
-```
-text_normalize @ git+https://github.com/112345brian/bripe-job-search.git@<sha>#subdirectory=libs/text_normalize
-```
+Source of truth for this library. Consumers vendor it with `dfetch` pinned to a tag; do not edit the vendored copy.
 
-```python
-from text_normalize import normalize, normalize_org
-
-normalize("R&D Lead (Remote)")            # "r d lead remote"   (kinds: text, space, fold, words, slug)
-normalize_org("Foo Co., Ltd.", legal_suffixes={"co", "ltd", "inc"})   # "foo"
-```
-
-The legal-suffix set is passed in; the lib has no vocabulary data.
+    uv run pytest

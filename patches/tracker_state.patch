@@ -1,0 +1,28 @@
+--- a/src/tracker_state/__init__.py
++++ b/src/tracker_state/__init__.py
+@@ -1 +1,3 @@
+ """The tracker contract's record and action shapes: generic, I/O-free (docs/tracker-contract.md)."""
++
++__arbor__ = {"ring": "core"}
+--- a/src/tracker_state/contract.py
++++ b/src/tracker_state/contract.py
+@@ -13,6 +13,8 @@
+ spec, so a wrong write cannot get through even if the spec above it is wrong.
+ """
+ from __future__ import annotations
++
++__arbor__ = {"ring": "core"}
+ 
+ from collections.abc import Mapping, Sequence
+ from dataclasses import dataclass, field
+--- a/src/tracker_state/user_state_transition.py
++++ b/src/tracker_state/user_state_transition.py
+@@ -40,6 +40,8 @@
+ only those differ; that is the store's call, not a rule about completed/dismissed.
+ """
+ from __future__ import annotations
++
++__arbor__ = {"ring": "core"}
+ 
+ from collections.abc import Mapping
+ from dataclasses import dataclass, field, replace

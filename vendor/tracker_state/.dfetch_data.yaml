@@ -1,0 +1,10 @@
+# This is a generated file by dfetch. Don't edit this, but edit the manifest.
+# For more info see https://dfetch.rtfd.io/en/latest/getting_started.html
+dfetch:
+  branch: main
+  hash: 3423e72e9d113c934ed3d64071c7cc82
+  last_fetch: 07/11/2026, 21:33:20
+  patch: patches/tracker_state.patch
+  remote_url: https://github.com/112345brian/tracker-state.git
+  revision: ''
+  tag: v0.1.0

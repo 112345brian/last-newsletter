@@ -1,11 +1,7 @@
 # usage_ledger_port
 
-The LLM usage ledger as a budget gate sees it. Standard library only.
+The usage-ledger port: a Protocol for reading ledger rows and recording a skipped-for-budget row, plus a bind slot that fails loudly when unbound.
 
-```
-usage_ledger_port @ git+https://github.com/112345brian/bripe-job-search.git@<sha>#subdirectory=libs/usage_ledger_port
-```
+Source of truth for this library. Consumers vendor it with `dfetch` pinned to a tag; do not edit the vendored copy.
 
-- `UsageLedger` (Protocol): `load_rows()` and `record_budget_skip(...)`.
-- `UsageLedgerSlot`: holds the bound ledger; `get()` raises `UsageLedgerNotBound` when none is, so an unbound process
-  cannot read "no spend". The application creates the slot and decides who binds it.
+    uv run pytest

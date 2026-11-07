@@ -1,0 +1,10 @@
+# This is a generated file by dfetch. Don't edit this, but edit the manifest.
+# For more info see https://dfetch.rtfd.io/en/latest/getting_started.html
+dfetch:
+  branch: main
+  hash: 881d548ee3fec0b4e7d162852647747f
+  last_fetch: 07/11/2026, 21:33:18
+  patch: patches/durable_outbox.patch
+  remote_url: https://github.com/112345brian/durable-outbox.git
+  revision: ''
+  tag: v0.1.1

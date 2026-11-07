@@ -1,0 +1,10 @@
+# This is a generated file by dfetch. Don't edit this, but edit the manifest.
+# For more info see https://dfetch.rtfd.io/en/latest/getting_started.html
+dfetch:
+  branch: main
+  hash: 8ffef6539de1f23a7ddaf695e069d5c7
+  last_fetch: 07/11/2026, 21:33:10
+  patch: patches/text_normalize.patch
+  remote_url: https://github.com/112345brian/text-normalize.git
+  revision: ''
+  tag: v0.1.0

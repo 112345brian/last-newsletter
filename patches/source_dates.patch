@@ -1,0 +1,17 @@
+--- a/src/source_dates/__init__.py
++++ b/src/source_dates/__init__.py
+@@ -1 +1,3 @@
+ """Resolve source-reported dates against their observation time."""
++
++__arbor__ = {"ring": "adapters"}
+--- a/src/source_dates/resolver.py
++++ b/src/source_dates/resolver.py
+@@ -7,6 +7,8 @@
+ Freshness: checked 2026-09-28; recheck by 2027-01-28. See freshness.json.
+ """
+ from __future__ import annotations
++
++__arbor__ = {"ring": "adapters"}
+ 
+ import re
+ from datetime import date, datetime

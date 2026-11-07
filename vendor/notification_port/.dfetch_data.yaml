@@ -1,0 +1,10 @@
+# This is a generated file by dfetch. Don't edit this, but edit the manifest.
+# For more info see https://dfetch.rtfd.io/en/latest/getting_started.html
+dfetch:
+  branch: main
+  hash: 7ce5e86b2d85949e20e3dc0234d1dd21
+  last_fetch: 07/11/2026, 21:33:12
+  patch: patches/notification_port.patch
+  remote_url: https://github.com/112345brian/notification-port.git
+  revision: ''
+  tag: v0.1.0
