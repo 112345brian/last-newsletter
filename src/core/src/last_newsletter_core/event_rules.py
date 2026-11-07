@@ -24,6 +24,7 @@ from last_newsletter_core.events import (
     PartialWhen,
     Timed,
     has_control_characters,
+    local_date,
     require_aware,
 )
 
@@ -165,7 +166,14 @@ def resolve_when(
         before_cutoff = cutoff is not None and chosen < cutoff
     else:
         start = datetime.combine(chosen, partial.time.replace(tzinfo=None), tzinfo=zone)
-        when = Timed(start=start, tz_name=zone.key)
+        end = None
+        if partial.end_time is not None:
+            end = datetime.combine(chosen, partial.end_time.replace(tzinfo=None), tzinfo=zone)
+            if end <= start:  # "1:30am-5am" style ranges can also be "10pm-2am"
+                end = datetime.combine(
+                    chosen + timedelta(days=1), partial.end_time.replace(tzinfo=None), tzinfo=zone
+                )
+        when = Timed(start=start, tz_name=zone.key, end=end)
         before_cutoff = not allow_past and start < now - PAST_GRACE
     return RejectReason.PAST_DATE if before_cutoff else when
 
@@ -192,7 +200,17 @@ def _screen(
     """Cheap checks on the text fields, in a fixed order. None means they are fine."""
     if not title:
         return RejectReason.BLANK_TITLE
-    texts = [title, candidate.summary, candidate.evidence, candidate.uid or "", candidate.url or ""]
+    texts = [
+        title,
+        candidate.summary,
+        candidate.evidence,
+        candidate.uid or "",
+        candidate.url or "",
+        candidate.city,
+        candidate.price,
+        candidate.age,
+        *candidate.tags,
+    ]
     if candidate.when is not None:
         texts.append(candidate.when.raw_text)
     if entities is None or any(has_control_characters(t) for t in texts):
@@ -245,4 +263,9 @@ def validate_candidate(
         uid=(candidate.uid or "").strip() or None,
         sequence=max(candidate.sequence, 0),
         url=canonical_url(candidate.url) if candidate.url is not None else None,
+        city=" ".join(candidate.city.split()),
+        tags=frozenset(t.strip() for t in candidate.tags if t.strip()),
+        price=" ".join(candidate.price.split()),
+        age=" ".join(candidate.age.split()),
+        night_of=local_date(when) - timedelta(days=1) if candidate.when.late_night else None,
     )

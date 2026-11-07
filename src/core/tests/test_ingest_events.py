@@ -26,7 +26,9 @@ from last_newsletter_core.events import (
     ItemState,
     MatchRule,
     PartialWhen,
+    RawRef,
 )
+from last_newsletter_core.raw_store import InMemoryRawMessageStore
 from last_newsletter_core.use_cases import IngestEvents, IngestPorts, IngestResult
 
 _NOW = datetime(2026, 11, 6, 12, 0, tzinfo=UTC)
@@ -304,3 +306,38 @@ def test_custom_similar_index_is_used_and_fed_new_events() -> None:
     )
     result = use_case.ingest([_message()], now=_NOW)
     assert index.indexed == list(result.created_ids)
+
+
+def test_raw_message_is_stored_and_referenced_from_the_mention() -> None:
+    raw = InMemoryRawMessageStore()
+    repo = InMemoryEventRepository()
+    ports = IngestPorts(
+        repository=repo,
+        reader=ScriptedReader(),
+        extractor=ScriptedExtractor([_candidate()]),
+        ids=SequentialIds(),
+        raw_store=raw,
+    )
+    result = IngestEvents(ports, home_tz=_TZ).ingest([_message()], now=_NOW)
+    assert result.created == 1
+    (event,) = repo.events.values()
+    ref = event.mentions[0].raw_ref
+    assert ref is not None
+    stored = raw.get(ref)
+    assert stored is not None
+    assert stored.message_id == "m1"
+    assert raw.put(_message()) == ref  # idempotent
+    assert raw.get(RawRef("nope")) is None
+
+
+def test_listing_fields_reach_the_stored_event() -> None:
+    candidate = _candidate(city="Los Angeles", tags=frozenset({"house"}), price="$20", age="21+")
+    use_case, repo = _use_case(extractor=ScriptedExtractor([candidate]))
+    assert use_case.ingest([_message()], now=_NOW).created == 1
+    (event,) = repo.events.values()
+    assert (event.city, event.tags, event.price, event.age) == (
+        "Los Angeles",
+        frozenset({"house"}),
+        "$20",
+        "21+",
+    )

@@ -31,9 +31,10 @@ if TYPE_CHECKING:
         EventExtractor,
         EventRepository,
         IdGenerator,
+        RawMessageStore,
         SimilarEventIndex,
     )
-    from last_newsletter_core.events import EventCandidate, EventDraft, EventId
+    from last_newsletter_core.events import EventCandidate, EventDraft, EventId, RawRef
 
 _SIMILAR_LIMIT = 5
 _WINDOW = timedelta(days=1)
@@ -81,11 +82,12 @@ class _Tally:
         )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class _Run:
     now: datetime
     index: SimilarEventIndex
     tally: _Tally
+    raw_refs: dict[str, RawRef] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,6 +100,7 @@ class IngestPorts:
     extractor: EventExtractor
     ids: IdGenerator
     similar_index: SimilarEventIndex | None = None
+    raw_store: RawMessageStore | None = None
 
 
 class IngestEvents:
@@ -109,6 +112,7 @@ class IngestEvents:
         self._extractor = ports.extractor
         self._ids = ports.ids
         self._index = ports.similar_index
+        self._raw_store = ports.raw_store
         self._home_tz = home_tz
         self._policy = policy or IdentityPolicy()
 
@@ -131,6 +135,8 @@ class IngestEvents:
 
         needs_extraction: dict[str, EmailMessage] = {}
         for message in by_id.values():
+            if self._raw_store is not None:
+                run.raw_refs[message.message_id] = self._raw_store.put(message)
             candidates = self._reader.read(message)
             for candidate in candidates:
                 self._process(candidate, {message.message_id: message}, run, check_evidence=False)
@@ -209,7 +215,9 @@ class IngestEvents:
         run: _Run,
     ) -> None:
         event_id = self._ids.new_event_id()
-        mention = _mention(draft, message, MatchRule.NEW, event_id)
+        mention = _mention(
+            draft, message, MatchRule.NEW, event_id, run.raw_refs.get(message.message_id)
+        )
         event = Event(
             id=event_id,
             kind=draft.kind,
@@ -224,6 +232,11 @@ class IngestEvents:
             uid=draft.uid,
             sequence=draft.sequence,
             url=draft.url,
+            city=draft.city,
+            tags=draft.tags,
+            price=draft.price,
+            age=draft.age,
+            night_of=draft.night_of,
         )
         self._repository.upsert(event)
         run.index.index(event)
@@ -253,7 +266,9 @@ class IngestEvents:
         ):
             run.tally.unchanged += 1
             return
-        mention = _mention(draft, message, decision.rule, existing.id)
+        mention = _mention(
+            draft, message, decision.rule, existing.id, run.raw_refs.get(message.message_id)
+        )
         if decision.rule is MatchRule.UID and draft.sequence > existing.sequence:
             # A higher SEQUENCE updates the facts; owner state and history are kept.
             updated = replace(
@@ -264,6 +279,11 @@ class IngestEvents:
                 when=draft.when,
                 entities=draft.entities,
                 url=draft.url or existing.url,
+                city=draft.city,
+                tags=draft.tags,
+                price=draft.price,
+                age=draft.age,
+                night_of=draft.night_of,
                 sequence=draft.sequence,
                 mentions=(*existing.mentions, mention),
                 last_seen=max(existing.last_seen, mention.seen_at),
@@ -276,7 +296,11 @@ class IngestEvents:
 
 
 def _mention(
-    draft: EventDraft, message: EmailMessage, rule: MatchRule, event_id: EventId
+    draft: EventDraft,
+    message: EmailMessage,
+    rule: MatchRule,
+    event_id: EventId,
+    raw_ref: RawRef | None,
 ) -> Mention:
     return Mention(
         message_id=message.message_id,
@@ -286,4 +310,5 @@ def _mention(
         match_rule=rule,
         cited_event_id=event_id,
         raw_date_text=draft.raw_date_text,
+        raw_ref=raw_ref,
     )

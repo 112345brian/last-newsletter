@@ -1,5 +1,5 @@
 from dataclasses import replace
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 
 import pytest
 
@@ -19,6 +19,7 @@ from last_newsletter_core.events import (
     EventKind,
     PartialWhen,
     Timed,
+    local_date,
 )
 
 _NOW = datetime(2026, 11, 6, 12, 0, tzinfo=UTC)
@@ -222,3 +223,60 @@ def test_invalid_url_is_dropped_not_fatal() -> None:
     draft = _validate(_candidate(url="javascript:alert(1)"))
     assert not isinstance(draft, RejectReason)
     assert draft.url is None
+
+
+def test_listing_fields_are_carried_and_cleaned() -> None:
+    draft = _validate(
+        _candidate(
+            city=" Los  Angeles ",
+            tags=frozenset({" house ", "", "techno"}),
+            price="$20 |  21+",
+            age="21+",
+            entities=(EntityRef(name="Org Crew", role=EntityRole.ORGANIZER),),
+        )
+    )
+    assert not isinstance(draft, RejectReason)
+    assert (draft.city, draft.price, draft.age) == ("Los Angeles", "$20 | 21+", "21+")
+    assert draft.tags == frozenset({"house", "techno"})
+    assert draft.entities[0].role is EntityRole.ORGANIZER
+
+
+@pytest.mark.parametrize("field", ["city", "price", "age"])
+def test_control_characters_in_listing_fields_are_rejected(field: str) -> None:
+    assert _validate(_candidate(**{field: "x\x00"})) is RejectReason.CONTROL_CHARACTERS
+    assert _validate(_candidate(tags=frozenset({"a\x00"}))) is RejectReason.CONTROL_CHARACTERS
+
+
+def test_after_midnight_range_keeps_listed_date_and_night_of() -> None:
+    # "Sat Nov 7 1:30am-5am" in a list is Friday night's event.
+    draft = _validate(
+        _candidate(
+            when=PartialWhen(
+                year=2026,
+                month=11,
+                day=7,
+                time=time(1, 30),
+                end_time=time(5, 0),
+                late_night=True,
+                tz="America/Los_Angeles",
+            ),
+            evidence="Band at Venue, Dec 12",
+        )
+    )
+    assert not isinstance(draft, RejectReason)
+    assert isinstance(draft.when, Timed)
+    assert draft.when.end is not None
+    assert draft.when.end - draft.when.start == timedelta(hours=3, minutes=30)
+    assert local_date(draft.when) == date(2026, 11, 7)
+    assert draft.night_of == date(2026, 11, 6)
+
+
+def test_range_ending_after_midnight_rolls_the_end_to_the_next_day() -> None:
+    when = resolve_when(
+        PartialWhen(year=2026, month=12, day=12, time=time(22, 0), end_time=time(2, 0)),
+        now=_NOW,
+        home_tz=_TZ,
+    )
+    assert isinstance(when, Timed)
+    assert when.end is not None
+    assert when.end - when.start == timedelta(hours=4)

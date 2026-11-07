@@ -15,6 +15,8 @@ Signatures other packages build against:
     EventRepository.record_mention(event_id, mention) -> None
     SimilarEventIndex.index(event) -> None
     SimilarEventIndex.similar(candidate, *, limit) -> list[tuple[EventId, float]]
+    RawMessageStore.put(message) -> RawRef
+    RawMessageStore.get(ref) -> EmailMessage | None
 """
 
 from __future__ import annotations
@@ -35,6 +37,7 @@ if TYPE_CHECKING:
         EventDraft,
         EventId,
         Mention,
+        RawRef,
     )
 
 
@@ -138,3 +141,17 @@ class SimilarEventIndex(Protocol):
     def index(self, event: Event) -> None: ...
 
     def similar(self, candidate: EventDraft, *, limit: int) -> list[tuple[EventId, float]]: ...
+
+
+class RawMessageStore(Protocol):
+    """Keeps the source message so a rule change can be re-run and every event traces to its
+    email (design section 6). Lives in the runtime data dir; core never reads files itself.
+
+    - `put(message)`: store and return a stable `RawRef`. Idempotent: putting the same
+      `message_id` again returns the same ref (and may refresh the content).
+    - `get(ref)`: the stored message, or None for an unknown ref.
+    """
+
+    def put(self, message: EmailMessage) -> RawRef: ...
+
+    def get(self, ref: RawRef) -> EmailMessage | None: ...

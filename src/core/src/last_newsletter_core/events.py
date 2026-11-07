@@ -22,6 +22,9 @@ if TYPE_CHECKING:
 EventId = NewType("EventId", UUID)
 """Opaque surrogate key. Core never generates one: it comes from the `IdGenerator` port."""
 
+RawRef = NewType("RawRef", str)
+"""Opaque handle to a stored raw message, issued by the `RawMessageStore` port."""
+
 _ALLOWED_CONTROL = frozenset("\t\n\r")
 
 
@@ -125,6 +128,7 @@ class Mention:
     match_rule: MatchRule
     cited_event_id: EventId
     raw_date_text: str = ""
+    raw_ref: RawRef | None = None
 
     def __post_init__(self) -> None:
         require_aware(self.seen_at, "seen_at")
@@ -139,6 +143,8 @@ class PartialWhen:
     day: int | None = None
     weekday: int | None = None  # Monday == 0, as date.weekday()
     time: clock_time | None = None
+    end_time: clock_time | None = None  # end before/at `time` means it ends the next day
+    late_night: bool = False  # listed after midnight but belongs to the previous night
     tz: str | None = None
     raw_text: str = ""
 
@@ -163,6 +169,10 @@ class EventCandidate:
     sequence: int = 0
     url: str | None = None
     is_recap: bool = False
+    city: str = ""
+    tags: frozenset[str] = frozenset()
+    price: str = ""  # free text, e.g. "$20 | 21+"
+    age: str = ""  # free text, e.g. "21+"
 
 
 @dataclass(frozen=True, slots=True)
@@ -179,6 +189,11 @@ class EventDraft:
     uid: str | None = None
     sequence: int = 0
     url: str | None = None
+    city: str = ""
+    tags: frozenset[str] = frozenset()
+    price: str = ""
+    age: str = ""
+    night_of: date | None = None
 
     @property
     def venue(self) -> str:
@@ -187,7 +202,10 @@ class EventDraft:
 
 @dataclass(frozen=True, slots=True)
 class Event:
-    """One real-world happening. A later email about the same thing adds a `Mention`, not a row.
+    """One real-world happening. `when` is the listed start; for a listing that runs past
+    midnight, `night_of` is the date of the night it belongs to (the previous day).
+
+    A later email about the same thing adds a `Mention`, not a row.
 
     `possible_duplicates` is the structured citation column for ambiguous matches: ids of other
     events this might be the same as. Showing a duplicate is safe; hiding a live item is not.
@@ -208,13 +226,19 @@ class Event:
     uid: str | None = None
     sequence: int = 0
     url: str | None = None
+    city: str = ""
+    tags: frozenset[str] = frozenset()
+    price: str = ""
+    age: str = ""
+    night_of: date | None = None
 
     def __post_init__(self) -> None:
         if not self.title.strip():
             msg = "title must not be blank"
             raise ValueError(msg)
-        if has_control_characters(self.title) or has_control_characters(self.summary):
-            msg = "title and summary must not contain control characters"
+        free_text = [self.title, self.summary, self.city, self.price, self.age, *self.tags]
+        if any(has_control_characters(t) for t in free_text):
+            msg = "event text must not contain control characters"
             raise ValueError(msg)
         require_aware(self.first_seen, "first_seen")
         require_aware(self.last_seen, "last_seen")
