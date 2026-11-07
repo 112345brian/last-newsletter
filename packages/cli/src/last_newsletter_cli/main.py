@@ -16,6 +16,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from last_newsletter_adapter_email.filtered_source import FilteredEmailSource
 from last_newsletter_adapter_email.imap_source import ImapConfig, ImapEmailSource
 from last_newsletter_adapter_knowledge import SqliteKnowledgeWeigher
 from last_newsletter_adapter_publish.email_publisher import (
@@ -28,13 +29,19 @@ from last_newsletter_adapter_storage.json_repository import JsonDigestRepository
 from last_newsletter_adapter_summarizer.anthropic_summarizer import AnthropicSummarizer
 from last_newsletter_adapter_summarizer.extractive_summarizer import ExtractiveSummarizer
 from last_newsletter_adapter_web.app import create_app
+from last_newsletter_core.default_filters import DEFAULT_FILTERS
 from last_newsletter_core.entities import Cadence
 from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from last_newsletter_core.ports import DigestPublisher, RelevanceWeigher, Summarizer
+    from last_newsletter_core.ports import (
+        DigestPublisher,
+        EmailSource,
+        RelevanceWeigher,
+        Summarizer,
+    )
 
 _DATA_DIR = Path.home() / ".last-newsletter"
 _SERVE_PORT = 5317
@@ -114,16 +121,25 @@ def _publisher(*, send: bool) -> DigestPublisher:
     return CompositePublisher([markdown, email])
 
 
-def _build_use_case(*, send: bool, summarizer: str) -> BuildDigestUseCase:
-    email_source = ImapEmailSource(
+def _email_source() -> EmailSource:
+    """Wraps the real source in the default Gmail/Google noise filters unless disabled --
+    see default_filters.py. Set LAST_NEWSLETTER_DISABLE_DEFAULT_FILTERS=1 once the dedicated
+    mailbox stops being Gmail-sourced, or its noise stops looking like these defaults."""
+    source: EmailSource = ImapEmailSource(
         ImapConfig(
             host=os.environ["LAST_NEWSLETTER_IMAP_HOST"],
             username=os.environ["LAST_NEWSLETTER_IMAP_USER"],
             password=os.environ["LAST_NEWSLETTER_IMAP_PASSWORD"],
         )
     )
+    if os.environ.get("LAST_NEWSLETTER_DISABLE_DEFAULT_FILTERS") == "1":
+        return source
+    return FilteredEmailSource(source, DEFAULT_FILTERS)
+
+
+def _build_use_case(*, send: bool, summarizer: str) -> BuildDigestUseCase:
     return BuildDigestUseCase(
-        email_source,
+        _email_source(),
         _summarizer(summarizer),
         _publisher(send=send),
         _digest_repository(),
