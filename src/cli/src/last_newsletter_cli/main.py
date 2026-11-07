@@ -17,43 +17,41 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
-from uuid import uuid4
-
-from process_lock.file_lock import cross_process_file_lock
 
 from last_newsletter_adapter_email.imap_source import ImapConfig, ImapEmailSource
 from last_newsletter_adapter_knowledge import SqliteKnowledgeWeigher
+from last_newsletter_adapter_ledger import SqliteEventRepository
 from last_newsletter_adapter_publish.email_publisher import (
     CompositePublisher,
     SmtpConfig,
     SmtpEmailPublisher,
 )
 from last_newsletter_adapter_publish.markdown_publisher import MarkdownPublisher
-from last_newsletter_adapter_storage.json_event_repository import JsonEventRepository
 from last_newsletter_adapter_storage.json_repository import JsonDigestRepository
-from last_newsletter_adapter_storage.processed_markers import ProcessedMarkers
 from last_newsletter_adapter_storage.raw_message_store import (
     FileRawMessageStore,
     RawStoreEmailSource,
 )
 from last_newsletter_adapter_summarizer.anthropic_summarizer import AnthropicSummarizer
-from last_newsletter_adapter_summarizer.dated_line_extractor import (
-    DatedLineExtractor,
-    NoEmbeddedEvents,
-)
 from last_newsletter_adapter_summarizer.extractive_summarizer import ExtractiveSummarizer
 from last_newsletter_adapter_web.app import create_app
-from last_newsletter_cli.process_stage import DEFAULT_BATCH_SIZE, process_raw
+from last_newsletter_cli.events_view import render_json, render_text
+from last_newsletter_cli.process_command import (
+    EXTRACTOR_CHOICES,
+    LEDGER_NAME,
+    ConfigError,
+    ProcessContext,
+    ProcessOptions,
+    execute_process,
+)
+from last_newsletter_cli.process_stage import DEFAULT_BATCH_SIZE
 from last_newsletter_core.entities import Cadence
-from last_newsletter_core.events import EventId
-from last_newsletter_core.use_cases import IngestEvents, IngestPorts
 from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
     from last_newsletter_adapter_storage.raw_message_store import ListableRawMessageStore
-    from last_newsletter_core.event_ports import EventExtractor, EventRepository
     from last_newsletter_core.ports import (
         DigestPublisher,
         EmailSource,
@@ -85,10 +83,6 @@ def _configured_weighers() -> list[RelevanceWeigher]:
             )
         )
     return weighers
-
-
-class ConfigError(Exception):
-    """A setting is missing or invalid. Its message names the variable to fix."""
 
 
 def smtp_config_from_env(environ: Mapping[str, str]) -> SmtpConfig:
@@ -265,54 +259,29 @@ def _run_fetch(*, since: str | None, days: int | None, out: Path | None) -> None
     )
 
 
-class Uuid4Ids:
-    """`IdGenerator`: random UUIDs (randomness is an effect, so it lives outside core)."""
-
-    def new_event_id(self) -> EventId:
-        return EventId(uuid4())
-
-
-def _event_repository() -> EventRepository:
-    # SEAM: file-backed ledger for now. The SQLite `EventRepository` adapter replaces this one
-    # line; the port (`last_newsletter_core.event_ports.EventRepository`) is the contract.
-    return JsonEventRepository(_DATA_DIR / "events" / "events.json")
-
-
-def _extractor(name: str) -> EventExtractor:
-    # SEAM: `--extractor local-llm` (src/adapter_events) plugs in here. Anything that costs
-    # money must stay behind its own explicit flag; the default is model-free.
-    if name == "dated-lines":
-        return DatedLineExtractor()
-    msg = f"unknown extractor {name!r}"
-    raise ConfigError(msg)
-
-
-def _ingest_use_case(*, extractor: str, home_tz: str) -> IngestEvents:
-    # SEAM: pass `similar_index=` here to use the semantic index (src/adapter_semantic,
-    # `SimilarEventIndex`). Without it core uses its difflib default, seeded per run.
-    return IngestEvents(
-        IngestPorts(
-            repository=_event_repository(),
-            reader=NoEmbeddedEvents(),
-            extractor=_extractor(extractor),
-            ids=Uuid4Ids(),
-            raw_store=_raw_store(),
-        ),
-        home_tz=home_tz,
+def _run_process(options: ProcessOptions) -> int:
+    """Stage 2: reads only the local raw store; no IMAP, no cloud model, no API key."""
+    context = ProcessContext(
+        data_dir=_DATA_DIR,
+        now=datetime.now(tz=UTC),
+        environ=os.environ,
+        out=sys.stdout,
+        err=sys.stderr,
     )
+    return execute_process(context, options)
 
 
-def _run_process(*, extractor: str, home_tz: str, batch_size: int) -> None:
-    """Stage 2: reads only the local raw store; no IMAP, no network."""
-    with cross_process_file_lock(_DATA_DIR / "process.lock", timeout_s=5.0, label="process"):
-        summary = process_raw(
-            _raw_store(),
-            ProcessedMarkers(_DATA_DIR / "events" / "processed.json"),
-            _ingest_use_case(extractor=extractor, home_tz=home_tz),
-            now=datetime.now(tz=UTC),
-            batch_size=batch_size,
+def _run_events(*, as_json: bool) -> int:
+    ledger_path = _DATA_DIR / "events" / LEDGER_NAME
+    if not ledger_path.exists():
+        sys.stdout.write(
+            "[]\n" if as_json else "no events stored yet (run `fetch`, then `process`)\n"
         )
-    sys.stdout.write("\n".join(summary.lines()) + "\n")
+        return 0
+    with SqliteEventRepository(ledger_path) as ledger:
+        events = ledger.list_all()
+    sys.stdout.write((render_json(events) if as_json else render_text(events)) + "\n")
+    return 0
 
 
 def _run_serve() -> None:
@@ -326,7 +295,7 @@ def _run_serve() -> None:
     app.run(host="127.0.0.1", port=_SERVE_PORT, debug=False)
 
 
-def main() -> None:
+def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="last-newsletter")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -380,7 +349,20 @@ def main() -> None:
         help="Stage 2: turn stored raw mail into event records (UUID per event, later mentions "
         "cite the first). Reads only the local raw store: no IMAP, no network. Re-runnable.",
     )
-    process_parser.add_argument("--extractor", choices=["dated-lines"], default="dated-lines")
+    process_parser.add_argument(
+        "--extractor",
+        choices=EXTRACTOR_CHOICES,
+        default="dated-lines",
+        help="dated-lines: no model (default). local-llm: a model on this machine through "
+        "Ollama ($LAST_NEWSLETTER_OLLAMA_MODEL, default gpt-oss:120b; "
+        "$LAST_NEWSLETTER_OLLAMA_URL, default http://localhost:11434). Nothing is sent to a "
+        "cloud model.",
+    )
+    process_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Work on a throwaway copy of the ledger and save nothing; print only counts.",
+    )
     process_parser.add_argument(
         "--home-tz",
         default=os.environ.get("LAST_NEWSLETTER_HOME_TZ", "UTC"),
@@ -388,9 +370,16 @@ def main() -> None:
     )
     process_parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
 
+    events_parser = subparsers.add_parser(
+        "events",
+        help="List stored events: UUID, the mentions that cite each (message id, rung, evidence "
+        "quote) and possible duplicates. No email bodies.",
+    )
+    events_parser.add_argument("--json", action="store_true", help="Machine-readable output.")
+
     subparsers.add_parser("serve", help="Open the local digest browser in your web browser.")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.command == "build":
         try:
             _run_build(
@@ -409,9 +398,20 @@ def main() -> None:
             parser.exit(2, f"last-newsletter: {error}\n")
     elif args.command == "process":
         try:
-            _run_process(extractor=args.extractor, home_tz=args.home_tz, batch_size=args.batch_size)
+            code = _run_process(
+                ProcessOptions(
+                    extractor=args.extractor,
+                    home_tz=args.home_tz,
+                    batch_size=args.batch_size,
+                    dry_run=args.dry_run,
+                )
+            )
         except (ConfigError, TimeoutError) as error:
             parser.exit(2, f"last-newsletter: {error}\n")
+        if code:
+            sys.exit(code)
+    elif args.command == "events":
+        sys.exit(_run_events(as_json=args.json))
     elif args.command == "serve":
         _run_serve()
 
