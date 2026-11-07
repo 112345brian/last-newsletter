@@ -8,9 +8,6 @@ Install::
 raises ``UsageLedgerNotBound`` when none is, so a process that skipped the bind cannot read "no spend". Standard
 library only.
 """
-
-__arbor__ = {"ring": "core"}
-
 from usage_ledger_port.ledger_port import UsageLedger, UsageLedgerNotBound, UsageLedgerSlot
 
 __all__ = ["UsageLedger", "UsageLedgerNotBound", "UsageLedgerSlot"]

@@ -2,9 +2,9 @@
 # For more info see https://dfetch.rtfd.io/en/latest/getting_started.html
 dfetch:
   branch: main
-  hash: 7b766efb1041cb47e2554a5295ec5556
-  last_fetch: 07/11/2026, 21:33:04
-  patch: patches/urgency.patch
+  hash: 40cf7e195b8a19f12abcb0e8950e65f4
+  last_fetch: 07/11/2026, 21:43:18
+  patch: ''
   remote_url: https://github.com/112345brian/urgency.git
   revision: ''
   tag: v0.1.0

@@ -4,10 +4,11 @@ Managed by [dfetch](https://dfetch.readthedocs.io) — see `dfetch.yaml` at the 
 `vendor/` is a copy of a standalone repo `github.com/112345brian/<name-with-dashes>`, pinned to its own tag
 (`v0.1.0`; `process_lock` and `durable_outbox` are `v0.1.1`). Do not hand-edit `vendor/`; run `uvx dfetch update` to re-fetch.
 
-Consumer-specific changes live in `patches/<name>.patch` and are re-applied on every fetch. Today that is only the
-`__arbor__ = {"ring": ...}` marker this repo's `arborescent` config needs on each module (the ring is a property of
-how *this* repo uses the library, so it does not belong upstream). The tests for `process_lock` and
-`durable_outbox` ship with the upstream repos (v0.1.1) under `vendor/*/tests`.
+Consumer-specific changes live in `patches/<name>.patch` and are re-applied on every fetch. Today that is only
+`durable_outbox`'s `pyproject.toml`, which points `process-lock` at the workspace member instead of its git tag.
+Ring membership (`core`/`adapters`/...) is a property of how *this* repo uses each library, so it is not annotated in
+the vendored source: `arborescent.toml`'s `[classify]` table maps these modules to rings by name.
+The tests for `process_lock` and `durable_outbox` ship with the upstream repos (v0.1.1) under `vendor/*/tests`.
 
 Rules: ruff and ty skip `vendor/`; import-linter and the workspace-layout test do not. `core` must
 not import any of these (it owns its own defaults); they sit beside `core`, `text_match` and `mailtext` and are

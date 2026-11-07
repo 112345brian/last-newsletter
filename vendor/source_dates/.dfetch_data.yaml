@@ -2,9 +2,9 @@
 # For more info see https://dfetch.rtfd.io/en/latest/getting_started.html
 dfetch:
   branch: main
-  hash: 73100521ba1ca278b466747806ed5d9a
-  last_fetch: 07/11/2026, 21:33:08
-  patch: patches/source_dates.patch
+  hash: 6587172b32520bc6e11a0835de8ebb9f
+  last_fetch: 07/11/2026, 21:43:45
+  patch: ''
   remote_url: https://github.com/112345brian/source-dates.git
   revision: ''
   tag: v0.1.0

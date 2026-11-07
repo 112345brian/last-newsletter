@@ -41,8 +41,6 @@ only those differ; that is the store's call, not a rule about completed/dismisse
 """
 from __future__ import annotations
 
-__arbor__ = {"ring": "core"}
-
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from typing import Any

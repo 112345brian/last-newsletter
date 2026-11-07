@@ -1,8 +1,6 @@
 """Errors raised by the outbox."""
 from __future__ import annotations
 
-__arbor__ = {"ring": "adapters"}
-
 
 class OutboxWriteError(RuntimeError):
     """The hosted outbox itself could not be written (disk full, permissions, a lock that

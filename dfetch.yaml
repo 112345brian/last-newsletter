@@ -11,37 +11,30 @@ manifest:
       dst: vendor/urgency
       repo-path: urgency.git
       tag: v0.1.0
-      patch: patches/urgency.patch
     - name: identity_dedupe
       dst: vendor/identity_dedupe
       repo-path: identity-dedupe.git
       tag: v0.1.0
-      patch: patches/identity_dedupe.patch
     - name: source_dates
       dst: vendor/source_dates
       repo-path: source-dates.git
       tag: v0.1.0
-      patch: patches/source_dates.patch
     - name: text_normalize
       dst: vendor/text_normalize
       repo-path: text-normalize.git
       tag: v0.1.0
-      patch: patches/text_normalize.patch
     - name: notification_port
       dst: vendor/notification_port
       repo-path: notification-port.git
       tag: v0.1.0
-      patch: patches/notification_port.patch
     - name: usage_ledger_port
       dst: vendor/usage_ledger_port
       repo-path: usage-ledger-port.git
       tag: v0.1.0
-      patch: patches/usage_ledger_port.patch
     - name: process_lock
       dst: vendor/process_lock
       repo-path: process-lock.git
       tag: v0.1.1
-      patch: patches/process_lock.patch
     - name: durable_outbox
       dst: vendor/durable_outbox
       repo-path: durable-outbox.git
@@ -51,4 +44,3 @@ manifest:
       dst: vendor/tracker_state
       repo-path: tracker-state.git
       tag: v0.1.0
-      patch: patches/tracker_state.patch
