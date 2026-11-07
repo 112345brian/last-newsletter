@@ -21,7 +21,7 @@ def _pyproject() -> dict[str, Any]:
 def _member_dirs() -> set[str]:
     return {
         f"{root}/{path.name}"
-        for root in ("packages", "vendor")
+        for root in ("src", "libs", "vendor")
         for path in (_ROOT / root).iterdir()
         if (path / "pyproject.toml").is_file()
     }
@@ -30,7 +30,7 @@ def _member_dirs() -> set[str]:
 def _import_names_on_disk() -> set[str]:
     return {
         init.parent.name
-        for root in ("packages", "vendor")
+        for root in ("src", "libs", "vendor")
         for init in (_ROOT / root).glob("*/src/*/__init__.py")
     }
 

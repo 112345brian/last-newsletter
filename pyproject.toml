@@ -1,7 +1,7 @@
 [project]
 name = "last-newsletter"
 version = "0.1.0"
-description = "Self-hosted workspace root for Last Newsletter. No code of its own — see packages/."
+description = "Self-hosted workspace root for Last Newsletter. No code of its own — see src/, libs/, and vendor/."
 requires-python = ">=3.11"
 dependencies = []
 
@@ -18,17 +18,17 @@ dev = [
 
 [tool.uv.workspace]
 members = [
-    "packages/core",
-    "packages/adapter_email",
-    "packages/adapter_summarizer",
-    "packages/adapter_publish",
-    "packages/cli",
-    "packages/adapter_storage",
-    "packages/adapter_web",
-    "packages/adapter_knowledge",
-    "packages/text_match",
-    "packages/mailtext",
-    "packages/llmhost",
+    "src/core",
+    "src/adapter_email",
+    "src/adapter_summarizer",
+    "src/adapter_publish",
+    "src/cli",
+    "src/adapter_storage",
+    "src/adapter_web",
+    "src/adapter_knowledge",
+    "libs/text_match",
+    "libs/mailtext",
+    "libs/llmhost",
     "vendor/urgency",
     "vendor/identity_dedupe",
     "vendor/source_dates",
@@ -43,7 +43,7 @@ members = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["packages/*/src"]
+src = ["src/*/src", "libs/*/src"]
 extend-exclude = ["vendor"]
 
 [tool.ruff.lint]
@@ -82,7 +82,7 @@ truthiness-test-of-none-union = "error"
 missing-override-decorator = "error"
 
 [tool.pytest.ini_options]
-testpaths = ["packages", "vendor"]
+testpaths = ["src", "libs", "vendor"]
 
 [tool.importlinter]
 root_packages = [
