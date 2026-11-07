@@ -2,9 +2,9 @@
 # For more info see https://dfetch.rtfd.io/en/latest/getting_started.html
 dfetch:
   branch: main
-  hash: 92fa92f23d69e190465f29a90b82b25a
-  last_fetch: 07/11/2026, 21:33:06
-  patch: patches/identity_dedupe.patch
+  hash: 3fab784ed1b1dc2819cf0fc24e228e53
+  last_fetch: 07/11/2026, 21:43:34
+  patch: ''
   remote_url: https://github.com/112345brian/identity-dedupe.git
   revision: ''
   tag: v0.1.0

@@ -1,8 +1,6 @@
 """Normalize a URL so two links to one page compare equal: no tracking params, fragment or trailing slashes."""
 from __future__ import annotations
 
-__arbor__ = {"ring": "core"}
-
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 
