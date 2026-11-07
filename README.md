@@ -137,14 +137,13 @@ anything that imports across packages need already present in `.venv`.
 ## Status
 
 The domain model, use case (including continuity/ranking), every port, IMAP
-fetch (`adapter_email`, via `imapclient`), and Markdown rendering
-(`adapter_publish`) are implemented and tested — 68 tests passing, strict
-`ty`, clean `ruff`, and `import-linter`'s architecture contract all green.
-`adapter_summarizer` (the actual Claude call) is still stubbed with
-`NotImplementedError` — it's the one piece that needs a real prompt-design
-decision, not just plumbing, so it's deliberately not rushed. `adapter_knowledge`'s
-SQL query is grounded in the real, versioned `knowledge.db` schema but not yet
-exercised against a real database — see its module docstring.
+fetch (`adapter_email`, via `imapclient`), Markdown rendering
+(`adapter_publish`), and the Claude call itself (`adapter_summarizer`, forcing
+a structured tool response rather than parsing prose) are implemented and
+tested — 73 tests passing, strict `ty`, clean `ruff`, and `import-linter`'s
+architecture contract all green. `adapter_knowledge`'s SQL query is grounded
+in the real, versioned `knowledge.db` schema but not yet exercised against a
+real database — see its module docstring.
 
 ## License
 

@@ -41,6 +41,7 @@ def _make_db(tmp_path: Path, *, schema_version: int = 4) -> Path:
 def _add_entity(db_path: Path, *, name_norm: str, aliases: tuple[str, ...] = ()) -> int:
     conn = sqlite3.connect(db_path)
     entity_id = conn.execute("INSERT INTO entities (name_norm) VALUES (?)", (name_norm,)).lastrowid
+    assert entity_id is not None
     for alias in aliases:
         conn.execute(
             "INSERT INTO entity_aliases (entity_id, alias_norm) VALUES (?, ?)", (entity_id, alias)
@@ -53,6 +54,7 @@ def _add_entity(db_path: Path, *, name_norm: str, aliases: tuple[str, ...] = ())
 def _add_subject(db_path: Path, name: str) -> int:
     conn = sqlite3.connect(db_path)
     subject_id = conn.execute("INSERT INTO subjects (name) VALUES (?)", (name,)).lastrowid
+    assert subject_id is not None
     conn.commit()
     conn.close()
     return subject_id
