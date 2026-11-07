@@ -1,0 +1,10 @@
+# This is a generated file by dfetch. Don't edit this, but edit the manifest.
+# For more info see https://dfetch.rtfd.io/en/latest/getting_started.html
+dfetch:
+  branch: main
+  hash: 9a04148b94bafc3886605f162f6d4632
+  last_fetch: 07/11/2026, 21:44:03
+  patch: ''
+  remote_url: https://github.com/112345brian/usage-ledger-port.git
+  revision: ''
+  tag: v0.1.0

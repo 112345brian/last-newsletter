@@ -1,7 +1,7 @@
 [project]
 name = "last-newsletter"
 version = "0.1.0"
-description = "Self-hosted workspace root for Last Newsletter. No code of its own — see packages/."
+description = "Self-hosted workspace root for Last Newsletter. No code of its own — see src/, libs/, and vendor/."
 requires-python = ">=3.11"
 dependencies = []
 
@@ -12,27 +12,39 @@ dev = [
     "pytest-cov",
     "ruff",
     "ty",
+    # Architecture gate (rings and forbidden effects); config in arborescent.toml.
+    "arborescent>=0.5.0",
 ]
 
 [tool.uv.workspace]
 members = [
-    "packages/core",
-    "packages/adapter_email",
-    "packages/adapter_summarizer",
-    "packages/adapter_publish",
-    "packages/cli",
-    "packages/adapter_storage",
-    "packages/adapter_web",
-    "packages/adapter_knowledge",
-    "packages/libraries",
-    "packages/text_match",
-    "packages/mailtext",
+    "src/core",
+    "src/adapter_email",
+    "src/adapter_summarizer",
+    "src/adapter_publish",
+    "src/cli",
+    "src/adapter_storage",
+    "src/adapter_web",
+    "src/adapter_knowledge",
+    "libs/text_match",
+    "libs/mailtext",
+    "libs/llmhost",
+    "vendor/urgency",
+    "vendor/identity_dedupe",
+    "vendor/source_dates",
+    "vendor/text_normalize",
+    "vendor/notification_port",
+    "vendor/usage_ledger_port",
+    "vendor/process_lock",
+    "vendor/durable_outbox",
+    "vendor/tracker_state",
 ]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["packages/*/src"]
+src = ["src/*/src", "libs/*/src"]
+extend-exclude = ["vendor"]
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -41,6 +53,9 @@ ignore = ["D", "COM812", "ISC001", "CPY001"]
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S101", "D", "PLR2004", "ARG002", "INP001", "PLR0913", "S106"]
 "**/adapter_*/**" = ["ARG002"]
+
+[tool.ty.src]
+exclude = ["vendor"]
 
 [tool.ty.environment]
 python-version = "3.11"
@@ -67,7 +82,7 @@ truthiness-test-of-none-union = "error"
 missing-override-decorator = "error"
 
 [tool.pytest.ini_options]
-testpaths = ["packages"]
+testpaths = ["src", "libs", "vendor"]
 
 [tool.importlinter]
 root_packages = [
@@ -81,6 +96,16 @@ root_packages = [
     "last_newsletter_cli",
     "text_match",
     "mailtext",
+    "llmhost",
+    "urgency",
+    "identity_dedupe",
+    "source_dates",
+    "text_normalize",
+    "notification_port",
+    "usage_ledger_port",
+    "process_lock",
+    "durable_outbox",
+    "tracker_state",
 ]
 
 [[tool.importlinter.contracts]]
@@ -89,5 +114,6 @@ type = "layers"
 layers = [
     "last_newsletter_cli",
     "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge",
-    "last_newsletter_core | text_match | mailtext",
+    "last_newsletter_core | text_match | mailtext | llmhost | urgency | identity_dedupe | source_dates | text_normalize | notification_port | usage_ledger_port | durable_outbox | tracker_state",
+    "process_lock",
 ]

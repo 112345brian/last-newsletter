@@ -1,0 +1,11 @@
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -16,7 +16,7 @@
+ testpaths = ["tests"]
+ 
+ [tool.uv.sources]
+-process-lock = { git = "https://github.com/112345brian/process-lock", tag = "v0.1.1" }
++process-lock = { workspace = true }
+ 
+ [dependency-groups]
+ dev = ["pytest>=8"]
