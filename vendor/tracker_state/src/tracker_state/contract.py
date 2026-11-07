@@ -14,8 +14,6 @@ spec, so a wrong write cannot get through even if the spec above it is wrong.
 """
 from __future__ import annotations
 
-__arbor__ = {"ring": "core"}
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Literal, Protocol
