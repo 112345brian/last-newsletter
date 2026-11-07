@@ -112,6 +112,16 @@ class HashedNgramIndex:
     def close(self) -> None:
         self._db.close()
 
+    def ids(self) -> set[str]:
+        """Ids currently indexed (lets the caller check the index against its source of truth)."""
+        return set(self._rows)
+
+    def clear(self) -> None:
+        """Drop every vector so the caller can re-index from scratch."""
+        self._db.execute("DELETE FROM event_vectors")
+        self._db.commit()
+        self._rows.clear()
+
     def index(self, event: IndexableEvent) -> None:
         """Insert or replace the event's vector. Never raises on odd text."""
         ident = str(event.id)

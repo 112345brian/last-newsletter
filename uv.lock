@@ -995,8 +995,11 @@ version = "0.1.0"
 source = { editable = "src/cli" }
 dependencies = [
     { name = "last-newsletter-adapter-email" },
+    { name = "last-newsletter-adapter-events" },
     { name = "last-newsletter-adapter-knowledge" },
+    { name = "last-newsletter-adapter-ledger" },
     { name = "last-newsletter-adapter-publish" },
+    { name = "last-newsletter-adapter-semantic" },
     { name = "last-newsletter-adapter-storage" },
     { name = "last-newsletter-adapter-summarizer" },
     { name = "last-newsletter-adapter-web" },
@@ -1015,8 +1018,11 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "last-newsletter-adapter-email", editable = "src/adapter_email" },
+    { name = "last-newsletter-adapter-events", editable = "src/adapter_events" },
     { name = "last-newsletter-adapter-knowledge", editable = "src/adapter_knowledge" },
+    { name = "last-newsletter-adapter-ledger", editable = "src/adapter_ledger" },
     { name = "last-newsletter-adapter-publish", editable = "src/adapter_publish" },
+    { name = "last-newsletter-adapter-semantic", editable = "src/adapter_semantic" },
     { name = "last-newsletter-adapter-storage", editable = "src/adapter_storage" },
     { name = "last-newsletter-adapter-summarizer", editable = "src/adapter_summarizer" },
     { name = "last-newsletter-adapter-web", editable = "src/adapter_web" },

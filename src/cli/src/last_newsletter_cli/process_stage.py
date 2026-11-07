@@ -24,6 +24,15 @@ if TYPE_CHECKING:
 DEFAULT_BATCH_SIZE = 10
 
 
+@dataclass(frozen=True, slots=True)
+class Batching:
+    """How the todo list is cut up. `max_failed` gives up after that many failed batches (an
+    offline model fails every batch; waiting on each one would take hours)."""
+
+    size: int = DEFAULT_BATCH_SIZE
+    max_failed: int | None = None
+
+
 @dataclass(slots=True)
 class ProcessSummary:
     """Totals over every batch of one run. `result` is the merged `IngestResult`."""
@@ -34,6 +43,7 @@ class ProcessSummary:
     processed: int = 0  # messages ingested and marked this run
     retry_later: int = 0  # messages in batches that hit an extraction failure
     unreadable: int = 0  # refs the store listed but could not return
+    gave_up: bool = False  # stopped early after repeated failed batches (e.g. model offline)
 
     def lines(self) -> list[str]:
         r = self.result
@@ -48,6 +58,8 @@ class ProcessSummary:
         )
         failures = f"extraction failures: {r.extraction_failures}; rejected: {r.rejected_total}"
         out = [counts, events, failures]
+        if self.gave_up:
+            out.append("stopped early: repeated extraction failures; the rest stays unprocessed")
         out.extend(f"  rejected {reason.value}: {n}" for reason, n in sorted(r.rejected.items()))
         return out
 
@@ -73,10 +85,13 @@ def process_raw(
     ingest: IngestEvents,
     *,
     now: datetime,
-    batch_size: int = DEFAULT_BATCH_SIZE,
+    batching: Batching | None = None,
 ) -> ProcessSummary:
+    batching = batching or Batching()
+    batch_size = batching.size
+    max_failed_batches = batching.max_failed
     if batch_size < 1:
-        msg = "batch_size must be at least 1"
+        msg = "batch size must be at least 1"
         raise ValueError(msg)
     summary = ProcessSummary()
     done = markers.processed()
@@ -84,6 +99,7 @@ def process_raw(
     summary.seen = len(refs)
     todo = [ref for ref in refs if ref not in done]
     summary.already_processed = len(refs) - len(todo)
+    failed_batches = 0
     for start in range(0, len(todo), batch_size):
         batch_refs = todo[start : start + batch_size]
         loaded = [(ref, store.get(ref)) for ref in batch_refs]
@@ -95,6 +111,12 @@ def process_raw(
         summary.result = _merge(summary.result, result)
         if result.extraction_failures:
             summary.retry_later += len(pairs)
+            failed_batches += 1
+            if max_failed_batches is not None and failed_batches >= max_failed_batches:
+                # An offline model fails every batch; stop instead of waiting on each one.
+                summary.gave_up = True
+                summary.retry_later += len(todo) - start - len(batch_refs)
+                break
             continue
         markers.mark([ref for ref, _ in pairs])
         summary.processed += len(pairs)
