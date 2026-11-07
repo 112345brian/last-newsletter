@@ -29,11 +29,13 @@ class FakeProvider:
 
 
 def _summarizer(
-    themes: list[dict[str, Any]],
-    **kwargs: Any,  # noqa: ANN401
+    themes: list[dict[str, Any]], *, usage_ledger_path: Path | None = None
 ) -> tuple[AnthropicSummarizer, FakeProvider]:
     provider = FakeProvider(themes)
-    return AnthropicSummarizer(_provider_override=provider, **kwargs), provider
+    summarizer = AnthropicSummarizer(
+        _provider_override=provider, usage_ledger_path=usage_ledger_path
+    )
+    return summarizer, provider
 
 
 def _message(message_id: str = "<1@example.com>") -> EmailMessage:

@@ -1,13 +1,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypedDict, Unpack, cast
 
 from llmhost.contracts import CompletionRequest
 from llmhost.provider_claude import ClaudeProvider
 
 if TYPE_CHECKING:
-    from anthropic.types import Message
+    from anthropic.types import Message, MessageParam, ToolChoiceToolParam, ToolParam
+
+
+class _CreateParams(TypedDict):
+    """Mirrors `provider_claude._CreateMessageParams` -- what `_MessagesClient.create`
+    actually needs, so this fake's signature structurally matches the real protocol."""
+
+    model: str
+    max_tokens: int
+    system: str
+    tools: list[ToolParam]
+    tool_choice: ToolChoiceToolParam
+    messages: list[MessageParam]
 
 
 @dataclass
@@ -31,13 +43,15 @@ class _FakeMessage:
 
 
 class FakeMessagesClient:
+    """Matches `_MessagesClient`'s own signature -- a fake, not a `**kwargs` catch-all."""
+
     def __init__(self, tool_input: dict[str, Any], usage: _FakeUsage) -> None:
         self._tool_input = tool_input
         self._usage = usage
-        self.create_calls: list[dict[str, Any]] = []
+        self.tool_choices: list[ToolChoiceToolParam] = []
 
-    def create(self, **kwargs: Any) -> Message:  # noqa: ANN401
-        self.create_calls.append(kwargs)
+    def create(self, **kwargs: Unpack[_CreateParams]) -> Message:
+        self.tool_choices.append(kwargs["tool_choice"])
         fake = _FakeMessage(content=[_FakeToolUseBlock(input=self._tool_input)], usage=self._usage)
         return cast("Message", fake)
 
@@ -69,4 +83,4 @@ def test_complete_with_tool_returns_the_tool_input_and_usage() -> None:
     assert result.usage.model == "claude-sonnet-5-5"
     assert result.usage.input_tokens == 100
     assert result.usage.output_tokens == 20
-    assert client.messages.create_calls[0]["tool_choice"] == {"type": "tool", "name": "record"}
+    assert client.messages.tool_choices[0] == {"type": "tool", "name": "record"}

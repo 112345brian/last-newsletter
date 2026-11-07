@@ -4,20 +4,33 @@ token usage from the response rather than leaving a caller to estimate it."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Protocol, TypedDict, Unpack, cast
 
 import anthropic
 
 from llmhost.contracts import CompletionResult, Usage
 
 if TYPE_CHECKING:
-    from anthropic.types import Message, ToolParam
+    from anthropic.types import Message, MessageParam, ToolChoiceToolParam, ToolParam
 
     from llmhost.contracts import CompletionRequest
 
 
+class _CreateMessageParams(TypedDict):
+    """Exactly the keyword arguments `complete_with_tool` passes to `messages.create` --
+    named here so the call is fully typed without `_MessagesClient.create` itself needing
+    more than one parameter."""
+
+    model: str
+    max_tokens: int
+    system: str
+    tools: list[ToolParam]
+    tool_choice: ToolChoiceToolParam
+    messages: list[MessageParam]
+
+
 class _MessagesClient(Protocol):
-    def create(self, **kwargs: Any) -> Message: ...  # noqa: ANN401
+    def create(self, **kwargs: Unpack[_CreateMessageParams]) -> Message: ...
 
 
 class _AnthropicClient(Protocol):
