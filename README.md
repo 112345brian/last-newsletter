@@ -134,6 +134,7 @@ uv run ruff check .                           # lint
 uv run ruff format --check .                  # formatting
 uv run ty check packages/*/src                # strict type-checking (see pyproject.toml's [tool.ty.rules])
 uv run lint-imports                            # Clean Architecture boundaries (see pyproject.toml's [tool.importlinter])
+uv run arborescent check                         # rings + forbidden effects in core (see arborescent.toml)
 ```
 
 The first command matters: `uv sync` alone only installs the root project's own

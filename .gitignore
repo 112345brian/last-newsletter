@@ -12,3 +12,4 @@ htmlcov/
 digests/
 .env
 .DS_Store
+.claude/

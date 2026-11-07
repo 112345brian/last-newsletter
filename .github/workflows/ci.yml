@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install every workspace package and the architecture gate
+        run: uv sync --all-packages
+      - name: Tests
+        run: uv run pytest -q
+      - name: Lint
+        run: uv run ruff check .
+      - name: Format
+        run: uv run ruff format --check .
+      - name: Types
+        run: uv run ty check
+      - name: Package dependency contract
+        run: uv run lint-imports
+      - name: Architecture gate (rings and forbidden effects)
+        run: uv run arborescent check
