@@ -12,7 +12,7 @@ from __future__ import annotations
 __arbor__ = {"ring": "cli"}
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -63,8 +63,16 @@ class CoreSimilarIndex:
         self._index.index(_view(str(event.id), event))
 
     def similar(self, candidate: EventDraft, *, limit: int) -> list[tuple[EventId, float]]:
-        hits = self._index.similar(_view("", candidate), limit=limit)
-        return [(EventId(UUID(ident)), score) for ident, score in hits]
+        """Hits on the same date score as the index says; hits on another date (the same series
+        a week later) are found by asking again with the date left out, which the index scores
+        as "date unknown". Core links them but never merges across dates."""
+        view = _view("", candidate)
+        best: dict[str, float] = {}
+        for query in (view, replace(view, day=None)):
+            for ident, score in self._index.similar(query, limit=limit):
+                best[ident] = max(score, best.get(ident, 0.0))
+        ranked = sorted(best.items(), key=lambda pair: (-pair[1], pair[0]))[:limit]
+        return [(EventId(UUID(ident)), score) for ident, score in ranked]
 
 
 def sync_index(index: HashedNgramIndex, events: list[Event]) -> bool:

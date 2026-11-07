@@ -35,6 +35,7 @@ from last_newsletter_adapter_storage.raw_message_store import (
 from last_newsletter_adapter_summarizer.anthropic_summarizer import AnthropicSummarizer
 from last_newsletter_adapter_summarizer.extractive_summarizer import ExtractiveSummarizer
 from last_newsletter_adapter_web.app import create_app
+from last_newsletter_cli.build_report import BuildFacts, describe_build
 from last_newsletter_cli.events_view import render_json, render_text
 from last_newsletter_cli.process_command import (
     EXTRACTOR_CHOICES,
@@ -45,7 +46,7 @@ from last_newsletter_cli.process_command import (
     execute_process,
 )
 from last_newsletter_cli.process_stage import DEFAULT_BATCH_SIZE
-from last_newsletter_core.entities import Cadence
+from last_newsletter_core.entities import Cadence, digest_slug
 from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
 if TYPE_CHECKING:
@@ -180,7 +181,19 @@ def _run_build(
     since, until = build_window(cadence, now=datetime.now(tz=UTC), force=force)
 
     use_case = _build_use_case(send=send, summarizer=summarizer, direct_imap=direct_imap)
-    use_case.execute(BuildDigestRequest(since=since, until=until, cadence=cadence))
+    existing = {digest_slug(d) for _, d in _digest_repository().list_recent(limit=500)}
+    digest = use_case.execute(BuildDigestRequest(since=since, until=until, cadence=cadence))
+    raw = _raw_store()
+    received = [m.received_at for ref in raw.list() if (m := raw.get(ref)) is not None]
+    facts = BuildFacts(
+        slug=digest_slug(digest),
+        replaced=digest_slug(digest) in existing,
+        force=force,
+        raw_total=len(received),
+        raw_newest=max(received, default=None),
+        output_dir=str(_DATA_DIR / "markdown"),
+    )
+    sys.stdout.write("\n".join(describe_build(digest, facts)) + "\n")
 
 
 @dataclass(frozen=True, slots=True)
@@ -364,6 +377,13 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="Work on a throwaway copy of the ledger and save nothing; print only counts.",
     )
     process_parser.add_argument(
+        "--reprocess",
+        action="store_true",
+        help="Process all stored raw mail again from an empty ledger. The old ledger, index and "
+        "processed markers are moved to events/backup-<timestamp>/ first (nothing is deleted). "
+        "With --dry-run nothing real is touched.",
+    )
+    process_parser.add_argument(
         "--home-tz",
         default=os.environ.get("LAST_NEWSLETTER_HOME_TZ", "UTC"),
         help="IANA zone for dates without one (default: $LAST_NEWSLETTER_HOME_TZ, else UTC).",
@@ -404,6 +424,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                     home_tz=args.home_tz,
                     batch_size=args.batch_size,
                     dry_run=args.dry_run,
+                    reprocess=args.reprocess,
                 )
             )
         except (ConfigError, TimeoutError) as error:

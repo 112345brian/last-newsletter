@@ -58,7 +58,7 @@ def test_schema_becomes_format_and_sampling_is_deterministic() -> None:
     url, payload, _ = transport.calls[0]
     assert url == "http://h:1/api/chat"
     assert payload["format"] == SCHEMA["input_schema"]
-    assert payload["options"] == {"temperature": 0, "num_ctx": 16384, "num_predict": 99}
+    assert payload["options"] == {"temperature": 0, "seed": 0, "num_ctx": 16384, "num_predict": 99}
     assert payload["think"] is False
     assert payload["stream"] is False
 

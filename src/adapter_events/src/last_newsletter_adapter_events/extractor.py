@@ -14,7 +14,7 @@ from last_newsletter_adapter_events.prompt import SYSTEM_PROMPT, PromptInput, bu
 from last_newsletter_adapter_events.schema import EVENT_TOOL, RawEvent, parse_events
 from last_newsletter_adapter_events.stats import ExtractionStats
 from last_newsletter_adapter_events.text import clean_text, squash
-from last_newsletter_adapter_events.when import parse_when
+from last_newsletter_adapter_events.when import parse_when, split_listing
 from last_newsletter_core.event_ports import ExtractionFailedError
 from last_newsletter_core.events import EntityRef, EntityRole, EventCandidate, EventKind
 from llmhost import CompletionRequest, LlmError, LlmOutputError, resolve_model
@@ -160,11 +160,21 @@ class LocalLlmEventExtractor:
                 self.stats.rejected["empty_title"] += 1
             else:
                 low_conf = low_conf or event.confidence == "low"
-                accepted.append(_candidate(event, message_id, home_tz))
+                accepted.extend(_candidates(event, message_id, home_tz))
         return accepted, low_conf
 
 
-def _candidate(event: RawEvent, message_id: str, home_tz: str) -> EventCandidate:
+def _candidates(event: RawEvent, message_id: str, home_tz: str) -> list[EventCandidate]:
+    """One candidate per listed date: a listing naming several days is several events, each with
+    its own UUID (docs/design/event-ledger.md section 3), sharing the quoted evidence line."""
+    days = split_listing(event.start_text)
+    end_text = event.end_text if len(days) == 1 else ""
+    return [_candidate(event, message_id, home_tz, day, end_text) for day in days]
+
+
+def _candidate(
+    event: RawEvent, message_id: str, home_tz: str, start_text: str, end_text: str
+) -> EventCandidate:
     entities = tuple(
         EntityRef(name=name.strip(), role=EntityRole.ORGANIZER)
         for name in event.organizers
@@ -181,7 +191,7 @@ def _candidate(event: RawEvent, message_id: str, home_tz: str) -> EventCandidate
         title=event.title.strip(),
         kind=EventKind(event.kind),
         summary=summary,
-        when=parse_when(event.start_text, event.end_text, tz=home_tz),
+        when=parse_when(start_text, end_text, tz=home_tz),
         evidence=event.evidence.strip(),
         entities=entities,
         url=event.url.strip() or None,

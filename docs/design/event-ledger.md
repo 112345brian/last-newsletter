@@ -29,7 +29,9 @@ All types are frozen dataclasses with no I/O. Datetimes are timezone-aware; cons
 - **`Mention`** (provenance, never overwritten): `message_id`, `seen_at`, `source`, `raw_date_text`, `evidence` (the quoted line the item came from), `match_rule` (which identity rung linked it).
 - **`ItemState`**: `OPEN`, `DONE`, `DISMISSED`, `SNOOZED(until)`, `EXPIRED`. State is separate from extracted fields so a re-extraction never overwrites what the owner did.
 - **`EventCandidate`**: untrusted extractor output. Partial values allowed; the use case validates it into an `Event` or rejects it with a counted reason.
-- **`PartialWhen`**: `year | None`, `month`, `day`, `weekday | None`, `time | None`, `tz | None`, `raw_text`.
+- **`PartialWhen`**: `year | None`, `month`, `day`, `weekday | None`, `time | None`, `showtimes`, `tz | None`, `raw_text`.
+
+**One event is one happening on one date.** A listing that runs over several days ("Friday, November 13th - 12PM, 3:30PM, 7PM Saturday, November 14th - 12PM, ...") is one event per distinct date, each with its own UUID. The several start times within a date are `Event.showtimes` (empty unless there are at least two; the first is the time in `when`). *Decision (2026-11):* we considered a series parent referencing child dates, and chose per-date events because it needs no new entity or link type: every date is individually citable, snoozable and dismissable, a later email about "Monday's screening" cites Monday's UUID by the ordinary identity ladder, and the digest lists dates as it already does. The extractor does the split (`split_listing`, from the weekday + month/day boundaries in the quoted text, so it never invents a date); core only ever sees one date per candidate. The sibling dates stay unlinked: the same title on different dates is *separate by design*, not a possible duplicate. A time list is told apart from a range by its separator ("9pm-2am", "9pm to 2am" are ranges; "12PM, 3:30PM, 7PM" are showtimes).
 
 `Theme` is unchanged **[V: scaffold review, section 1.1]**. It stays the digest's ranking record; the ledger does not extend it.
 
@@ -40,6 +42,7 @@ All types are frozen dataclasses with no I/O. Datetimes are timezone-aware; cons
 | Resolve missing year | Given `PartialWhen` and a reference date, choose the year in which the month, day and weekday agree; if no weekday, take the nearest future occurrence within a grace window; if still ambiguous, mark uncertain. | Survey: lists like "SATURDAY DEC 12" omit the year. **[V]** Dec 12 is a Saturday in 2026 (computed from Fri Nov 6, 2026 plus 36 days), so the weekday pins the year. |
 | Default task deadline | First seen plus 7 days; `due_is_default = True`. | Owner decision 2026-11-06. |
 | Resurface | A lapsed task of high importance returns once (`resurfaced` becomes 1), then expires. Never resurfaces if `DONE` or `DISMISSED`. | Owner decision. |
+| Past weekday dates | A date whose weekday does pin a year, but only to one already behind us, is `past_date`, not `ambiguous_year`. `ambiguous_year` means no year in the window fits the weekday. | The first real-mail run reported past listings as ambiguous. |
 | Past dates | Reject if start is before now minus a grace period, unless the text marks it as a recap; count and report rejections. | LLMs invent dates. |
 | Cancellation | A mention marked as cancelling moves a matching open item to `DISMISSED` with reason `cancelled_by_source`, and keeps the mention. | The survey saw a mail that cancels an event. |
 | Urgency | `UrgencyPolicy.band(item, now)` returns an ordered band. Core ships a simple default (days until). | See port below; the job repo's survival curve becomes a later implementation. |
@@ -50,8 +53,8 @@ Match ladder, stop at the first hit, always against open or recently closed item
 
 1. iCalendar `UID` (with `RECURRENCE-ID` for one instance); a higher `SEQUENCE` updates, a lower one is ignored.
 2. Canonical URL, when the item has one.
-3. Normalized title + local date + venue, within a ±1 day window.
-4. Otherwise a new item.
+3. Normalized title + venue on the **same listed local date**. One day off counts only when a date is genuinely uncertain: an after-midnight listing (`night_of` set, "Sat 1:30am" is Friday night) on either side. Two consecutive listed dates of one title (Sunday, Monday) are two events and never cite each other.
+4. Otherwise a new item. A similarity score (any date) may *link* it as a possible duplicate (a series under a slightly different title, a week later) but never merges across dates; a hit with the same title and venue on another date is a known sibling and is not linked.
 
 **Failure policy: when a candidate could match several items, keep it separate and link it as a possible duplicate. Showing a duplicate is safe; hiding a live item is not.** This mirrors the job repo's rule.
 

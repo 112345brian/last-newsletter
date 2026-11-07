@@ -42,6 +42,7 @@ def events_as_data(events: list[Event]) -> list[dict[str, Any]]:
             "kind": e.kind.value,
             "title": e.title,
             "when": _when(e.when),
+            "showtimes": [t.strftime("%H:%M") for t in e.showtimes],
             "state": e.state.value,
             "first_seen": e.first_seen.isoformat(),
             "last_seen": e.last_seen.isoformat(),
@@ -73,7 +74,8 @@ def render_text(events: list[Event]) -> str:
         return "no events stored yet (run `fetch`, then `process`)"
     lines: list[str] = []
     for item in events_as_data(events):
-        lines.append(f"{item['id']}  {item['when']}  {item['title']}  [{item['state']}]")
+        times = f"  showtimes {', '.join(item['showtimes'])}" if item["showtimes"] else ""
+        lines.append(f"{item['id']}  {item['when']}{times}  {item['title']}  [{item['state']}]")
         lines.extend(
             f"    mention {m['message_id']}  rung={m['rung']}  evidence: {m['evidence']}"
             for m in item["mentions"]

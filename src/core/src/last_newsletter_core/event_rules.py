@@ -11,6 +11,7 @@ __arbor__ = {"ring": "core"}
 import re
 import unicodedata
 from datetime import date, datetime, timedelta
+from datetime import time as clock_time
 from enum import StrEnum
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -131,11 +132,17 @@ def _resolve_day(partial: PartialWhen, *, today: date, cutoff: date | None) -> d
         return RejectReason.INVALID_DATE
     if partial.year is not None:
         return _explicit_day(partial.year, partial.month, partial.day)
+    return _pick_year(partial, today=today, cutoff=cutoff)
+
+
+def _pick_year(partial: PartialWhen, *, today: date, cutoff: date | None) -> date | RejectReason:
     options = _year_options(partial, today=today, cutoff=cutoff)
     if options:
         if cutoff is None:
             return min(options, key=lambda d: abs((d - today).days))
         return min(options)
+    if cutoff is not None and _year_options(partial, today=today, cutoff=None):
+        return RejectReason.PAST_DATE  # the weekday did pin a year; that day is already behind us
     # No year fits: a weekday that never lines up is ambiguous, an impossible date is invalid.
     return RejectReason.AMBIGUOUS_YEAR if partial.weekday is not None else RejectReason.INVALID_DATE
 
@@ -176,6 +183,12 @@ def resolve_when(
         when = Timed(start=start, tz_name=zone.key, end=end)
         before_cutoff = not allow_past and start < now - PAST_GRACE
     return RejectReason.PAST_DATE if before_cutoff else when
+
+
+def _showtimes(when: PartialWhen) -> tuple[clock_time, ...]:
+    """The distinct start times of one date, in clock order; fewer than two is not a list."""
+    times = tuple(sorted({t.replace(tzinfo=None) for t in when.showtimes}))
+    return times if len(times) > 1 else ()
 
 
 def _squash(text: str) -> str:
@@ -268,4 +281,5 @@ def validate_candidate(
         price=" ".join(candidate.price.split()),
         age=" ".join(candidate.age.split()),
         night_of=local_date(when) - timedelta(days=1) if candidate.when.late_night else None,
+        showtimes=_showtimes(candidate.when),
     )

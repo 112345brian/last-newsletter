@@ -145,6 +145,7 @@ class PartialWhen:
     time: clock_time | None = None
     end_time: clock_time | None = None  # end before/at `time` means it ends the next day
     late_night: bool = False  # listed after midnight but belongs to the previous night
+    showtimes: tuple[clock_time, ...] = ()  # every start time listed for this one date
     tz: str | None = None
     raw_text: str = ""
 
@@ -194,6 +195,7 @@ class EventDraft:
     price: str = ""
     age: str = ""
     night_of: date | None = None
+    showtimes: tuple[clock_time, ...] = ()
 
     @property
     def venue(self) -> str:
@@ -206,6 +208,11 @@ class Event:
     midnight, `night_of` is the date of the night it belongs to (the previous day).
 
     A later email about the same thing adds a `Mention`, not a row.
+
+    One event is one real-world happening on one date. A listing that runs over several days
+    (or a film that plays Fri, Sat and Sun) is one event per date, each with its own UUID; the
+    several start times within a date are `showtimes` (empty unless there are at least two;
+    the first is `when`'s own time).
 
     `possible_duplicates` is the structured citation column for ambiguous matches: ids of other
     events this might be the same as. Showing a duplicate is safe; hiding a live item is not.
@@ -231,6 +238,7 @@ class Event:
     price: str = ""
     age: str = ""
     night_of: date | None = None
+    showtimes: tuple[clock_time, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.title.strip():

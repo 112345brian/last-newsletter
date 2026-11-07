@@ -33,6 +33,7 @@ def _event(
     venue: str = "The Venue",
     uid: str | None = None,
     url: str | None = None,
+    night_of: date | None = None,
 ) -> Event:
     return Event(
         id=_id(n),
@@ -55,6 +56,7 @@ def _event(
         last_seen=_T,
         uid=uid,
         url=url,
+        night_of=night_of,
     )
 
 
@@ -65,6 +67,7 @@ def _draft(
     venue: str = "The Venue",
     uid: str | None = None,
     url: str | None = None,
+    night_of: date | None = None,
 ) -> EventDraft:
     return EventDraft(
         kind=EventKind.EVENT,
@@ -75,6 +78,7 @@ def _draft(
         entities=_venue(venue),
         uid=uid,
         url=url,
+        night_of=night_of,
     )
 
 
@@ -120,22 +124,27 @@ def test_title_date_venue_matches_ignoring_case_and_accents() -> None:
     assert decision.event == existing
 
 
-def test_one_day_off_matches_when_exactly_one_candidate() -> None:
-    existing = _event(1, day=date(2026, 12, 13))
-    assert identify(_draft(), [existing]).rule is MatchRule.TITLE_DATE_VENUE
+def test_consecutive_listed_days_of_one_title_stay_separate() -> None:
+    """A film screening on Sunday and again on Monday is two events, not one cited twice."""
+    sunday = _event(1, day=date(2026, 11, 15))
+    decision = identify(_draft(day=date(2026, 11, 16)), [sunday])
+    assert (decision.rule, decision.event, decision.possible_duplicates) == (
+        MatchRule.NEW,
+        None,
+        (),
+    )
+    tuesday = _event(2, day=date(2026, 11, 17))
+    assert identify(_draft(day=date(2026, 11, 16)), [sunday, tuesday]).rule is MatchRule.NEW
 
 
-def test_exact_date_beats_neighbouring_night() -> None:
-    friday, saturday = _event(1, day=date(2026, 12, 11)), _event(2, day=date(2026, 12, 12))
-    decision = identify(_draft(day=date(2026, 12, 12)), [friday, saturday])
-    assert decision.event == saturday
-
-
-def test_two_equally_close_candidates_are_ambiguous() -> None:
-    a, b = _event(1, day=date(2026, 12, 11)), _event(2, day=date(2026, 12, 13))
-    decision = identify(_draft(day=date(2026, 12, 12)), [a, b])
-    assert decision.rule is MatchRule.NEW
-    assert decision.possible_duplicates == (_id(1), _id(2))
+def test_one_day_off_matches_only_for_an_after_midnight_listing() -> None:
+    """ "Sat 1:30am" is Friday night: the listed date is uncertain, so one day off may match."""
+    night = _event(1, day=date(2026, 12, 13), night_of=date(2026, 12, 12))
+    assert identify(_draft(day=date(2026, 12, 12)), [night]).rule is MatchRule.TITLE_DATE_VENUE
+    late_draft = _draft(day=date(2026, 12, 13), night_of=date(2026, 12, 12))
+    plain = _event(2, day=date(2026, 12, 12))
+    assert identify(late_draft, [plain]).rule is MatchRule.TITLE_DATE_VENUE
+    assert identify(_draft(day=date(2026, 12, 11)), [night]).rule is MatchRule.NEW
 
 
 def test_same_title_on_a_different_date_is_a_different_event() -> None:
@@ -178,7 +187,7 @@ def test_similarity_merges_high_scores_links_middling_and_ignores_low() -> None:
     ignored = identify(draft, [], similar=lambda: hit(0.3), policy=policy)
     assert (ignored.rule, ignored.possible_duplicates) == (MatchRule.NEW, ())
     far = identify(draft, [], similar=lambda: hit(0.99, date(2027, 5, 5)), policy=policy)
-    assert (far.rule, far.possible_duplicates) == (MatchRule.NEW, ())
+    assert (far.rule, far.event) == (MatchRule.NEW, None)  # linked, never merged across dates
 
 
 def test_similarity_never_merges_across_conflicting_venues() -> None:
@@ -201,3 +210,21 @@ def test_two_high_similarity_hits_are_ambiguous() -> None:
     )
     assert decision.rule is MatchRule.NEW
     assert decision.possible_duplicates == (_id(5), _id(6))
+
+
+def test_similar_event_on_another_date_is_linked_not_merged() -> None:
+    """Same series, different date (and a different title): never a match, but worth a link."""
+    policy = IdentityPolicy(merge_at=0.9, link_at=0.7)
+    week_later = _event(5, title="Zebra Night Vol 2", day=date(2026, 12, 19))
+    decision = identify(
+        _draft(title="Zebra Night Vol 3"), [], similar=lambda: [(week_later, 0.97)], policy=policy
+    )
+    assert (decision.rule, decision.event) == (MatchRule.NEW, None)
+    assert decision.possible_duplicates == (_id(5),)
+
+
+def test_same_title_on_another_date_is_not_linked_by_similarity() -> None:
+    policy = IdentityPolicy(merge_at=0.9, link_at=0.7)
+    other_day = _event(5, day=date(2026, 12, 19))
+    decision = identify(_draft(), [], similar=lambda: [(other_day, 0.99)], policy=policy)
+    assert (decision.rule, decision.possible_duplicates) == (MatchRule.NEW, ())
