@@ -9,6 +9,8 @@ Callers must consume the ``NotifyResult`` a ``push`` returns.
 """
 from __future__ import annotations
 
+__arbor__ = {"ring": "core"}
+
 import enum
 from typing import Protocol
 

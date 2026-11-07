@@ -22,6 +22,8 @@ last_newsletter_core or BuildDigestUseCase needs to change to add one.
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "adapters"}
+
 import sqlite3
 from typing import TYPE_CHECKING
 

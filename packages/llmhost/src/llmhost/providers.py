@@ -8,6 +8,8 @@ Add a second provider by writing `provider_<name>.py` (same shape as
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "libs"}
+
 from typing import TYPE_CHECKING, Protocol
 
 from llmhost.provider_claude import ClaudeProvider

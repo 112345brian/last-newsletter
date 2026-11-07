@@ -6,6 +6,8 @@ inward, from adapters toward these Protocols, never the other way.
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "core"}
+
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:

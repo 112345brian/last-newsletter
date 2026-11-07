@@ -1,3 +1,5 @@
+__arbor__ = {"ring": "libs"}
+
 from llmhost.contracts import CompletionRequest, CompletionResult, Usage
 from llmhost.providers import Provider, resolve
 from llmhost.usage_ledger import record_usage, total_tokens

@@ -12,6 +12,9 @@ Install::
 
 Standard library only; no environment, files or clock of its own.
 """
+
+__arbor__ = {"ring": "core"}
+
 from notification_port.notifier_port import Notifier, NotifyResult
 from notification_port.transport import NtfyTransport, UrllibNtfyTransport
 

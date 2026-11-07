@@ -18,6 +18,8 @@ group first appeared.
 """
 from __future__ import annotations
 
+__arbor__ = {"ring": "core"}
+
 from collections.abc import Callable, Iterable
 from typing import Protocol, TypeVar
 

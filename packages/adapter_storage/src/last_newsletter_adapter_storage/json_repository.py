@@ -8,6 +8,8 @@ directory of files ever stops being enough.
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "adapters"}
+
 import json
 import re
 from datetime import date, datetime

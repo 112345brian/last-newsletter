@@ -12,6 +12,8 @@ or newsletter knowledge in it, factored out into its own package rather than kep
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "adapters"}
+
 import email
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime

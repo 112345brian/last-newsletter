@@ -8,6 +8,8 @@ this behind the same port without any other change.
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "adapters"}
+
 import re
 import unicodedata
 from typing import TYPE_CHECKING

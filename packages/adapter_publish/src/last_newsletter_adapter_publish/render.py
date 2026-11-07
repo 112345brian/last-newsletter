@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "adapters"}
+
 from html import escape
 from typing import TYPE_CHECKING
 

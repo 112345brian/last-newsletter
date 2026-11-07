@@ -38,6 +38,8 @@ Everything is UTF-8 (``encoding="utf-8"``), per the repo's Windows convention.
 """
 from __future__ import annotations
 
+__arbor__ = {"ring": "adapters"}
+
 import json
 import logging
 import os

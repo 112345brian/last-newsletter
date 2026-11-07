@@ -1,3 +1,5 @@
+__arbor__ = {"ring": "core"}
+
 from last_newsletter_core.entities import Cadence, Digest, EmailMessage, Theme, digest_slug
 from last_newsletter_core.ports import (
     DigestPublisher,

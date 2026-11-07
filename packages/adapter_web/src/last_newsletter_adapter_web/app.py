@@ -8,6 +8,8 @@ running except this one process on localhost.
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "adapters"}
+
 from typing import TYPE_CHECKING
 
 from flask import Flask, abort, render_template_string

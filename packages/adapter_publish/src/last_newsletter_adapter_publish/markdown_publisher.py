@@ -6,6 +6,8 @@ can be added later as its own adapter package without touching core or this one.
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "adapters"}
+
 from typing import TYPE_CHECKING
 
 from last_newsletter_adapter_publish.render import render_markdown

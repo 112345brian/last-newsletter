@@ -8,6 +8,8 @@ The slot is an object, not module state: the application creates one and decides
 """
 from __future__ import annotations
 
+__arbor__ = {"ring": "core"}
+
 from typing import Protocol
 
 

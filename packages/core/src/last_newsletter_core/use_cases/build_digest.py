@@ -16,6 +16,8 @@ whatever those adapters hand back.
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "core"}
+
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 

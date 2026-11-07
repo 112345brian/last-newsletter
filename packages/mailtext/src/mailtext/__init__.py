@@ -8,6 +8,8 @@ text/plain part, falling back to converting text/html when that's all there is).
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "libs"}
+
 from email.header import decode_header
 from typing import TYPE_CHECKING
 

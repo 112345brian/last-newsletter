@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "libs"}
+
 from dataclasses import dataclass, field
 
 

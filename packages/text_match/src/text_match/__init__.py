@@ -15,6 +15,8 @@ anywhere text is matched against a vocabulary, not just there.
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "libs"}
+
 import functools
 import re
 import unicodedata

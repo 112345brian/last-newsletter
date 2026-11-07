@@ -12,6 +12,8 @@ themes exist, which prior ones continue (by matching `theme_key`), and each one'
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "adapters"}
+
 from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING, Any, cast
 

@@ -15,6 +15,8 @@ from configuration, which rejects line breaks so a value cannot inject headers.
 
 from __future__ import annotations
 
+__arbor__ = {"ring": "adapters"}
+
 import smtplib
 import ssl
 from dataclasses import dataclass
