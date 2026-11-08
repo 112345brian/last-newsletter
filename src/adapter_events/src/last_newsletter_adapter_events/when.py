@@ -9,6 +9,7 @@ from __future__ import annotations
 __arbor__ = {"ring": "adapters"}
 
 import re
+from datetime import date
 from datetime import time as clock_time
 from itertools import pairwise
 
@@ -54,6 +55,8 @@ def parse_when(start_text: str, end_text: str = "", *, tz: str | None = None) ->
         month = day = None
     raw = text if not end_text.strip() else f"{text} - {end_text.strip()}"
     times, ranged = _times(text)
+    if len(starts := _listed_starts(text)) == _MIN_LISTED_DAYS and is_overnight_span(text, starts):
+        times, ranged = times[:2], True  # one span: start on the first day, end on the next
     end_times = _times(end_text)[0]
     start = times[0] if times else None
     end = times[1] if ranged and len(times) > 1 else (end_times[0] if end_times else None)
@@ -140,22 +143,48 @@ _LISTED_DAY = re.compile(
 )
 
 
+def _listed_starts(text: str) -> list[int]:
+    return [
+        m.start()
+        for m in _LISTED_DAY.finditer(text)
+        if _month_day(m.group(0)) is not None or "/" in m.group(0)
+    ]
+
+
 def split_listing(start_text: str) -> list[str]:
     """Cut one listing that names several dated days ("Friday, November 13th - 12PM, 7PM Saturday,
     November 14th - 12PM") into one text per day. Text with fewer than two such days is returned
     whole. Only a weekday followed by a month and day starts a segment."""
-    starts = [
-        m.start()
-        for m in _LISTED_DAY.finditer(start_text)
-        if _month_day(m.group(0)) is not None or "/" in m.group(0)
-    ]
+    starts = _listed_starts(start_text)
     if len(starts) < _MIN_LISTED_DAYS:
+        return [start_text]
+    if is_overnight_span(start_text, starts):
         return [start_text]
     bounds = [*starts, len(start_text)]
     return [start_text[a:b].strip() for a, b in pairwise(bounds)]
 
 
 _MIN_LISTED_DAYS = 2
+
+
+def is_overnight_span(text: str, starts: list[int]) -> bool:
+    """Exactly two consecutive listed days, each with one single time and the second time
+    earlier than the first ("Friday, November 6th - 6:30PM Saturday, November 7th - 9AM"): one
+    overnight span (an end time on the next day), not two sessions. A later or equal second time,
+    a list of showtimes, or non-consecutive days stay one event per date."""
+    if len(starts) != _MIN_LISTED_DAYS:
+        return False
+    first, second = text[: starts[1]], text[starts[1] :]
+    (t1, r1), (t2, r2) = _times(first), _times(second)
+    one, two = _month_day(first), _month_day(second)
+    if len(t1) != 1 or len(t2) != 1 or r1 or r2 or one is None or two is None:
+        return False
+    (m1, d1), (m2, d2) = one, two
+    try:
+        gap = date(2024, m2, d2) - date(2024, m1, d1)  # 2024: leap year, so Feb 29 is valid
+    except ValueError:
+        return False
+    return gap.days == 1 and t2[0] < t1[0]
 
 
 def _has_meridiem(text: str) -> bool:

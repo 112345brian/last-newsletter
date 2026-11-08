@@ -54,9 +54,10 @@ Match ladder, stop at the first hit, always against open or recently closed item
 1. iCalendar `UID` (with `RECURRENCE-ID` for one instance); a higher `SEQUENCE` updates, a lower one is ignored.
 2. Canonical URL, when the item has one.
 3. Normalized title + venue on the **same listed local date**. One day off counts only when a date is genuinely uncertain: an after-midnight listing (`night_of` set, "Sat 1:30am" is Friday night) on either side. Two consecutive listed dates of one title (Sunday, Monday) are two events and never cite each other.
-4. Otherwise a new item. A similarity score (any date) may *link* it as a possible duplicate (a series under a slightly different title, a week later) but never merges across dates; a hit with the same title and venue on another date is a known sibling and is not linked.
+4. **Same listed date, related title, shared showtime.** One title contains the other (whole words, case-insensitive: `same_date_title_contains`) or they are nearly equal (`same_date_title_similar`, ratio >= 0.85), the venue does not conflict (missing on one side is fine), and the showtimes (or single start times) are equal or overlap. This is how a second email listing the same schedule under a longer title is cited as a mention instead of becoming a new UUID. Never across dates. If more than one same-date event fits, keep separate and link them all. A related same-date title with no shared showtime is only linked.
+5. Otherwise a new item. A similarity score may *link* it as a possible duplicate, but only to events on the **same listed date**: other dates of one series are not duplicates (a series is not N duplicate links). The same applies to a shared URL.
 
-**Failure policy: when a candidate could match several items, keep it separate and link it as a possible duplicate. Showing a duplicate is safe; hiding a live item is not.** This mirrors the job repo's rule.
+An overnight span ("Friday, November 6th - 6:30PM Saturday, November 7th - 9AM": exactly two consecutive days, one time each, the second earlier than the first) is one event with an end time, not two per-date events. A later or equal second time, a showtime list, or non-consecutive days stay one event per date.
 
 The normalization used by rungs 2 and 3 is **core code** (stdlib `unicodedata`). `core` cannot import `text_match` **[V: layers contract]**, and it should not, since "same event" is a domain rule. Fuzzy title similarity is a port (below) with a stdlib default.
 

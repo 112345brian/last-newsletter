@@ -48,7 +48,7 @@ def _mail(n: int, subject: str, body: str) -> EmailMessage:
 _MAILBOX = [
     _mail(2, "SUBJ-A", "This week: Moon Party Sat Dec 12, 9pm at the Warehouse. Doors at 8."),
     _mail(3, "SUBJ-B", "Don't miss it! Moon Party Sat Dec 12, 9pm at the Warehouse."),
-    _mail(4, "SUBJ-C", "New this month: The Moon Party Sat Dec 12, 9pm, Warehouse, all night."),
+    _mail(4, "SUBJ-C", "New this month: The Moon Party Sat Dec 12, 11pm, Warehouse, all night."),
     _mail(5, "SUBJ-D", "Quiz Night Sun Dec 20, 7pm at the Pub."),
     _mail(6, "SUBJ-E", "No dates in this one, just chatter."),
 ]
@@ -57,7 +57,7 @@ _MAILBOX = [
 _ANSWERS: dict[str, dict[str, str]] = {
     "SUBJ-A": {"title": "Moon Party", "start": "Sat Dec 12, 9pm", "venue": "Warehouse"},
     "SUBJ-B": {"title": "Moon Party", "start": "Sat Dec 12, 9pm", "venue": "Warehouse"},
-    "SUBJ-C": {"title": "The Moon Party", "start": "Sat Dec 12, 9pm", "venue": "Warehouse"},
+    "SUBJ-C": {"title": "The Moon Party", "start": "Sat Dec 12, 11pm", "venue": "Warehouse"},
     "SUBJ-D": {"title": "Quiz Night", "start": "Sun Dec 20, 7pm", "venue": "Pub"},
 }
 
@@ -161,8 +161,8 @@ def test_fetch_process_events_digest_end_to_end(
     assert [m["rung"] for m in moon["mentions"]] == ["new", "title_date_venue"]
     assert all(m["evidence"] for m in moon["mentions"])
 
-    # A near-duplicate with a different title is a new event linked as a possible duplicate,
-    # never merged by similarity alone; the link shows from both sides.
+    # Same date, related title, but a different showtime: a new event linked as a possible
+    # duplicate (not cited, not merged); the link shows from both sides.
     near = by_title["The Moon Party"]
     assert near["id"] != moon["id"]
     assert [d["id"] for d in near["possible_duplicates"]] == [moon["id"]]
