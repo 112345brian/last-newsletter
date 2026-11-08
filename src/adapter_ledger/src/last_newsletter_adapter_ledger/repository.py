@@ -23,7 +23,7 @@ from uuid import UUID
 
 from process_lock.file_lock import cross_process_file_lock
 
-from last_newsletter_adapter_ledger.migrations import migrate
+from last_newsletter_adapter_ledger.migrations import migrate, require_current
 from last_newsletter_core.events import (
     AllDay,
     EntityRef,
@@ -67,22 +67,46 @@ class SqliteEventRepository:
     """`EventRepository` over one SQLite file (WAL, foreign keys on, one transaction per write).
 
     `path` may be ``":memory:"`` for tests. The parent directory is created if missing.
+
+    `read_only=True` opens an existing file that cannot be written through this connection: no
+    directory or file is created, no pragma or migration runs, and a database that is not at the
+    current schema raises `SchemaTooOldError` / `SchemaTooNewError`. Use it for reports that must
+    not disturb a ledger another run may be writing. `busy_timeout_s` bounds how long a locked
+    database is waited for.
     """
 
-    def __init__(self, path: Path | str) -> None:
+    def __init__(
+        self,
+        path: Path | str,
+        *,
+        read_only: bool = False,
+        busy_timeout_s: float = _BUSY_TIMEOUT_S,
+    ) -> None:
         self._memory = str(path) == ":memory:"
-        if not self._memory:
+        if read_only and self._memory:
+            msg = "an in-memory ledger cannot be opened read-only"
+            raise ValueError(msg)
+        if not self._memory and not read_only:
             Path(path).parent.mkdir(parents=True, exist_ok=True)
+        target = f"{Path(path).resolve().as_uri()}?mode=ro" if read_only else str(path)
         self._conn = sqlite3.connect(
-            str(path), timeout=_BUSY_TIMEOUT_S, isolation_level=None, check_same_thread=False
+            target,
+            timeout=busy_timeout_s,
+            isolation_level=None,
+            check_same_thread=False,
+            uri=read_only,
         )
         self._conn.row_factory = sqlite3.Row
         try:
-            self._conn.execute("PRAGMA foreign_keys = ON")
-            if not self._memory:
-                self._conn.execute("PRAGMA journal_mode = WAL")
-                self._conn.execute("PRAGMA synchronous = NORMAL")
-            migrate(self._conn)
+            if read_only:
+                self._conn.execute("PRAGMA query_only = ON")
+                require_current(self._conn)
+            else:
+                self._conn.execute("PRAGMA foreign_keys = ON")
+                if not self._memory:
+                    self._conn.execute("PRAGMA journal_mode = WAL")
+                    self._conn.execute("PRAGMA synchronous = NORMAL")
+                migrate(self._conn)
         except BaseException:
             self._conn.close()
             raise

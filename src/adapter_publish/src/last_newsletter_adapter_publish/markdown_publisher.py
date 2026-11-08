@@ -17,15 +17,18 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from last_newsletter_core.entities import Digest
+    from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
 
 
 class MarkdownPublisher:
     """Implements last_newsletter_core.ports.DigestPublisher."""
 
-    def __init__(self, output_dir: Path) -> None:
+    def __init__(self, output_dir: Path, *, upcoming: UpcomingEvents | None = None) -> None:
+        """`upcoming` is the "Coming up" window to print above the themes; None omits it."""
+        self._upcoming = upcoming
         self._output_dir = output_dir
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
     def publish(self, digest: Digest) -> None:
         path = self._output_dir / f"{digest_slug(digest)}.md"
-        path.write_text(render_markdown(digest))
+        path.write_text(render_markdown(digest, self._upcoming))

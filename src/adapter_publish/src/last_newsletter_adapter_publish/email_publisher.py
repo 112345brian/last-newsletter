@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
     from last_newsletter_core.entities import Digest
     from last_newsletter_core.ports import DigestPublisher
+    from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
 
 
 class PublishError(RuntimeError):
@@ -112,7 +113,9 @@ class SmtpEmailPublisher:
         *,
         sent_dir: Path,
         smtp_factory: Callable[[SmtpConfig], SmtpSession] = _open_smtp,
+        upcoming: UpcomingEvents | None = None,
     ) -> None:
+        self._upcoming = upcoming
         self._config = config
         self._sent_dir = sent_dir
         self._smtp_factory = smtp_factory
@@ -125,8 +128,8 @@ class SmtpEmailPublisher:
         message["Subject"] = digest_heading(digest)
         message["From"] = self._config.sender
         message["To"] = self._config.recipient
-        message.set_content(render_markdown(digest))
-        message.add_alternative(render_html(digest), subtype="html")
+        message.set_content(render_markdown(digest, self._upcoming))
+        message.add_alternative(render_html(digest, self._upcoming), subtype="html")
         return message
 
     def publish(self, digest: Digest) -> None:

@@ -20,6 +20,11 @@ class SchemaTooNewError(RuntimeError):
     """The database was written by a newer version of this program; refuse to touch it."""
 
 
+class SchemaTooOldError(RuntimeError):
+    """A read-only open found a database that has not been migrated yet. A reader never
+    migrates (that is a write); run `process` once to upgrade it."""
+
+
 _V1 = (
     """
     CREATE TABLE events (
@@ -128,3 +133,16 @@ def migrate(conn: sqlite3.Connection, migrations: Sequence[Sequence[str]] = MIGR
 def _version(conn: sqlite3.Connection) -> int:
     row = conn.execute("PRAGMA user_version").fetchone()
     return int(row[0])
+
+
+def require_current(
+    conn: sqlite3.Connection, migrations: Sequence[Sequence[str]] = MIGRATIONS
+) -> None:
+    """For read-only connections: raise unless the schema is exactly what this program reads."""
+    current, target = _version(conn), len(migrations)
+    if current > target:
+        msg = f"ledger database is schema v{current}; this program understands up to v{target}"
+        raise SchemaTooNewError(msg)
+    if current < target:
+        msg = f"ledger database is schema v{current}; this program needs v{target}"
+        raise SchemaTooOldError(msg)

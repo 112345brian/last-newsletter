@@ -95,7 +95,15 @@ The normalization used by rungs 2 and 3 is **core code** (stdlib `unicodedata`).
 - **`ApplyAction`**: `done`, `dismiss`, `snooze(until)`, `correct(fields)`, `merge(a, b)`, `split(item)`. Corrections are stored as overrides so a later extraction does not undo them.
 - **`SendReminders`**: `ListReminders` -> `Notifier`; a cooldown per item so one item is not sent repeatedly (pattern from the job repo's deadline alert).
 
-`BuildDigestUseCase` is not modified. Digest and ledger share the email fetch but nothing else.
+- **`ListUpcomingEvents`** (built; `use_cases/list_upcoming_events.py`): the digest's "Coming up" section. Pure: `EventRepository.list_open()` plus `now`, `days` (default 14) and the home time zone in; an `UpcomingEvents` out. Nothing is stored.
+  - Window: `days` calendar dates starting today in the home zone (counted in dates, so a daylight-saving change cannot move it). An event is listed under its own date (`night_of` for a listing past midnight) and dropped once over: its end, else its last showtime, else its start (all-day: the end of its date). A span that began yesterday and is still running stays.
+  - Listed: OPEN, and SNOOZED only after `snoozed_until`. DONE, DISMISSED and EXPIRED never.
+  - One line per event-date; the showtimes of that date are one list on that line. Order within a date: all-day, start time, most-mentioned first (the citation count, distinct emails), title, id.
+  - Each line carries title, start, end (and end date for an overnight span), showtimes, venue, city, URL, the event UUID and the citation count.
+
+`BuildDigestUseCase` is not modified, and neither is the `DigestPublisher` port. The digest and the ledger share the email fetch and, now, one read: `build` opens `<data dir>/events/ledger.sqlite` **read-only** (`SqliteEventRepository(..., read_only=True)`: no file or directory created, no pragma or migration run, a short lock wait), runs `ListUpcomingEvents`, and hands the result to the publishers' constructors, which pass it to the renderers as a second, optional input. The digest stays a function of the raw mail plus the ledger as it is at that moment; no digest row records the section.
+
+Never fatal: a missing ledger omits the section quietly; a locked, corrupt, too-old or too-new ledger omits it with one warning on stderr. `--no-events` skips the read, `--event-days N` sets the window, `--home-tz` (or `LAST_NEWSLETTER_HOME_TZ`) decides what "today" is. `build` prints one `coming up:` line with the counts. The UUID is kept out of the human text: a `data-event-id` attribute in HTML, an `<!-- event:UUID -->` comment in Markdown. Event URLs are emitted only when http(s). `SendReminders` and `ListReminders` remain unbuilt.
 
 ## 8. Package layout
 

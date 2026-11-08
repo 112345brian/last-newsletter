@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from last_newsletter_adapter_email.imap_source import ImapConfig, ImapEmailSource
 from last_newsletter_adapter_knowledge import SqliteKnowledgeWeigher
@@ -46,8 +47,13 @@ from last_newsletter_cli.process_command import (
     execute_process,
 )
 from last_newsletter_cli.process_stage import DEFAULT_BATCH_SIZE
+from last_newsletter_cli.upcoming_section import UpcomingOutcome, load_upcoming
 from last_newsletter_core.entities import Cadence, digest_slug
 from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
+from last_newsletter_core.use_cases.list_upcoming_events import (
+    DEFAULT_WINDOW_DAYS,
+    MAX_WINDOW_DAYS,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -59,6 +65,7 @@ if TYPE_CHECKING:
         RelevanceWeigher,
         Summarizer,
     )
+    from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
 
 _DATA_DIR = Path.home() / ".last-newsletter"
 _SERVE_PORT = 5317
@@ -127,11 +134,13 @@ def _summarizer(name: str) -> Summarizer:
     return ExtractiveSummarizer()
 
 
-def _publisher(*, send: bool) -> DigestPublisher:
-    markdown = MarkdownPublisher(output_dir=_DATA_DIR / "markdown")
+def _publisher(*, send: bool, upcoming: UpcomingEvents | None = None) -> DigestPublisher:
+    markdown = MarkdownPublisher(output_dir=_DATA_DIR / "markdown", upcoming=upcoming)
     if not send:
         return markdown
-    email = SmtpEmailPublisher(smtp_config_from_env(os.environ), sent_dir=_DATA_DIR / "sent")
+    email = SmtpEmailPublisher(
+        smtp_config_from_env(os.environ), sent_dir=_DATA_DIR / "sent", upcoming=upcoming
+    )
     return CompositePublisher([markdown, email])
 
 
@@ -140,7 +149,11 @@ def _raw_store() -> FileRawMessageStore:
 
 
 def _build_use_case(
-    *, send: bool, summarizer: str, direct_imap: bool = False
+    *,
+    send: bool,
+    summarizer: str,
+    direct_imap: bool = False,
+    upcoming: UpcomingEvents | None = None,
 ) -> BuildDigestUseCase:
     """By default the digest reads only the local raw store (filled by `fetch`): no network,
     no IMAP credentials. `direct_imap` keeps the old fetch-inside-build path."""
@@ -150,7 +163,7 @@ def _build_use_case(
     return BuildDigestUseCase(
         email_source,
         _summarizer(summarizer),
-        _publisher(send=send),
+        _publisher(send=send, upcoming=upcoming),
         _digest_repository(),
         weighers=_configured_weighers(),
     )
@@ -169,18 +182,57 @@ def build_window(
     return since, until
 
 
-def _run_build(
-    cadence_name: str,
-    *,
-    send: bool,
-    summarizer: str,
-    force: bool = False,
-    direct_imap: bool = False,
-) -> None:
-    cadence = Cadence(cadence_name)
-    since, until = build_window(cadence, now=datetime.now(tz=UTC), force=force)
+def _now() -> datetime:
+    """The one clock read of `build` (tests replace it)."""
+    return datetime.now(tz=UTC)
 
-    use_case = _build_use_case(send=send, summarizer=summarizer, direct_imap=direct_imap)
+
+@dataclass(frozen=True, slots=True)
+class BuildOptions:
+    """One field per `build` flag."""
+
+    cadence: str
+    send: bool = False
+    summarizer: str = "extractive"
+    force: bool = False
+    direct_imap: bool = False
+    events: bool = True
+    event_days: int = DEFAULT_WINDOW_DAYS
+    home_tz: str = "UTC"
+
+
+def _run_build(options: BuildOptions) -> None:
+    cadence = Cadence(options.cadence)
+    now = _now()
+    since, until = build_window(cadence, now=now, force=options.force)
+    if not 1 <= options.event_days <= MAX_WINDOW_DAYS:
+        msg = f"--event-days must be between 1 and {MAX_WINDOW_DAYS}"
+        raise ConfigError(msg)
+    try:
+        ZoneInfo(options.home_tz)
+    except (ZoneInfoNotFoundError, ValueError, OSError):
+        msg = f"unknown time zone {options.home_tz!r} (--home-tz or LAST_NEWSLETTER_HOME_TZ)"
+        raise ConfigError(msg) from None
+
+    # Read-only and optional: the ledger is never written here and never makes the digest fail.
+    if options.events:
+        outcome = load_upcoming(
+            _DATA_DIR / "events" / LEDGER_NAME,
+            now=now,
+            days=options.event_days,
+            tz_name=options.home_tz,
+        )
+        if outcome.warning is not None:
+            sys.stderr.write(outcome.warning + "\n")
+    else:
+        outcome = UpcomingOutcome(None, "coming up: skipped (--no-events)")
+
+    use_case = _build_use_case(
+        send=options.send,
+        summarizer=options.summarizer,
+        direct_imap=options.direct_imap,
+        upcoming=outcome.upcoming,
+    )
     existing = {digest_slug(d) for _, d in _digest_repository().list_recent(limit=500)}
     digest = use_case.execute(BuildDigestRequest(since=since, until=until, cadence=cadence))
     raw = _raw_store()
@@ -188,12 +240,12 @@ def _run_build(
     facts = BuildFacts(
         slug=digest_slug(digest),
         replaced=digest_slug(digest) in existing,
-        force=force,
+        force=options.force,
         raw_total=len(received),
         raw_newest=max(received, default=None),
         output_dir=str(_DATA_DIR / "markdown"),
     )
-    sys.stdout.write("\n".join(describe_build(digest, facts)) + "\n")
+    sys.stdout.write("\n".join([*describe_build(digest, facts), outcome.line]) + "\n")
 
 
 @dataclass(frozen=True, slots=True)
@@ -339,6 +391,25 @@ def main(argv: Sequence[str] | None = None) -> None:
         "midnight-aligned period. Use this to confirm the pipeline works right now during "
         "setup, not for the regular daily/weekly schedule.",
     )
+    build_parser.add_argument(
+        "--no-events",
+        action="store_true",
+        help="Leave out the Coming up section (by default it lists the next --event-days days "
+        "of open events from the event ledger, when one exists; read-only).",
+    )
+    build_parser.add_argument(
+        "--event-days",
+        type=int,
+        default=DEFAULT_WINDOW_DAYS,
+        help=f"How many calendar days the Coming up section covers, starting today "
+        f"(default {DEFAULT_WINDOW_DAYS}).",
+    )
+    build_parser.add_argument(
+        "--home-tz",
+        default=os.environ.get("LAST_NEWSLETTER_HOME_TZ", "UTC"),
+        help="IANA zone that decides what 'today' is for Coming up "
+        "(default: $LAST_NEWSLETTER_HOME_TZ, else UTC).",
+    )
 
     raw_parser = subparsers.add_parser(
         "fetch",
@@ -403,11 +474,16 @@ def main(argv: Sequence[str] | None = None) -> None:
     if args.command == "build":
         try:
             _run_build(
-                args.cadence,
-                send=args.send,
-                summarizer=args.summarizer,
-                force=args.force,
-                direct_imap=args.imap,
+                BuildOptions(
+                    cadence=args.cadence,
+                    send=args.send,
+                    summarizer=args.summarizer,
+                    force=args.force,
+                    direct_imap=args.imap,
+                    events=not args.no_events,
+                    event_days=args.event_days,
+                    home_tz=args.home_tz,
+                )
             )
         except ConfigError as error:
             parser.exit(2, f"last-newsletter: {error}\n")
