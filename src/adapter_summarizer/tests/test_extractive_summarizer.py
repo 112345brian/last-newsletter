@@ -6,7 +6,7 @@ from last_newsletter_adapter_summarizer.extractive_summarizer import (
     EXCERPT_LIMIT,
     ExtractiveSummarizer,
 )
-from last_newsletter_core.entities import EmailMessage, Theme
+from ranked_digest.entities import EmailMessage, Theme
 
 _TODAY = date(2026, 11, 8)
 

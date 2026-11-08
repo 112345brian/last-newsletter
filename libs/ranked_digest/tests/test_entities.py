@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from last_newsletter_core.entities import Cadence, Digest, digest_slug
+from ranked_digest.entities import Cadence, Digest, digest_slug
 
 
 def test_digest_slug_includes_period_start_and_cadence() -> None:

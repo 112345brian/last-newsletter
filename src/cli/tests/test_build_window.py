@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from last_newsletter_cli.main import build_window
-from last_newsletter_core.entities import Cadence
+from ranked_digest.entities import Cadence
 
 _NOW = datetime(2026, 11, 7, 14, 30, 0, tzinfo=UTC)
 

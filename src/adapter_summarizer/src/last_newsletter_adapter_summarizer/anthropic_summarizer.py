@@ -17,14 +17,14 @@ __arbor__ = {"ring": "adapters"}
 from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING, Any, cast
 
-from last_newsletter_core.entities import Theme
 from llmhost import CompletionRequest, parse_spec, record_usage, resolve
+from ranked_digest.entities import Theme
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from last_newsletter_core.entities import EmailMessage
     from llmhost import Provider
+    from ranked_digest.entities import EmailMessage
 
 _TOOL_NAME = "record_themes"
 _BODY_EXCERPT_CHARS = 1500
@@ -149,7 +149,7 @@ def _to_theme(raw: dict[str, Any], prior_by_key: dict[str, Theme], today: date) 
 
 
 class AnthropicSummarizer:
-    """Implements last_newsletter_core.ports.Summarizer.
+    """Implements ranked_digest.ports.Summarizer.
 
     Named for the default provider, not the mechanism: the actual call goes through
     `llmhost`'s provider registry (`provider` is a spec it resolves, e.g. "claude"),

@@ -21,8 +21,8 @@ from typing import TYPE_CHECKING, Protocol, Self, cast
 
 from imapclient import IMAPClient
 
-from last_newsletter_core.entities import EmailMessage
 from mailtext import decode_header_value, extract_body_text
+from ranked_digest.entities import EmailMessage
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -88,7 +88,7 @@ def _default_connect(host: str) -> _ImapConnection:
 
 
 class ImapEmailSource:
-    """Implements last_newsletter_core.ports.EmailSource.
+    """Implements ranked_digest.ports.EmailSource.
 
     `source_label` on each returned message is the sender address: distinct senders are what
     `core`'s `total_sources` and cross-source theme ranking count as distinct newsletters.

@@ -1,0 +1,17 @@
+[project]
+name = "ranked-digest"
+version = "0.1.0"
+description = "Build a ranked, continuity-aware digest over time: entities, ports, and the use case that fetches, summarizes, weighs, and ranks items into a Digest. No I/O, no framework, no app-specific concept anywhere in it -- a theme carried forward by recurrence or a known deadline, and weighed by any number of pluggable relevance signals, generalizes past newsletters."
+readme = "README.md"
+authors = [
+    { name = "112345brian", email = "11creepman@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "ruff", "ty"]
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

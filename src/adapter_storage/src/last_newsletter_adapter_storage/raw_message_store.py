@@ -28,9 +28,9 @@ from typing import TYPE_CHECKING, Any, Protocol
 from process_lock.file_lock import cross_process_file_lock, replace_with_retry
 
 from last_newsletter_adapter_storage.atomic_file import write_text_atomic
-from last_newsletter_core.entities import EmailMessage
 from last_newsletter_core.event_ports import RawMessageStore
 from last_newsletter_core.events import RawRef
+from ranked_digest.entities import EmailMessage
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

@@ -21,7 +21,6 @@ from last_newsletter_adapter_ledger import MIGRATIONS, SqliteEventRepository, mi
 from last_newsletter_adapter_publish.render import render_html
 from last_newsletter_adapter_storage import FileRawMessageStore
 from last_newsletter_cli.main import fetch_raw
-from last_newsletter_core.entities import Cadence, Digest, EmailMessage
 from last_newsletter_core.events import (
     AllDay,
     EntityRef,
@@ -34,6 +33,7 @@ from last_newsletter_core.events import (
     Mention,
     Timed,
 )
+from ranked_digest.entities import Cadence, Digest, EmailMessage
 
 if TYPE_CHECKING:
     from pathlib import Path

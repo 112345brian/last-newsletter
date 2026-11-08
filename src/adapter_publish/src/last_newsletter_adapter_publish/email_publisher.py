@@ -24,15 +24,15 @@ from email.message import EmailMessage as MimeMessage
 from typing import TYPE_CHECKING, Protocol, Self
 
 from last_newsletter_adapter_publish.render import digest_heading, render_html, render_markdown
-from last_newsletter_core.entities import digest_slug
+from ranked_digest.entities import digest_slug
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from pathlib import Path
 
-    from last_newsletter_core.entities import Digest
-    from last_newsletter_core.ports import DigestPublisher
     from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
+    from ranked_digest.entities import Digest
+    from ranked_digest.ports import DigestPublisher
 
 
 class PublishError(RuntimeError):
@@ -105,7 +105,7 @@ def _open_smtp(config: SmtpConfig) -> SmtpSession:
 
 
 class SmtpEmailPublisher:
-    """Implements last_newsletter_core.ports.DigestPublisher."""
+    """Implements ranked_digest.ports.DigestPublisher."""
 
     def __init__(
         self,

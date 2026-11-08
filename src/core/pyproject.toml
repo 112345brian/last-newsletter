@@ -7,7 +7,12 @@ authors = [
     { name = "112345brian", email = "11creepman@gmail.com" }
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "ranked-digest",
+]
+
+[tool.uv.sources]
+ranked-digest = { workspace = true }
 
 [dependency-groups]
 dev = ["pytest", "pytest-cov", "ruff", "ty"]

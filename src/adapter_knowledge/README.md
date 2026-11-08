@@ -1,6 +1,6 @@
 # last-newsletter-adapter-knowledge
 
-Optional personalization. Implements `last_newsletter_core.ports.RelevanceWeigher`
+Optional personalization. Implements `ranked_digest.ports.RelevanceWeigher`
 by reading a personal `knowledge.db` (schema: https://github.com/112345brian/knowledge)
 read-only — no dependency on that project's own code, only on its versioned schema.
 

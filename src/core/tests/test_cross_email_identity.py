@@ -6,7 +6,6 @@ from datetime import UTC, datetime, time
 
 from event_fakes import InMemoryEventRepository, ScriptedExtractor, ScriptedReader, SequentialIds
 
-from last_newsletter_core.entities import EmailMessage
 from last_newsletter_core.event_identity import IdentityPolicy, identify
 from last_newsletter_core.event_rules import validate_candidate
 from last_newsletter_core.event_similarity import DifflibSimilarEventIndex
@@ -19,6 +18,7 @@ from last_newsletter_core.events import (
     PartialWhen,
 )
 from last_newsletter_core.use_cases import IngestEvents, IngestPorts, IngestResult
+from ranked_digest.entities import EmailMessage
 
 _NOW = datetime(2026, 11, 6, 12, 0, tzinfo=UTC)
 _SHORT = "La bola negra"

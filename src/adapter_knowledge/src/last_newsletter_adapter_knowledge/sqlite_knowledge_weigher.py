@@ -1,6 +1,6 @@
 """Reads a personal knowledge.db (schema: https://github.com/112345brian/knowledge) read-only,
 translating "do I have facts about this candidate, and how many corroborate it mattering to
-me" into the float last_newsletter_core.ports.RelevanceWeigher expects.
+me" into the float ranked_digest.ports.RelevanceWeigher expects.
 
 Deliberately NOT a dependency on the `knowledge` project's own (unpublished, internal) Python
 code — that package exists to be an application, not a library, and has no stability promise
@@ -57,7 +57,7 @@ class SchemaVersionMismatchError(RuntimeError):
 
 
 class SqliteKnowledgeWeigher:
-    """Implements last_newsletter_core.ports.RelevanceWeigher.
+    """Implements ranked_digest.ports.RelevanceWeigher.
 
     `weight_per_fact` is this adapter's translation knob: how much one corroborating
     preference fact about a matched entity should move a theme's ranking. The default (3.0)

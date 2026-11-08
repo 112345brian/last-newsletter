@@ -17,8 +17,8 @@ from last_newsletter_adapter_publish.email_publisher import (
 from last_newsletter_adapter_publish.markdown_publisher import MarkdownPublisher
 from last_newsletter_adapter_storage.json_repository import JsonDigestRepository
 from last_newsletter_adapter_summarizer.extractive_summarizer import ExtractiveSummarizer
-from last_newsletter_core.entities import Cadence, EmailMessage
-from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
+from ranked_digest.entities import Cadence, EmailMessage
+from ranked_digest.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
 if TYPE_CHECKING:
     from email.message import EmailMessage as MimeMessage

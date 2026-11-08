@@ -12,13 +12,13 @@ from last_newsletter_adapter_publish.email_publisher import (
     SmtpConfig,
     SmtpEmailPublisher,
 )
-from last_newsletter_core.entities import Cadence, Digest, Theme
+from ranked_digest.entities import Cadence, Digest, Theme
 
 if TYPE_CHECKING:
     from email.message import EmailMessage as MimeMessage
     from pathlib import Path
 
-    from last_newsletter_core.ports import DigestPublisher
+    from ranked_digest.ports import DigestPublisher
 
 
 class FakeSmtp:

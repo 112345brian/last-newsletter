@@ -10,7 +10,6 @@ from event_fakes import (
     SequentialIds,
 )
 
-from last_newsletter_core.entities import EmailMessage
 from last_newsletter_core.event_identity import IdentityPolicy
 from last_newsletter_core.event_ports import SimilarEventIndex
 from last_newsletter_core.event_rules import RejectReason
@@ -31,6 +30,7 @@ from last_newsletter_core.events import (
 )
 from last_newsletter_core.raw_store import InMemoryRawMessageStore
 from last_newsletter_core.use_cases import IngestEvents, IngestPorts, IngestResult
+from ranked_digest.entities import EmailMessage
 
 _NOW = datetime(2026, 11, 6, 12, 0, tzinfo=UTC)
 _TZ = "America/New_York"

@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from last_newsletter_adapter_events import OllamaClient, OllamaConfig
-from last_newsletter_core.entities import EmailMessage
+from ranked_digest.entities import EmailMessage
 
 NOW = datetime(2026, 11, 6, 12, 0, tzinfo=UTC)
 

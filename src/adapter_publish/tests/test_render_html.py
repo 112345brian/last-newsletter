@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 
 from last_newsletter_adapter_publish.render import render_html
-from last_newsletter_core.entities import Cadence, Digest, Theme
+from ranked_digest.entities import Cadence, Digest, Theme
 
 
 def _digest(themes: tuple[Theme, ...]) -> Digest:

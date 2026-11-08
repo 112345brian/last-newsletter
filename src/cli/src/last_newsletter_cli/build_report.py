@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from last_newsletter_core.entities import Digest
+    from ranked_digest.entities import Digest
 
 _FORCE_HELP = (
     "`--force` ends the window at this moment instead of at midnight UTC, so mail received "

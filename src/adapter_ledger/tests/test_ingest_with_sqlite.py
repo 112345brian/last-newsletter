@@ -10,7 +10,6 @@ from uuid import UUID
 import pytest
 
 from last_newsletter_adapter_ledger import SqliteEventRepository
-from last_newsletter_core.entities import EmailMessage
 from last_newsletter_core.events import (
     EntityRef,
     EntityRole,
@@ -21,6 +20,7 @@ from last_newsletter_core.events import (
     PartialWhen,
 )
 from last_newsletter_core.use_cases import IngestEvents, IngestPorts, IngestResult
+from ranked_digest.entities import EmailMessage
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence

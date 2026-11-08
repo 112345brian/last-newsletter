@@ -13,7 +13,7 @@ from last_newsletter_core.event_ports import ExtractionFailedError
 from last_newsletter_core.events import EntityRole, EventCandidate, EventKind
 
 if TYPE_CHECKING:
-    from last_newsletter_core.entities import EmailMessage
+    from ranked_digest.entities import EmailMessage
 
 from .conftest import NOW, ScriptedTransport, answer, client_for, envelope, event, msg
 

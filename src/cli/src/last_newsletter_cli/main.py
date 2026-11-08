@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from last_newsletter_adapter_email.filtered_source import FilteredEmailSource
 from last_newsletter_adapter_email.imap_source import ImapConfig, ImapEmailSource
 from last_newsletter_adapter_knowledge import SqliteKnowledgeWeigher
 from last_newsletter_adapter_ledger import SqliteEventRepository
@@ -48,24 +49,25 @@ from last_newsletter_cli.process_command import (
 )
 from last_newsletter_cli.process_stage import DEFAULT_BATCH_SIZE
 from last_newsletter_cli.upcoming_section import UpcomingOutcome, load_upcoming
-from last_newsletter_core.entities import Cadence, digest_slug
-from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
+from last_newsletter_core.default_filters import DEFAULT_FILTERS
 from last_newsletter_core.use_cases.list_upcoming_events import (
     DEFAULT_WINDOW_DAYS,
     MAX_WINDOW_DAYS,
 )
+from ranked_digest.entities import Cadence, digest_slug
+from ranked_digest.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from last_newsletter_adapter_storage.raw_message_store import ListableRawMessageStore
-    from last_newsletter_core.ports import (
+    from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
+    from ranked_digest.ports import (
         DigestPublisher,
         EmailSource,
         RelevanceWeigher,
         Summarizer,
     )
-    from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
 
 _DATA_DIR = Path.home() / ".last-newsletter"
 _SERVE_PORT = 5317
@@ -148,6 +150,19 @@ def _raw_store() -> FileRawMessageStore:
     return FileRawMessageStore(_DATA_DIR / "raw")
 
 
+def _filtered(source: EmailSource) -> EmailSource:
+    """Wraps the source in the default Gmail/Google noise filters (see default_filters.py)
+    unless LAST_NEWSLETTER_DISABLE_DEFAULT_FILTERS=1, for a mailbox that is not Gmail-sourced."""
+    if os.environ.get("LAST_NEWSLETTER_DISABLE_DEFAULT_FILTERS") == "1":
+        return source
+    return FilteredEmailSource(source, DEFAULT_FILTERS)
+
+
+def _email_source() -> EmailSource:
+    """The live IMAP source wrapped in the default noise filters."""
+    return _filtered(_imap_source_from_env())
+
+
 def _build_use_case(
     *,
     send: bool,
@@ -158,7 +173,7 @@ def _build_use_case(
     """By default the digest reads only the local raw store (filled by `fetch`): no network,
     no IMAP credentials. `direct_imap` keeps the old fetch-inside-build path."""
     email_source: EmailSource = (
-        _imap_source_from_env() if direct_imap else RawStoreEmailSource(_raw_store())
+        _email_source() if direct_imap else _filtered(RawStoreEmailSource(_raw_store()))
     )
     return BuildDigestUseCase(
         email_source,

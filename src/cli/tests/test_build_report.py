@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from last_newsletter_cli.build_report import BuildFacts, describe_build
-from last_newsletter_core.entities import Cadence, Digest
+from ranked_digest.entities import Cadence, Digest
 
 _SINCE = datetime(2026, 10, 31, tzinfo=UTC)
 _UNTIL = datetime(2026, 11, 7, tzinfo=UTC)

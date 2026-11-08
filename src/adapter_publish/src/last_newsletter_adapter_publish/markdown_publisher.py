@@ -11,17 +11,17 @@ __arbor__ = {"ring": "adapters"}
 from typing import TYPE_CHECKING
 
 from last_newsletter_adapter_publish.render import render_markdown
-from last_newsletter_core.entities import digest_slug
+from ranked_digest.entities import digest_slug
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from last_newsletter_core.entities import Digest
     from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
+    from ranked_digest.entities import Digest
 
 
 class MarkdownPublisher:
-    """Implements last_newsletter_core.ports.DigestPublisher."""
+    """Implements ranked_digest.ports.DigestPublisher."""
 
     def __init__(self, output_dir: Path, *, upcoming: UpcomingEvents | None = None) -> None:
         """`upcoming` is the "Coming up" window to print above the themes; None omits it."""

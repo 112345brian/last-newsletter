@@ -15,7 +15,7 @@ import re
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
-from last_newsletter_core.entities import Cadence, Digest, Theme, digest_slug
+from ranked_digest.entities import Cadence, Digest, Theme, digest_slug
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -80,7 +80,7 @@ def _from_dict(data: dict[str, Any]) -> Digest:
 
 
 class JsonDigestRepository:
-    """Implements last_newsletter_core.ports.DigestRepository."""
+    """Implements ranked_digest.ports.DigestRepository."""
 
     def __init__(self, base_dir: Path) -> None:
         self._base_dir = base_dir

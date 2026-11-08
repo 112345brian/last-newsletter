@@ -2,7 +2,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 from last_newsletter_adapter_publish.markdown_publisher import MarkdownPublisher
-from last_newsletter_core.entities import Cadence, Digest, Theme
+from ranked_digest.entities import Cadence, Digest, Theme
 
 
 def _digest(themes: tuple[Theme, ...] = ()) -> Digest:

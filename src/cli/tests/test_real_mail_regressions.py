@@ -15,7 +15,7 @@ import pytest
 from last_newsletter_adapter_storage import FileRawMessageStore
 from last_newsletter_cli.main import fetch_raw
 from last_newsletter_cli.process_command import ProcessContext, ProcessOptions, execute_process
-from last_newsletter_core.entities import EmailMessage
+from ranked_digest.entities import EmailMessage
 
 if TYPE_CHECKING:
     from pathlib import Path
