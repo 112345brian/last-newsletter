@@ -15,6 +15,10 @@ dependencies = [
     "last-newsletter-adapter-storage",
     "last-newsletter-adapter-web",
     "last-newsletter-adapter-knowledge",
+    "last-newsletter-adapter-ledger",
+    "last-newsletter-adapter-semantic",
+    "last-newsletter-adapter-events",
+    "process-lock",
 ]
 
 [project.scripts]
@@ -31,6 +35,10 @@ last-newsletter-adapter-publish = { workspace = true }
 last-newsletter-adapter-storage = { workspace = true }
 last-newsletter-adapter-web = { workspace = true }
 last-newsletter-adapter-knowledge = { workspace = true }
+last-newsletter-adapter-ledger = { workspace = true }
+last-newsletter-adapter-semantic = { workspace = true }
+last-newsletter-adapter-events = { workspace = true }
+process-lock = { workspace = true }
 
 [build-system]
 requires = ["uv_build>=0.12.19,<0.13.0"]

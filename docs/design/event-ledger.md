@@ -29,7 +29,9 @@ All types are frozen dataclasses with no I/O. Datetimes are timezone-aware; cons
 - **`Mention`** (provenance, never overwritten): `message_id`, `seen_at`, `source`, `raw_date_text`, `evidence` (the quoted line the item came from), `match_rule` (which identity rung linked it).
 - **`ItemState`**: `OPEN`, `DONE`, `DISMISSED`, `SNOOZED(until)`, `EXPIRED`. State is separate from extracted fields so a re-extraction never overwrites what the owner did.
 - **`EventCandidate`**: untrusted extractor output. Partial values allowed; the use case validates it into an `Event` or rejects it with a counted reason.
-- **`PartialWhen`**: `year | None`, `month`, `day`, `weekday | None`, `time | None`, `tz | None`, `raw_text`.
+- **`PartialWhen`**: `year | None`, `month`, `day`, `weekday | None`, `time | None`, `showtimes`, `tz | None`, `raw_text`.
+
+**One event is one happening on one date.** A listing that runs over several days ("Friday, November 13th - 12PM, 3:30PM, 7PM Saturday, November 14th - 12PM, ...") is one event per distinct date, each with its own UUID. The several start times within a date are `Event.showtimes` (empty unless there are at least two; the first is the time in `when`). *Decision (2026-11):* we considered a series parent referencing child dates, and chose per-date events because it needs no new entity or link type: every date is individually citable, snoozable and dismissable, a later email about "Monday's screening" cites Monday's UUID by the ordinary identity ladder, and the digest lists dates as it already does. The extractor does the split (`split_listing`, from the weekday + month/day boundaries in the quoted text, so it never invents a date); core only ever sees one date per candidate. The sibling dates stay unlinked: the same title on different dates is *separate by design*, not a possible duplicate. A time list is told apart from a range by its separator ("9pm-2am", "9pm to 2am" are ranges; "12PM, 3:30PM, 7PM" are showtimes).
 
 `Theme` is unchanged **[V: scaffold review, section 1.1]**. It stays the digest's ranking record; the ledger does not extend it.
 
@@ -40,6 +42,7 @@ All types are frozen dataclasses with no I/O. Datetimes are timezone-aware; cons
 | Resolve missing year | Given `PartialWhen` and a reference date, choose the year in which the month, day and weekday agree; if no weekday, take the nearest future occurrence within a grace window; if still ambiguous, mark uncertain. | Survey: lists like "SATURDAY DEC 12" omit the year. **[V]** Dec 12 is a Saturday in 2026 (computed from Fri Nov 6, 2026 plus 36 days), so the weekday pins the year. |
 | Default task deadline | First seen plus 7 days; `due_is_default = True`. | Owner decision 2026-11-06. |
 | Resurface | A lapsed task of high importance returns once (`resurfaced` becomes 1), then expires. Never resurfaces if `DONE` or `DISMISSED`. | Owner decision. |
+| Past weekday dates | A date whose weekday does pin a year, but only to one already behind us, is `past_date`, not `ambiguous_year`. `ambiguous_year` means no year in the window fits the weekday. | The first real-mail run reported past listings as ambiguous. |
 | Past dates | Reject if start is before now minus a grace period, unless the text marks it as a recap; count and report rejections. | LLMs invent dates. |
 | Cancellation | A mention marked as cancelling moves a matching open item to `DISMISSED` with reason `cancelled_by_source`, and keeps the mention. | The survey saw a mail that cancels an event. |
 | Urgency | `UrgencyPolicy.band(item, now)` returns an ordered band. Core ships a simple default (days until). | See port below; the job repo's survival curve becomes a later implementation. |
@@ -50,10 +53,11 @@ Match ladder, stop at the first hit, always against open or recently closed item
 
 1. iCalendar `UID` (with `RECURRENCE-ID` for one instance); a higher `SEQUENCE` updates, a lower one is ignored.
 2. Canonical URL, when the item has one.
-3. Normalized title + local date + venue, within a ±1 day window.
-4. Otherwise a new item.
+3. Normalized title + venue on the **same listed local date**. One day off counts only when a date is genuinely uncertain: an after-midnight listing (`night_of` set, "Sat 1:30am" is Friday night) on either side. Two consecutive listed dates of one title (Sunday, Monday) are two events and never cite each other.
+4. **Same listed date, related title, shared showtime.** One title contains the other (whole words, case-insensitive: `same_date_title_contains`) or they are nearly equal (`same_date_title_similar`, ratio >= 0.85), the venue does not conflict (missing on one side is fine), and the showtimes (or single start times) are equal or overlap. This is how a second email listing the same schedule under a longer title is cited as a mention instead of becoming a new UUID. Never across dates. If more than one same-date event fits, keep separate and link them all. A related same-date title with no shared showtime is only linked.
+5. Otherwise a new item. A similarity score may *link* it as a possible duplicate, but only to events on the **same listed date**: other dates of one series are not duplicates (a series is not N duplicate links). The same applies to a shared URL.
 
-**Failure policy: when a candidate could match several items, keep it separate and link it as a possible duplicate. Showing a duplicate is safe; hiding a live item is not.** This mirrors the job repo's rule.
+An overnight span ("Friday, November 6th - 6:30PM Saturday, November 7th - 9AM": exactly two consecutive days, one time each, the second earlier than the first) is one event with an end time, not two per-date events. A later or equal second time, a showtime list, or non-consecutive days stay one event per date.
 
 The normalization used by rungs 2 and 3 is **core code** (stdlib `unicodedata`). `core` cannot import `text_match` **[V: layers contract]**, and it should not, since "same event" is a domain rule. Fuzzy title similarity is a port (below) with a stdlib default.
 
@@ -91,7 +95,15 @@ The normalization used by rungs 2 and 3 is **core code** (stdlib `unicodedata`).
 - **`ApplyAction`**: `done`, `dismiss`, `snooze(until)`, `correct(fields)`, `merge(a, b)`, `split(item)`. Corrections are stored as overrides so a later extraction does not undo them.
 - **`SendReminders`**: `ListReminders` -> `Notifier`; a cooldown per item so one item is not sent repeatedly (pattern from the job repo's deadline alert).
 
-`BuildDigestUseCase` is not modified. Digest and ledger share the email fetch but nothing else.
+- **`ListUpcomingEvents`** (built; `use_cases/list_upcoming_events.py`): the digest's "Coming up" section. Pure: `EventRepository.list_open()` plus `now`, `days` (default 14) and the home time zone in; an `UpcomingEvents` out. Nothing is stored.
+  - Window: `days` calendar dates starting today in the home zone (counted in dates, so a daylight-saving change cannot move it). An event is listed under its own date (`night_of` for a listing past midnight) and dropped once over: its end, else its last showtime, else its start (all-day: the end of its date). A span that began yesterday and is still running stays.
+  - Listed: OPEN, and SNOOZED only after `snoozed_until`. DONE, DISMISSED and EXPIRED never.
+  - One line per event-date; the showtimes of that date are one list on that line. Order within a date: all-day, start time, most-mentioned first (the citation count, distinct emails), title, id.
+  - Each line carries title, start, end (and end date for an overnight span), showtimes, venue, city, URL, the event UUID and the citation count.
+
+`BuildDigestUseCase` is not modified, and neither is the `DigestPublisher` port. The digest and the ledger share the email fetch and, now, one read: `build` opens `<data dir>/events/ledger.sqlite` **read-only** (`SqliteEventRepository(..., read_only=True)`: no file or directory created, no pragma or migration run, a short lock wait), runs `ListUpcomingEvents`, and hands the result to the publishers' constructors, which pass it to the renderers as a second, optional input. The digest stays a function of the raw mail plus the ledger as it is at that moment; no digest row records the section.
+
+Never fatal: a missing ledger omits the section quietly; a locked, corrupt, too-old or too-new ledger omits it with one warning on stderr. `--no-events` skips the read, `--event-days N` sets the window, `--home-tz` (or `LAST_NEWSLETTER_HOME_TZ`) decides what "today" is. `build` prints one `coming up:` line with the counts. The UUID is kept out of the human text: a `data-event-id` attribute in HTML, an `<!-- event:UUID -->` comment in Markdown. Event URLs are emitted only when http(s). `SendReminders` and `ListReminders` remain unbuilt.
 
 ## 8. Package layout
 

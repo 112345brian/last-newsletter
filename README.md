@@ -125,6 +125,31 @@ read-only local browser over past digests. Both are deliberately foreground-only
 — no background daemon, no process supervision — because "click an icon, look
 at it, close it" doesn't need a service kept alive in between.
 
+## Pipeline: inbox to event ledger to digest
+
+```bash
+uv run last-newsletter fetch --days 7                  # IMAP -> ~/.last-newsletter/raw (only step with network)
+uv run last-newsletter process --extractor local-llm   # raw -> SQLite event ledger (Ollama on this machine)
+uv run last-newsletter events                          # UUID, mentions, possible duplicates (--json too)
+uv run last-newsletter build                           # digest from the raw store + a Coming up section
+```
+
+`build` also adds a **Coming up** section (in the Markdown file and in the HTML and plain-text parts of the `--send` email) from the event
+ledger: open events in the next 14 days, grouped by date, one line per event-date with its
+showtimes, venue, link and how many emails mentioned it. It only *reads* the ledger
+(`~/.last-newsletter/events/ledger.sqlite`, read-only), so the digest stays stateless; with no
+ledger, or one that is locked or out of date, the digest is built without it (one warning).
+`--event-days N` changes the window, `--no-events` leaves it out, `--home-tz` (or
+`LAST_NEWSLETTER_HOME_TZ`) sets what "today" means. Output:
+`~/.last-newsletter/markdown/<period>_weekly.md`.
+
+Each email can announce events; the first sighting becomes an event with a UUID, later mentions
+cite that UUID, and an ambiguous match becomes a *possible duplicate* link, never a silent
+merge. `process` reads only the local raw store and uses only local models
+(`LAST_NEWSLETTER_OLLAMA_MODEL`, default `gpt-oss:120b`; `LAST_NEWSLETTER_OLLAMA_URL`). Try it
+on real mail without saving anything: `scripts/smoke_real_mail.sh` (counts only). Details,
+scheduling and file layout: [docs/cadence.md](docs/cadence.md).
+
 ## Verifying this repo
 
 ```bash

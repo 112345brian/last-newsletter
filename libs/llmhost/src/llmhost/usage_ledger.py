@@ -7,7 +7,7 @@ one `open(...).write()`, not a schema migration away from working.
 
 from __future__ import annotations
 
-__arbor__ = {"ring": "libs"}
+__arbor__ = {"ring": "llm"}
 
 import json
 from dataclasses import asdict

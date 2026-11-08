@@ -16,8 +16,6 @@ empties the key.
 """
 from __future__ import annotations
 
-__arbor__ = {"ring": "core"}
-
 import re
 import unicodedata
 from collections.abc import Set as AbstractSet

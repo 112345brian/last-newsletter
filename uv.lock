@@ -13,8 +13,11 @@ members = [
     "identity-dedupe",
     "last-newsletter",
     "last-newsletter-adapter-email",
+    "last-newsletter-adapter-events",
     "last-newsletter-adapter-knowledge",
+    "last-newsletter-adapter-ledger",
     "last-newsletter-adapter-publish",
+    "last-newsletter-adapter-semantic",
     "last-newsletter-adapter-storage",
     "last-newsletter-adapter-summarizer",
     "last-newsletter-adapter-web",
@@ -75,11 +78,11 @@ wheels = [
 
 [[package]]
 name = "arborescent"
-version = "0.5.0"
+version = "0.5.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a8/5b/f0ac34773267adf04efd818f5c37d95ec2fd394b1509b8c28683d91e349e/arborescent-0.5.0.tar.gz", hash = "sha256:07cad86599f745b6a35c1248d5079d48e73e007d81e52615954c4681b1067ced", size = 319874, upload-time = "2026-11-07T01:23:21.642Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/aa/a1/d53448b7c5c97499896ded9809b69a2b90d9b5fcba02070b8f08c94744c0/arborescent-0.5.1.tar.gz", hash = "sha256:e30339d33e413063774c12c678514caeeeece9e9aca8dcfc208ce6b02a2c2443", size = 321346, upload-time = "2026-11-07T06:27:45.466Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/9e/454e0cb9295d52d301cd4016f3bb9f99696d68871ef3bb6a91729c3f602e/arborescent-0.5.0-py3-none-any.whl", hash = "sha256:81275fa0a347abc4e56634d7099fdeddc318110b88f5f5385c061a5cf95b84df", size = 207653, upload-time = "2026-11-07T01:23:19.976Z" },
+    { url = "https://files.pythonhosted.org/packages/48/03/a7eeefede479c648e88f29edbbb0fc93774ae94270dbbc3e34acf2e76a0c/arborescent-0.5.1-py3-none-any.whl", hash = "sha256:ef7b306d3c09519fd2b2ed417049637f5b524d8b852482c6c1691faf3efe81ef", size = 208974, upload-time = "2026-11-07T06:27:43.83Z" },
 ]
 
 [[package]]
@@ -709,7 +712,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "arborescent", specifier = ">=0.5.0" },
+    { name = "arborescent", specifier = ">=0.5.1" },
     { name = "import-linter", specifier = ">=2.15" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -740,6 +743,37 @@ requires-dist = [
     { name = "imapclient", specifier = ">=4.1.0" },
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "mailtext", editable = "libs/mailtext" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[[package]]
+name = "last-newsletter-adapter-events"
+version = "0.1.0"
+source = { editable = "src/adapter_events" }
+dependencies = [
+    { name = "last-newsletter-core" },
+    { name = "llmhost" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "last-newsletter-core", editable = "src/core" },
+    { name = "llmhost", editable = "libs/llmhost" },
 ]
 
 [package.metadata.requires-dev]
@@ -782,6 +816,37 @@ dev = [
 ]
 
 [[package]]
+name = "last-newsletter-adapter-ledger"
+version = "0.1.0"
+source = { editable = "src/adapter_ledger" }
+dependencies = [
+    { name = "last-newsletter-core" },
+    { name = "process-lock" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "last-newsletter-core", editable = "src/core" },
+    { name = "process-lock", editable = "vendor/process_lock" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[[package]]
 name = "last-newsletter-adapter-publish"
 version = "0.1.0"
 source = { editable = "src/adapter_publish" }
@@ -809,11 +874,35 @@ dev = [
 ]
 
 [[package]]
+name = "last-newsletter-adapter-semantic"
+version = "0.1.0"
+source = { editable = "src/adapter_semantic" }
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[[package]]
 name = "last-newsletter-adapter-storage"
 version = "0.1.0"
 source = { editable = "src/adapter_storage" }
 dependencies = [
     { name = "last-newsletter-core" },
+    { name = "process-lock" },
 ]
 
 [package.dev-dependencies]
@@ -825,7 +914,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "last-newsletter-core", editable = "src/core" }]
+requires-dist = [
+    { name = "last-newsletter-core", editable = "src/core" },
+    { name = "process-lock", editable = "vendor/process_lock" },
+]
 
 [package.metadata.requires-dev]
 dev = [
@@ -903,12 +995,16 @@ version = "0.1.0"
 source = { editable = "src/cli" }
 dependencies = [
     { name = "last-newsletter-adapter-email" },
+    { name = "last-newsletter-adapter-events" },
     { name = "last-newsletter-adapter-knowledge" },
+    { name = "last-newsletter-adapter-ledger" },
     { name = "last-newsletter-adapter-publish" },
+    { name = "last-newsletter-adapter-semantic" },
     { name = "last-newsletter-adapter-storage" },
     { name = "last-newsletter-adapter-summarizer" },
     { name = "last-newsletter-adapter-web" },
     { name = "last-newsletter-core" },
+    { name = "process-lock" },
 ]
 
 [package.dev-dependencies]
@@ -922,12 +1018,16 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "last-newsletter-adapter-email", editable = "src/adapter_email" },
+    { name = "last-newsletter-adapter-events", editable = "src/adapter_events" },
     { name = "last-newsletter-adapter-knowledge", editable = "src/adapter_knowledge" },
+    { name = "last-newsletter-adapter-ledger", editable = "src/adapter_ledger" },
     { name = "last-newsletter-adapter-publish", editable = "src/adapter_publish" },
+    { name = "last-newsletter-adapter-semantic", editable = "src/adapter_semantic" },
     { name = "last-newsletter-adapter-storage", editable = "src/adapter_storage" },
     { name = "last-newsletter-adapter-summarizer", editable = "src/adapter_summarizer" },
     { name = "last-newsletter-adapter-web", editable = "src/adapter_web" },
     { name = "last-newsletter-core", editable = "src/core" },
+    { name = "process-lock", editable = "vendor/process_lock" },
 ]
 
 [package.metadata.requires-dev]
