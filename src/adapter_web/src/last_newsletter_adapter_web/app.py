@@ -1,6 +1,6 @@
 """Read-only local digest browser.
 
-Depends only on `last_newsletter_core.ports.DigestRepository` — it has no idea
+Depends only on `ranked_digest.ports.DigestRepository` — it has no idea
 whether digests live in JSON files, SQLite, or anywhere else. Run via the CLI's
 `last-newsletter serve`; there is no deploy target, no account system, nothing
 running except this one process on localhost.
@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 from flask import Flask, abort, render_template_string
 
 if TYPE_CHECKING:
-    from last_newsletter_core.ports import DigestRepository
+    from ranked_digest.ports import DigestRepository
 
 _INDEX_TEMPLATE = """
 <!doctype html>

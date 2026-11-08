@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import datetime
 
-    from last_newsletter_core.entities import EmailMessage
+    from ranked_digest.entities import EmailMessage
 
 
 class SequentialIds:

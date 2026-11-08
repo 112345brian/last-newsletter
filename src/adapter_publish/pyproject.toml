@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "last-newsletter-core",
+    "ranked-digest",
 ]
 
 [dependency-groups]
@@ -16,6 +17,7 @@ dev = ["pytest", "pytest-cov", "ruff", "ty"]
 
 [tool.uv.sources]
 last-newsletter-core = { workspace = true }
+ranked-digest = { workspace = true }
 
 [build-system]
 requires = ["uv_build>=0.12.19,<0.13.0"]

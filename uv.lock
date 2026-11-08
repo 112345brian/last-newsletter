@@ -27,6 +27,7 @@ members = [
     "mailtext",
     "notification-port",
     "process-lock",
+    "ranked-digest",
     "source-dates",
     "text-match",
     "text-normalize",
@@ -728,6 +729,7 @@ dependencies = [
     { name = "imapclient" },
     { name = "last-newsletter-core" },
     { name = "mailtext" },
+    { name = "ranked-digest" },
 ]
 
 [package.dev-dependencies]
@@ -743,6 +745,7 @@ requires-dist = [
     { name = "imapclient", specifier = ">=4.1.0" },
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "mailtext", editable = "libs/mailtext" },
+    { name = "ranked-digest", editable = "libs/ranked_digest" },
 ]
 
 [package.metadata.requires-dev]
@@ -760,6 +763,7 @@ source = { editable = "src/adapter_events" }
 dependencies = [
     { name = "last-newsletter-core" },
     { name = "llmhost" },
+    { name = "ranked-digest" },
 ]
 
 [package.dev-dependencies]
@@ -774,6 +778,7 @@ dev = [
 requires-dist = [
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "llmhost", editable = "libs/llmhost" },
+    { name = "ranked-digest", editable = "libs/ranked_digest" },
 ]
 
 [package.metadata.requires-dev]
@@ -790,6 +795,7 @@ version = "0.1.0"
 source = { editable = "src/adapter_knowledge" }
 dependencies = [
     { name = "last-newsletter-core" },
+    { name = "ranked-digest" },
     { name = "text-match" },
 ]
 
@@ -804,6 +810,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "last-newsletter-core", editable = "src/core" },
+    { name = "ranked-digest", editable = "libs/ranked_digest" },
     { name = "text-match", editable = "libs/text_match" },
 ]
 
@@ -822,6 +829,7 @@ source = { editable = "src/adapter_ledger" }
 dependencies = [
     { name = "last-newsletter-core" },
     { name = "process-lock" },
+    { name = "ranked-digest" },
 ]
 
 [package.dev-dependencies]
@@ -836,6 +844,7 @@ dev = [
 requires-dist = [
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "process-lock", editable = "vendor/process_lock" },
+    { name = "ranked-digest", editable = "libs/ranked_digest" },
 ]
 
 [package.metadata.requires-dev]
@@ -852,6 +861,7 @@ version = "0.1.0"
 source = { editable = "src/adapter_publish" }
 dependencies = [
     { name = "last-newsletter-core" },
+    { name = "ranked-digest" },
 ]
 
 [package.dev-dependencies]
@@ -863,7 +873,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "last-newsletter-core", editable = "src/core" }]
+requires-dist = [
+    { name = "last-newsletter-core", editable = "src/core" },
+    { name = "ranked-digest", editable = "libs/ranked_digest" },
+]
 
 [package.metadata.requires-dev]
 dev = [
@@ -903,6 +916,7 @@ source = { editable = "src/adapter_storage" }
 dependencies = [
     { name = "last-newsletter-core" },
     { name = "process-lock" },
+    { name = "ranked-digest" },
 ]
 
 [package.dev-dependencies]
@@ -917,6 +931,7 @@ dev = [
 requires-dist = [
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "process-lock", editable = "vendor/process_lock" },
+    { name = "ranked-digest", editable = "libs/ranked_digest" },
 ]
 
 [package.metadata.requires-dev]
@@ -934,6 +949,7 @@ source = { editable = "src/adapter_summarizer" }
 dependencies = [
     { name = "last-newsletter-core" },
     { name = "llmhost" },
+    { name = "ranked-digest" },
 ]
 
 [package.dev-dependencies]
@@ -948,6 +964,7 @@ dev = [
 requires-dist = [
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "llmhost", editable = "libs/llmhost" },
+    { name = "ranked-digest", editable = "libs/ranked_digest" },
 ]
 
 [package.metadata.requires-dev]
@@ -964,7 +981,7 @@ version = "0.1.0"
 source = { editable = "src/adapter_web" }
 dependencies = [
     { name = "flask" },
-    { name = "last-newsletter-core" },
+    { name = "ranked-digest" },
 ]
 
 [package.dev-dependencies]
@@ -978,7 +995,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "flask", specifier = ">=3.0" },
-    { name = "last-newsletter-core", editable = "src/core" },
+    { name = "ranked-digest", editable = "libs/ranked_digest" },
 ]
 
 [package.metadata.requires-dev]
@@ -1005,6 +1022,7 @@ dependencies = [
     { name = "last-newsletter-adapter-web" },
     { name = "last-newsletter-core" },
     { name = "process-lock" },
+    { name = "ranked-digest" },
 ]
 
 [package.dev-dependencies]
@@ -1028,6 +1046,7 @@ requires-dist = [
     { name = "last-newsletter-adapter-web", editable = "src/adapter_web" },
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "process-lock", editable = "vendor/process_lock" },
+    { name = "ranked-digest", editable = "libs/ranked_digest" },
 ]
 
 [package.metadata.requires-dev]
@@ -1042,6 +1061,9 @@ dev = [
 name = "last-newsletter-core"
 version = "0.1.0"
 source = { editable = "src/core" }
+dependencies = [
+    { name = "ranked-digest" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -1052,6 +1074,7 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "ranked-digest", editable = "libs/ranked_digest" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1569,6 +1592,29 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f5/b0/168030b0bfcc334cf09fa3313afdb888d892c8a0027324683d1de0ec277e/pytz-2026.6.tar.gz", hash = "sha256:3b0fc2727707663d6e517936f444fd8a8b240f1fc32f4bf7ee03274245945284", size = 318520, upload-time = "2026-10-29T09:05:47.011Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b6/25/564f3fc5b70c1398d706c51f2b1470d0ea0b1b2f96fee67877b6f5bdf3b6/pytz-2026.6-py2.py3-none-any.whl", hash = "sha256:7fed3fee8fd6bd4a2b7b75a8d56021d0624127bf69bd5691f115db929ac570b3", size = 506321, upload-time = "2026-10-29T09:05:45.14Z" },
+]
+
+[[package]]
+name = "ranked-digest"
+version = "0.1.0"
+source = { editable = "libs/ranked_digest" }
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
 ]
 
 [[package]]

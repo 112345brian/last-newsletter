@@ -9,8 +9,8 @@ import pytest
 
 from last_newsletter_adapter_storage import FileRawMessageStore
 from last_newsletter_adapter_storage.raw_message_store import raw_ref_for
-from last_newsletter_core.entities import EmailMessage
 from last_newsletter_core.events import RawRef
+from ranked_digest.entities import EmailMessage
 
 
 def _msg(message_id: str = "<a@x>", body: str = "hello", subject: str = "s") -> EmailMessage:

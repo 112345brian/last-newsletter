@@ -21,14 +21,14 @@ __arbor__ = {"ring": "core"}
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
-from last_newsletter_core.entities import Digest
+from ranked_digest.entities import Digest
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import date, datetime
 
-    from last_newsletter_core.entities import Cadence, EmailMessage, Theme
-    from last_newsletter_core.ports import (
+    from ranked_digest.entities import Cadence, EmailMessage, Theme
+    from ranked_digest.ports import (
         DigestPublisher,
         DigestRepository,
         EmailSource,

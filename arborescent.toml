@@ -9,6 +9,7 @@ sources = [
     "libs/text_match/src",
     "libs/mailtext/src",
     "libs/llmhost/src",
+    "libs/ranked_digest/src",
     "src/adapter_email/src",
     "src/adapter_summarizer/src",
     "src/adapter_publish/src",
@@ -34,6 +35,7 @@ source_roots = [
     "libs/text_match/src",
     "libs/mailtext/src",
     "libs/llmhost/src",
+    "libs/ranked_digest/src",
     "src/adapter_email/src",
     "src/adapter_summarizer/src",
     "src/adapter_publish/src",
@@ -93,6 +95,8 @@ external = ["*"]
 [classify]
 "last_newsletter_core" = "core"
 "last_newsletter_core.*" = "core"
+"ranked_digest" = "core"
+"ranked_digest.*" = "core"
 "text_match" = "libs"
 "text_match.*" = "libs"
 "mailtext" = "libs"

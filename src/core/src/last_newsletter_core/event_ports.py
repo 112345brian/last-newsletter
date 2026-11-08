@@ -30,7 +30,6 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import date, datetime
 
-    from last_newsletter_core.entities import EmailMessage
     from last_newsletter_core.events import (
         Event,
         EventCandidate,
@@ -39,6 +38,7 @@ if TYPE_CHECKING:
         Mention,
         RawRef,
     )
+    from ranked_digest.entities import EmailMessage
 
 
 class ExtractionFailedError(Exception):

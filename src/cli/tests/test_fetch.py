@@ -12,7 +12,7 @@ from last_newsletter_adapter_storage.raw_message_store import (
     RawStoreEmailSource,
 )
 from last_newsletter_cli.main import ConfigError, fetch_raw, raw_since
-from last_newsletter_core.entities import EmailMessage
+from ranked_digest.entities import EmailMessage
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -24,8 +24,8 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     from last_newsletter_adapter_events.escalation import Escalator
-    from last_newsletter_core.entities import EmailMessage
     from llmhost import Provider
+    from ranked_digest.entities import EmailMessage
 
 _MAX_EVENTS_PER_EMAIL = 60
 _FIELDS = {f.name for f in dataclasses.fields(EventCandidate)}

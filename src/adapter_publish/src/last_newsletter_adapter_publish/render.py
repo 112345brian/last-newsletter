@@ -12,12 +12,12 @@ from urllib.parse import urlsplit
 if TYPE_CHECKING:
     from datetime import date, time
 
-    from last_newsletter_core.entities import Digest, Theme
     from last_newsletter_core.use_cases.list_upcoming_events import (
         UpcomingDay,
         UpcomingEvent,
         UpcomingEvents,
     )
+    from ranked_digest.entities import Digest, Theme
 
 MAX_TITLE_CHARS = 140
 _NOON = 12

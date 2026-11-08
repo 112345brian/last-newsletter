@@ -1,7 +1,7 @@
 from datetime import UTC, date, datetime, timedelta
 
-from last_newsletter_core.entities import Cadence, Digest, EmailMessage, Theme
-from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
+from ranked_digest.entities import Cadence, Digest, EmailMessage, Theme
+from ranked_digest.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
 _TODAY = date(2026, 1, 8)
 _UNTIL = datetime(2026, 1, 8, tzinfo=UTC)

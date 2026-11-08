@@ -20,8 +20,8 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import datetime
 
-    from last_newsletter_core.entities import EmailMessage
-    from last_newsletter_core.ports import EmailSource
+    from ranked_digest.entities import EmailMessage
+    from ranked_digest.ports import EmailSource
 
 
 class MessageFilter(Protocol):
@@ -31,7 +31,7 @@ class MessageFilter(Protocol):
 
 
 class FilteredEmailSource:
-    """Implements last_newsletter_core.ports.EmailSource."""
+    """Implements ranked_digest.ports.EmailSource."""
 
     def __init__(self, source: EmailSource, filters: Sequence[MessageFilter] = ()) -> None:
         self._source = source

@@ -4,8 +4,8 @@ from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING, Any
 
 from last_newsletter_adapter_summarizer.anthropic_summarizer import AnthropicSummarizer
-from last_newsletter_core.entities import EmailMessage, Theme
 from llmhost import CompletionResult, Usage
+from ranked_digest.entities import EmailMessage, Theme
 
 if TYPE_CHECKING:
     from pathlib import Path

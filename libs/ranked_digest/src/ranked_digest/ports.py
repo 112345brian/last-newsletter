@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Protocol
 if TYPE_CHECKING:
     from datetime import date, datetime
 
-    from last_newsletter_core.entities import Digest, EmailMessage, Theme
+    from ranked_digest.entities import Digest, EmailMessage, Theme
 
 
 class EmailSource(Protocol):

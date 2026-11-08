@@ -32,6 +32,7 @@ members = [
     "libs/text_match",
     "libs/mailtext",
     "libs/llmhost",
+    "libs/ranked_digest",
     "vendor/urgency",
     "vendor/identity_dedupe",
     "vendor/source_dates",
@@ -90,6 +91,7 @@ testpaths = ["src", "libs", "vendor"]
 [tool.importlinter]
 root_packages = [
     "last_newsletter_core",
+    "ranked_digest",
     "last_newsletter_adapter_email",
     "last_newsletter_adapter_summarizer",
     "last_newsletter_adapter_publish",
@@ -120,6 +122,7 @@ type = "layers"
 layers = [
     "last_newsletter_cli",
     "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge | last_newsletter_adapter_semantic | last_newsletter_adapter_ledger | last_newsletter_adapter_events",
-    "last_newsletter_core | text_match | mailtext | llmhost | urgency | identity_dedupe | source_dates | text_normalize | notification_port | usage_ledger_port | durable_outbox | tracker_state",
+    "last_newsletter_core",
+    "ranked_digest | text_match | mailtext | llmhost | urgency | identity_dedupe | source_dates | text_normalize | notification_port | usage_ledger_port | durable_outbox | tracker_state",
     "process_lock",
 ]

@@ -14,12 +14,12 @@ import re
 import unicodedata
 from typing import TYPE_CHECKING
 
-from last_newsletter_core.entities import Theme
+from ranked_digest.entities import Theme
 
 if TYPE_CHECKING:
     from datetime import date
 
-    from last_newsletter_core.entities import EmailMessage
+    from ranked_digest.entities import EmailMessage
 
 EXCERPT_LIMIT = 400
 _NO_SUBJECT = "(no subject)"
@@ -57,7 +57,7 @@ def _title(subject: str) -> str:
 
 
 class ExtractiveSummarizer:
-    """Implements last_newsletter_core.ports.Summarizer."""
+    """Implements ranked_digest.ports.Summarizer."""
 
     def summarize(
         self, messages: list[EmailMessage], *, prior_themes: list[Theme], today: date

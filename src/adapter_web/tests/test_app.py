@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from last_newsletter_adapter_web.app import create_app
-from last_newsletter_core.entities import Cadence, Digest, Theme
+from ranked_digest.entities import Cadence, Digest, Theme
 
 
 class FakeRepository:

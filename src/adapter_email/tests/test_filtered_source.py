@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from last_newsletter_adapter_email.filtered_source import FilteredEmailSource
-from last_newsletter_core.entities import EmailMessage
 from last_newsletter_core.filtering import FilterRule
+from ranked_digest.entities import EmailMessage
 
 _SINCE = datetime(2026, 1, 1, tzinfo=UTC)
 

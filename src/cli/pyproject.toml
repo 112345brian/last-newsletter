@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "last-newsletter-core",
+    "ranked-digest",
     "last-newsletter-adapter-email",
     "last-newsletter-adapter-summarizer",
     "last-newsletter-adapter-publish",
@@ -29,6 +30,7 @@ dev = ["pytest", "pytest-cov", "ruff", "ty"]
 
 [tool.uv.sources]
 last-newsletter-core = { workspace = true }
+ranked-digest = { workspace = true }
 last-newsletter-adapter-email = { workspace = true }
 last-newsletter-adapter-summarizer = { workspace = true }
 last-newsletter-adapter-publish = { workspace = true }

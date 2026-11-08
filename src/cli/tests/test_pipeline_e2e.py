@@ -26,11 +26,11 @@ from last_newsletter_adapter_summarizer.dated_line_extractor import (
 from last_newsletter_adapter_summarizer.extractive_summarizer import ExtractiveSummarizer
 from last_newsletter_cli.main import FetchRawResult, fetch_raw
 from last_newsletter_cli.process_stage import Batching, ProcessSummary, process_raw
-from last_newsletter_core.entities import Cadence, Digest, EmailMessage
 from last_newsletter_core.event_ports import ExtractionFailedError
 from last_newsletter_core.events import EventCandidate, EventId, MatchRule
 from last_newsletter_core.use_cases import IngestEvents, IngestPorts
-from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
+from ranked_digest.entities import Cadence, Digest, EmailMessage
+from ranked_digest.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

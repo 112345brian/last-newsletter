@@ -23,8 +23,8 @@ from last_newsletter_adapter_events import (
     OllamaClient,
     OllamaConfig,
 )
-from last_newsletter_core.entities import EmailMessage
 from last_newsletter_core.event_ports import ExtractionFailedError
+from ranked_digest.entities import EmailMessage
 
 
 class Case(NamedTuple):

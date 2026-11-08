@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from last_newsletter_core.default_filters import DEFAULT_FILTERS
-from last_newsletter_core.entities import EmailMessage
+from ranked_digest.entities import EmailMessage
 
 
 def _message(sender: str, subject: str) -> EmailMessage:

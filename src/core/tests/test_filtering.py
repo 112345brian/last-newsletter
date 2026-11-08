@@ -4,8 +4,8 @@ from datetime import UTC, datetime
 
 import pytest
 
-from last_newsletter_core.entities import EmailMessage
 from last_newsletter_core.filtering import FilterRule
+from ranked_digest.entities import EmailMessage
 
 
 def _message(

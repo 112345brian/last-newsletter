@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import datetime
 
-    from last_newsletter_core.entities import EmailMessage
     from last_newsletter_core.event_ports import (
         EmbeddedEventReader,
         EventExtractor,
@@ -35,6 +34,7 @@ if TYPE_CHECKING:
         SimilarEventIndex,
     )
     from last_newsletter_core.events import EventCandidate, EventDraft, EventId, RawRef
+    from ranked_digest.entities import EmailMessage
 
 _SIMILAR_LIMIT = 5
 _WINDOW = timedelta(days=1)

@@ -19,8 +19,8 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import datetime
 
-    from last_newsletter_core.entities import EmailMessage
     from last_newsletter_core.events import EventCandidate as Candidate
+    from ranked_digest.entities import EmailMessage
 
 _ISO_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
 _MAX_PER_MESSAGE = 50

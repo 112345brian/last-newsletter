@@ -50,24 +50,24 @@ from last_newsletter_cli.process_command import (
 from last_newsletter_cli.process_stage import DEFAULT_BATCH_SIZE
 from last_newsletter_cli.upcoming_section import UpcomingOutcome, load_upcoming
 from last_newsletter_core.default_filters import DEFAULT_FILTERS
-from last_newsletter_core.entities import Cadence, digest_slug
-from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 from last_newsletter_core.use_cases.list_upcoming_events import (
     DEFAULT_WINDOW_DAYS,
     MAX_WINDOW_DAYS,
 )
+from ranked_digest.entities import Cadence, digest_slug
+from ranked_digest.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from last_newsletter_adapter_storage.raw_message_store import ListableRawMessageStore
-    from last_newsletter_core.ports import (
+    from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
+    from ranked_digest.ports import (
         DigestPublisher,
         EmailSource,
         RelevanceWeigher,
         Summarizer,
     )
-    from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
 
 _DATA_DIR = Path.home() / ".last-newsletter"
 _SERVE_PORT = 5317

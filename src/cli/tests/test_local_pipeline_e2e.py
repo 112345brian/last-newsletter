@@ -20,8 +20,8 @@ from last_newsletter_adapter_storage import (
 from last_newsletter_adapter_summarizer.extractive_summarizer import ExtractiveSummarizer
 from last_newsletter_cli.main import fetch_raw
 from last_newsletter_cli.process_command import ProcessContext, ProcessOptions, execute_process
-from last_newsletter_core.entities import Cadence, EmailMessage
-from last_newsletter_core.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
+from ranked_digest.entities import Cadence, EmailMessage
+from ranked_digest.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
 if TYPE_CHECKING:
     from pathlib import Path

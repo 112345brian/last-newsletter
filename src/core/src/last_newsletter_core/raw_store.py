@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from last_newsletter_core.events import RawRef
 
 if TYPE_CHECKING:
-    from last_newsletter_core.entities import EmailMessage
+    from ranked_digest.entities import EmailMessage
 
 
 class InMemoryRawMessageStore:
