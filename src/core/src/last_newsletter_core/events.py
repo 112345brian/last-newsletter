@@ -72,6 +72,8 @@ class MatchRule(StrEnum):
     UID = "uid"
     URL = "url"
     TITLE_DATE_VENUE = "title_date_venue"
+    SAME_DATE_TITLE_CONTAINS = "same_date_title_contains"
+    SAME_DATE_TITLE_SIMILAR = "same_date_title_similar"
     SIMILAR = "similar"
 
 

@@ -9,11 +9,16 @@ Rungs, stopping at the first hit:
 3. normalized title + venue, on the same local date. One day off counts only when a listed date
    is uncertain (an after-midnight listing, `night_of`): a title listed on two consecutive days
    is two events, never one cited twice.
-4. optional: a `SimilarEventIndex` score, consulted only if rungs 1 to 3 found nothing.
+4. the same listed date, a title that contains (or nearly equals) the other, and equal or
+   overlapping showtimes, with no venue conflict: the same showing under another email's
+   wording (`same_date_title_contains`, `same_date_title_similar`). Other dates never match.
+5. optional: a `SimilarEventIndex` score, consulted only if rungs 1 to 4 found nothing.
 
 Failure policy: when a draft could be several existing events, or a rung found something
 suspicious but not certain, it stays a NEW event and is linked to those events as a possible
-duplicate. Showing a duplicate is safe; hiding a live item is not.
+duplicate. Showing a duplicate is safe; hiding a live item is not. Links are for the same date
+(or, for an uncertain after-midnight date, the next one) only: other dates of one series are
+not duplicates.
 """
 
 from __future__ import annotations
@@ -22,18 +27,23 @@ __arbor__ = {"ring": "core"}
 
 import re
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 from typing import TYPE_CHECKING
+from zoneinfo import ZoneInfo
 
 from last_newsletter_core.event_rules import normalize_text
-from last_newsletter_core.events import EventId, MatchRule, local_date
+from last_newsletter_core.events import EventId, MatchRule, Timed, local_date
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
+    from datetime import time as clock_time
 
     from last_newsletter_core.events import Event, EventDraft
 
 _URL_WITH_PATH = re.compile(r"^https?://[^/?]+/.+")
 _WINDOW_DAYS = 1
+_TITLE_NEAR = 0.85
+_MIN_TITLE_CHARS = 4
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,11 +100,52 @@ def _is_dated_sibling(draft: EventDraft, event: Event) -> bool:
     )
 
 
+def _clock_times(item: Event | EventDraft) -> frozenset[clock_time]:
+    """Every start time listed for the item: its own start plus any other showtimes."""
+    times = set(item.showtimes)
+    if isinstance(item.when, Timed):
+        times.add(item.when.start.astimezone(ZoneInfo(item.when.tz_name)).time())
+    return frozenset(times)
+
+
+def _title_rule(a: str, b: str) -> MatchRule | None:
+    """How two normalized titles relate: one contains the other (whole words), or nearly equal."""
+    if min(len(a), len(b)) < _MIN_TITLE_CHARS:
+        return None
+    if f" {a} " in f" {b} " or f" {b} " in f" {a} ":
+        return MatchRule.SAME_DATE_TITLE_CONTAINS
+    if SequenceMatcher(None, a, b).ratio() >= _TITLE_NEAR:
+        return MatchRule.SAME_DATE_TITLE_SIMILAR
+    return None
+
+
 def _decide(rule: MatchRule, found: Sequence[Event], soft: dict[EventId, Event]) -> Decision:
     """One hit is a match; several are ambiguous, so keep separate and link them all."""
     if len(found) == 1:
         return Decision(rule, found[0])
     return Decision(MatchRule.NEW, None, _linked([*found, *soft.values()]))
+
+
+def _same_showing(
+    draft: EventDraft, pool: Sequence[Event], soft: dict[EventId, Event]
+) -> Decision | None:
+    """Rung 4: same listed date and related titles. One that also shares a showtime is the same
+    showing (cite it); several are ambiguous (keep separate, link); none sharing a showtime are
+    only linked. Returns None when nothing on the draft's date has a related title."""
+    title = normalize_text(draft.title)
+    related: list[tuple[Event, MatchRule]] = []
+    for e in pool:
+        rule = _title_rule(title, normalize_text(e.title))
+        if rule is not None and _days_apart(draft, e) == 0 and not _venues_conflict(draft, e):
+            related.append((e, rule))
+    soft.update({e.id: e for e, _ in related})
+    times = _clock_times(draft)
+    sharing = [(e, rule) for e, rule in related if times & _clock_times(e)]
+    if len(sharing) == 1:
+        return Decision(sharing[0][1], sharing[0][0])
+    if sharing:
+        return Decision(MatchRule.NEW, None, _linked(list(soft.values())))
+    return None
 
 
 def identify(
@@ -118,7 +169,7 @@ def identify(
         near = [e for e in same_url if _days_apart(draft, e) <= _WINDOW_DAYS]
         if near:
             return _decide(MatchRule.URL, near, {})
-        soft.update({e.id: e for e in same_url})
+        soft.update({e.id: e for e in same_url if _same_day(draft, e)})
 
     title = normalize_text(draft.title)
     venue = normalize_text(draft.venue)
@@ -128,13 +179,16 @@ def identify(
         return _decide(MatchRule.TITLE_DATE_VENUE, _closest(draft, same_venue), soft)
     soft.update({e.id: e for e in same_title if not _venues_conflict(draft, e)})
 
+    showing = _same_showing(draft, pool, soft)
+    if showing is not None:
+        return showing
+
     if similar is not None:
-        # Any date may be linked (the index already discounts a date mismatch), but an event
-        # with the very same title and venue on another date is a known-separate sibling.
+        # Only the draft's own date may be linked: other dates of a series are not duplicates.
         hits = [
             (e, score)
             for e, score in similar()
-            if score >= policy.link_at and not _is_dated_sibling(draft, e)
+            if score >= policy.link_at and _same_day(draft, e) and not _is_dated_sibling(draft, e)
         ]
         mergeable = [
             e

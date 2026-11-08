@@ -112,7 +112,7 @@ def test_url_match_needs_a_path_and_a_nearby_date() -> None:
     far = _event(2, url=url, day=date(2027, 3, 1), title="Other", venue="")
     decision = identify(_draft(url=url, title="Zzz"), [far])
     assert decision.rule is MatchRule.NEW
-    assert decision.possible_duplicates == (_id(2),)
+    assert decision.possible_duplicates == ()  # another date's page is a series, not a duplicate
     home = _event(3, url="https://example.com", title="Other", venue="")
     assert identify(_draft(url="https://example.com", title="Zzz"), [home]).rule is MatchRule.NEW
 
@@ -212,15 +212,15 @@ def test_two_high_similarity_hits_are_ambiguous() -> None:
     assert decision.possible_duplicates == (_id(5), _id(6))
 
 
-def test_similar_event_on_another_date_is_linked_not_merged() -> None:
-    """Same series, different date (and a different title): never a match, but worth a link."""
+def test_similar_event_on_another_date_is_neither_merged_nor_linked() -> None:
+    """Same series, different date (and a different title): not a match, not a duplicate."""
     policy = IdentityPolicy(merge_at=0.9, link_at=0.7)
     week_later = _event(5, title="Zebra Night Vol 2", day=date(2026, 12, 19))
     decision = identify(
         _draft(title="Zebra Night Vol 3"), [], similar=lambda: [(week_later, 0.97)], policy=policy
     )
     assert (decision.rule, decision.event) == (MatchRule.NEW, None)
-    assert decision.possible_duplicates == (_id(5),)
+    assert decision.possible_duplicates == ()
 
 
 def test_same_title_on_another_date_is_not_linked_by_similarity() -> None:

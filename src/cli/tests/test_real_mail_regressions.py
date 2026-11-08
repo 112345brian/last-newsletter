@@ -172,7 +172,7 @@ def test_message_ids_print_raw_and_are_not_stored_html_escaped(
     assert stored == ["<m2@fixture.test>"]
 
 
-def test_a_similar_event_on_another_date_is_recorded_and_shown_as_a_possible_duplicate(
+def test_a_similar_event_on_another_date_is_a_separate_event_with_no_duplicate_link(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     first = "Moon Party Sat Dec 12, 9pm"
@@ -184,14 +184,12 @@ def test_a_similar_event_on_another_date_is_recorded_and_shown_as_a_possible_dup
     }
     summary = _run(tmp_path, mails, answers)
     assert "2 created" in summary
-    assert "1 possible duplicates" in summary
+    assert "0 possible duplicates" in summary
 
     text = _events_output(tmp_path, monkeypatch, capsys)
-    assert text.count("possible duplicate of") == 2  # shown from both sides
+    assert "possible duplicate of" not in text  # other dates of a series are not duplicates
     events = json.loads(_events_output(tmp_path, monkeypatch, capsys, "--json"))
-    first_event, second_event = sorted(events, key=lambda e: e["when"])
-    assert [d["id"] for d in second_event["possible_duplicates"]] == [first_event["id"]]
-    assert [d["id"] for d in first_event["possible_duplicates"]] == [second_event["id"]]
+    assert all(e["possible_duplicates"] == [] for e in events)
 
 
 def test_a_dry_run_and_the_real_run_agree_when_the_model_answers_the_same(tmp_path: Path) -> None:

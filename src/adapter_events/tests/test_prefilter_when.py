@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import time
+
 import pytest
 
 from last_newsletter_adapter_events.prefilter import has_date_signal
@@ -74,3 +76,30 @@ def test_one_listing_with_several_days_splits_into_one_segment_per_date() -> Non
 )
 def test_a_single_date_is_not_split(text: str) -> None:
     assert split_listing(text) == [text]
+
+
+_OVERNIGHT = "Friday, November 6th - 6:30PM Saturday, November 7th - 9AM"
+
+
+def test_two_consecutive_days_with_one_time_each_going_backwards_is_one_overnight_span() -> None:
+    assert split_listing(_OVERNIGHT) == [_OVERNIGHT]
+    w = parse_when(_OVERNIGHT)
+    assert (w.month, w.day) == (11, 6)
+    assert (w.time, w.end_time) == (time(18, 30), time(9))
+    assert w.showtimes == ()
+    assert w.late_night is False
+
+
+@pytest.mark.parametrize(
+    ("text", "segments"),
+    [
+        ("Friday, November 6th - 9AM Saturday, November 7th - 6:30PM", 2),  # later: two sessions
+        ("Friday, November 6th - 7PM Saturday, November 7th - 7PM", 2),  # equal: two sessions
+        ("Friday, November 6th - 6:30PM Sunday, November 8th - 9AM", 2),  # not consecutive
+        ("Friday, November 6th - 6:30PM Saturday, November 7th", 2),  # a day without a time
+        ("Friday, November 6th - 6PM, 8PM Saturday, November 7th - 9AM", 2),  # showtime list
+        ("Friday, November 6th - 6PM Saturday, November 7th - 9AM Sunday, November 8th - 9AM", 3),
+    ],
+)
+def test_everything_else_stays_one_event_per_date(text: str, segments: int) -> None:
+    assert len(split_listing(text)) == segments
