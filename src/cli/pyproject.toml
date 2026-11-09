@@ -21,6 +21,7 @@ dependencies = [
     "last-newsletter-adapter-events",
     "last-newsletter-adapter-ticketmaster",
     "last-newsletter-adapter-frequentflyer",
+    "last-newsletter-adapter-ical",
     "process-lock",
     "httpx",
 ]
@@ -45,6 +46,7 @@ last-newsletter-adapter-semantic = { workspace = true }
 last-newsletter-adapter-events = { workspace = true }
 last-newsletter-adapter-ticketmaster = { workspace = true }
 last-newsletter-adapter-frequentflyer = { workspace = true }
+last-newsletter-adapter-ical = { workspace = true }
 process-lock = { workspace = true }
 
 [build-system]

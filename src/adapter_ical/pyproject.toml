@@ -1,0 +1,24 @@
+[project]
+name = "last-newsletter-adapter-ical"
+version = "0.1.0"
+description = "Generic iCalendar (.ics) feed implementation of core's EventSource port: any published calendar URL becomes a source, with the feed's own UID as the event identity."
+readme = "README.md"
+authors = [
+    { name = "112345brian", email = "11creepman@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "last-newsletter-core",
+    "httpx>=0.27",
+    "icalendar>=6.0",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "ruff", "ty"]
+
+[tool.uv.sources]
+last-newsletter-core = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

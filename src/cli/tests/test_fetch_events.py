@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib
 import io
+import itertools
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING
@@ -103,6 +104,16 @@ class FakeWorld:
             [_ff_event("ff-1", "Zebulon Night", "2026-11-24", ticket_url="https://x.example/z")]
         )
     )
+    ics: str = (
+        "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//t//EN\r\n"
+        "BEGIN:VEVENT\r\nUID:ical-1@example.com\r\nSUMMARY:Zebulon Matinee\r\n"
+        "DTSTART:20261125T230000Z\r\nLOCATION:Zebulon\\, 2478 Fletcher Dr\\, Los Angeles\r\n"
+        "URL:https://calendar.example.com/e/1\r\nEND:VEVENT\r\n"
+        "BEGIN:VEVENT\r\nUID:ical-2@example.com\r\nSUMMARY:Mdou Moctar\r\n"
+        "DTSTART:20261121T040000Z\r\nLOCATION:The Fonda Theatre\\, 6126 Hollywood Blvd\r\n"
+        "END:VEVENT\r\nEND:VCALENDAR\r\n"
+    )
+    ics_status: int = 200
     hosts: list[str] = field(default_factory=list)
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
@@ -111,6 +122,10 @@ class FakeWorld:
             return httpx.Response(self.tm_status, json=self.tm_body)
         if request.url.host == "frequentflyerla.com":
             return httpx.Response(200, json=self.ff_body)
+        if request.url.host == "calendar.example.com":
+            return httpx.Response(
+                self.ics_status, text=self.ics, headers={"content-type": "text/calendar"}
+            )
         return httpx.Response(404)
 
     @property
@@ -118,13 +133,14 @@ class FakeWorld:
         return httpx.Client(transport=httpx.MockTransport(self))
 
 
+_NEXT_ID = itertools.count(1)
+
+
 class _Ids:
-    def __init__(self) -> None:
-        self._n = 0
+    """Ids unique across runs in one test, like the random UUIDs production uses."""
 
     def new_event_id(self) -> EventId:
-        self._n += 1
-        return EventId(UUID(int=self._n))
+        return EventId(UUID(int=next(_NEXT_ID)))
 
 
 @dataclass
@@ -143,6 +159,8 @@ def _run(
     days: int = 60,
     key: str | None = _KEY,
     city: str = "Los Angeles",
+    ical_url: str = "",
+    ical_name: str = "",
 ) -> Run:
     out, err = io.StringIO(), io.StringIO()
     environ = {TICKETMASTER_KEY: key} if key is not None else {}
@@ -158,7 +176,14 @@ def _run(
             sleep=lambda _s: None,
         ),
         FetchEventsOptions(
-            source=source, city=city, region="CA", days=days, home_tz=_TZ, dry_run=dry_run
+            source=source,
+            city=city,
+            region="CA",
+            days=days,
+            home_tz=_TZ,
+            dry_run=dry_run,
+            ical_url=ical_url,
+            ical_name=ical_name,
         ),
     )
     return Run(code, out.getvalue(), err.getvalue())
@@ -319,6 +344,65 @@ def test_the_same_show_from_two_sources_is_one_event_with_two_mentions(tmp_path:
 def test_an_unknown_source_is_a_configuration_error(tmp_path: Path) -> None:
     with pytest.raises(ConfigError, match="unknown source"):
         _run(tmp_path, FakeWorld(), source="songkick")
+
+
+# --- ical --------------------------------------------------------------------------------------
+
+_FEED = "https://calendar.example.com/feed.ics?token=SECRET-TOKEN"
+
+
+def test_an_ical_feed_needs_no_key_and_is_labelled_by_its_name(tmp_path: Path) -> None:
+    world = FakeWorld()
+    result = _run(tmp_path, world, source="ical", key=None, ical_url=_FEED, ical_name="mycal")
+    assert result.code == 0
+    assert "events: 2 created" in result.out
+    assert set(world.hosts) == {"calendar.example.com"}
+    stored = {e.title: e for e in _stored(tmp_path)}
+    assert set(stored) == {"Zebulon Matinee", "Mdou Moctar"}
+    zebulon = stored["Zebulon Matinee"]
+    assert zebulon.uid == "ical-1@example.com"
+    assert zebulon.venue == "Zebulon"
+    assert [m.source for m in zebulon.mentions] == ["mycal"]
+
+
+def test_the_feed_host_names_the_source_when_no_name_is_given(tmp_path: Path) -> None:
+    _run(tmp_path, FakeWorld(), source="ical", key=None, ical_url=_FEED)
+    sources = {m.source for e in _stored(tmp_path) for m in e.mentions}
+    assert sources == {"calendar.example.com"}
+
+
+def test_an_ical_rerun_changes_nothing_and_the_token_is_never_printed(tmp_path: Path) -> None:
+    _run(tmp_path, FakeWorld(), source="ical", key=None, ical_url=_FEED)
+    again = _run(tmp_path, FakeWorld(), source="ical", key=None, ical_url=_FEED)
+    assert "events: 0 created, 0 new mentions, 2 unchanged" in again.out
+    assert "SECRET-TOKEN" not in again.out + again.err
+
+
+def test_a_calendar_event_matching_a_ticketmaster_event_is_cited_not_duplicated(
+    tmp_path: Path,
+) -> None:
+    _run(tmp_path, FakeWorld())
+    result = _run(tmp_path, FakeWorld(), source="ical", key=None, ical_url=_FEED, ical_name="mycal")
+    assert "events: 1 created, 1 new mentions" in result.out
+    stored = {e.title: e for e in _stored(tmp_path)}
+    assert [m.source for m in stored["Mdou Moctar"].mentions] == ["ticketmaster", "mycal"]
+    assert stored["Mdou Moctar"].mentions[-1].match_rule is MatchRule.TITLE_DATE_VENUE
+
+
+@pytest.mark.parametrize("url", ["", "calendar.example.com/feed.ics", "file:///etc/passwd"])
+def test_an_ical_source_needs_a_web_url(tmp_path: Path, url: str) -> None:
+    world = FakeWorld()
+    with pytest.raises(ConfigError, match="--ical-url"):
+        _run(tmp_path, world, source="ical", key=None, ical_url=url)
+    assert world.hosts == []
+
+
+def test_a_broken_feed_url_fails_cleanly_without_the_token(tmp_path: Path) -> None:
+    result = _run(tmp_path, FakeWorld(ics_status=404), source="ical", key=None, ical_url=_FEED)
+    assert result.code == 1
+    assert "HTTP 404" in result.err
+    assert "SECRET-TOKEN" not in result.out + result.err
+    assert not (tmp_path / "events" / LEDGER_NAME).exists()
 
 
 # --- wiring ------------------------------------------------------------------------------------

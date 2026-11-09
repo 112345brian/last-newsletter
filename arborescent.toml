@@ -21,6 +21,7 @@ sources = [
     "src/adapter_events/src",
     "src/adapter_ticketmaster/src",
     "src/adapter_frequentflyer/src",
+    "src/adapter_ical/src",
     "src/cli/src",
     "vendor/urgency/src",
     "vendor/identity_dedupe/src",
@@ -49,6 +50,7 @@ source_roots = [
     "src/adapter_events/src",
     "src/adapter_ticketmaster/src",
     "src/adapter_frequentflyer/src",
+    "src/adapter_ical/src",
     "src/cli/src",
     "vendor/urgency/src",
     "vendor/identity_dedupe/src",
@@ -90,7 +92,7 @@ external = ["anthropic"]
 may_import = ["core", "libs", "llm"]
 # Adapters own their effects (disk, network, clock for sleeping); only core is forbidden them.
 forbid = []
-external = ["imapclient", "flask", "dateparser", "filelock", "tenacity", "psutil", "httpx"]
+external = ["imapclient", "flask", "dateparser", "filelock", "tenacity", "psutil", "httpx", "icalendar"]
 
 [ring.cli]
 may_import = ["*"]
@@ -142,6 +144,8 @@ external = ["*"]
 "last_newsletter_adapter_ticketmaster.*" = "adapters"
 "last_newsletter_adapter_frequentflyer" = "adapters"
 "last_newsletter_adapter_frequentflyer.*" = "adapters"
+"last_newsletter_adapter_ical" = "adapters"
+"last_newsletter_adapter_ical.*" = "adapters"
 "source_dates" = "adapters"
 "source_dates.*" = "adapters"
 "process_lock" = "adapters"

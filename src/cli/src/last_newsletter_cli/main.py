@@ -507,13 +507,26 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=FETCH_EVENT_SOURCES,
         default="ticketmaster",
         help="ticketmaster needs $TICKETMASTER_API_KEY and --city; frequentflyer needs neither "
-        "(Los Angeles only).",
+        "(Los Angeles only); ical needs --ical-url. Times in a feed are shown in --home-tz.",
     )
     fetch_events_parser.add_argument(
         "--city", default="", help='ticketmaster only, e.g. "Los Angeles".'
     )
     fetch_events_parser.add_argument(
         "--neighborhood", default="", help='frequentflyer only, a slug such as "echo-park".'
+    )
+    fetch_events_parser.add_argument(
+        "--ical-url", default="", help="ical only: the calendar feed (.ics) to read."
+    )
+    fetch_events_parser.add_argument(
+        "--ical-name",
+        default="",
+        help="ical only: a short stable label for its mentions (default: the URL's host).",
+    )
+    fetch_events_parser.add_argument(
+        "--ical-venue",
+        default="",
+        help="ical only: set when the whole feed is one venue's calendar.",
     )
     fetch_events_parser.add_argument(
         "--vibe", default="music", help='frequentflyer only (default "music"; "" for everything).'
@@ -606,6 +619,9 @@ def _command_fetch_events(parser: argparse.ArgumentParser, args: argparse.Namesp
                 dma_id=args.dma_id,
                 neighborhood=args.neighborhood,
                 vibe=args.vibe,
+                ical_url=args.ical_url,
+                ical_name=args.ical_name,
+                ical_venue=args.ical_venue,
                 home_tz=args.home_tz,
                 dry_run=args.dry_run,
             )

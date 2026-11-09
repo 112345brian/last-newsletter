@@ -18,6 +18,7 @@ import time
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from last_newsletter_adapter_frequentflyer import (
@@ -25,6 +26,7 @@ from last_newsletter_adapter_frequentflyer import (
     FrequentFlyerConfig,
     FrequentFlyerEventSource,
 )
+from last_newsletter_adapter_ical import IcalClient, IcalConfig, IcalEventSource
 from last_newsletter_adapter_ticketmaster import (
     TicketmasterClient,
     TicketmasterConfig,
@@ -46,7 +48,7 @@ if TYPE_CHECKING:
     from last_newsletter_cli.command_support import IdGenerator
     from last_newsletter_core.event_ports import EventSource, SourceReport
 
-SOURCES = ("ticketmaster", "frequentflyer")
+SOURCES = ("ticketmaster", "frequentflyer", "ical")
 TICKETMASTER_KEY = "TICKETMASTER_API_KEY"
 MAX_DAYS = 365
 
@@ -77,6 +79,10 @@ class FetchEventsOptions:
     # frequentflyer
     neighborhood: str = ""
     vibe: str = "music"
+    # ical: any published calendar; the name labels its mentions and defaults to the URL's host
+    ical_url: str = ""
+    ical_name: str = ""
+    ical_venue: str = ""
 
 
 def _window(ctx: FetchEventsContext, options: FetchEventsOptions) -> SourceWindow:
@@ -118,8 +124,22 @@ def _build_source(ctx: FetchEventsContext, options: FetchEventsOptions) -> Event
                 vibe=options.vibe.strip(), neighborhood=options.neighborhood.strip()
             ),
         )
+    if options.source == "ical":
+        return _ical_source(ctx, options)
     msg = f"unknown source {options.source!r} (one of: {', '.join(SOURCES)})"
     raise ConfigError(msg)
+
+
+def _ical_source(ctx: FetchEventsContext, options: FetchEventsOptions) -> EventSource:
+    url = options.ical_url.strip()
+    if urlsplit(url).scheme not in {"http", "https"}:
+        msg = "--ical-url must be an http or https URL for the ical source"
+        raise ConfigError(msg)
+    name = options.ical_name.strip() or (urlsplit(url).hostname or "ical")
+    return IcalEventSource(
+        IcalClient(http=ctx.http),
+        IcalConfig(name=name, url=url, tz=options.home_tz, venue=options.ical_venue.strip()),
+    )
 
 
 def execute_fetch_events(ctx: FetchEventsContext, options: FetchEventsOptions) -> int:
