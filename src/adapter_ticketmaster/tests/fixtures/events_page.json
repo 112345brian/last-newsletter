@@ -1,0 +1,223 @@
+{
+  "_embedded": {
+    "events": [
+      {
+        "id": "tm-001",
+        "name": "Mdou Moctar",
+        "type": "event",
+        "url": "https://www.ticketmaster.com/event/tm-001",
+        "dates": {
+          "start": {
+            "localDate": "2026-11-20",
+            "localTime": "20:00:00"
+          },
+          "timezone": "America/Los_Angeles",
+          "status": {
+            "code": "onsale"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "name": "Music"
+            },
+            "genre": {
+              "name": "Alternative"
+            },
+            "subGenre": {
+              "name": "Undefined"
+            }
+          }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "The Fonda Theatre",
+              "city": {
+                "name": "Los Angeles"
+              },
+              "timezone": "America/Los_Angeles"
+            }
+          ],
+          "attractions": [
+            {
+              "name": "Mdou Moctar"
+            },
+            {
+              "name": "Fuzz Opener"
+            }
+          ]
+        },
+        "priceRanges": [
+          {
+            "type": "standard",
+            "currency": "USD",
+            "min": 35,
+            "max": 55.5
+          }
+        ]
+      },
+      {
+        "id": "tm-002",
+        "name": "Cancelled Night",
+        "type": "event",
+        "url": "https://www.ticketmaster.com/event/tm-002",
+        "dates": {
+          "start": {
+            "localDate": "2026-11-21",
+            "localTime": "20:00:00"
+          },
+          "timezone": "America/Los_Angeles",
+          "status": {
+            "code": "canceled"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "name": "Music"
+            },
+            "genre": {
+              "name": "Rock"
+            },
+            "subGenre": {
+              "name": "Undefined"
+            }
+          }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "The Fonda Theatre",
+              "city": {
+                "name": "Los Angeles"
+              },
+              "timezone": "America/Los_Angeles"
+            }
+          ]
+        }
+      },
+      {
+        "id": "tm-003",
+        "name": "Lakers vs Suns",
+        "type": "event",
+        "url": "https://www.ticketmaster.com/event/tm-003",
+        "dates": {
+          "start": {
+            "localDate": "2026-11-21",
+            "localTime": "19:30:00"
+          },
+          "timezone": "America/Los_Angeles",
+          "status": {
+            "code": "onsale"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "name": "Sports"
+            },
+            "genre": {
+              "name": "Basketball"
+            },
+            "subGenre": {
+              "name": "Undefined"
+            }
+          }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Crypto.com Arena",
+              "city": {
+                "name": "Los Angeles"
+              },
+              "timezone": "America/Los_Angeles"
+            }
+          ]
+        }
+      },
+      {
+        "id": "tm-004",
+        "name": "Door Time TBA",
+        "type": "event",
+        "url": "https://www.ticketmaster.com/event/tm-004",
+        "dates": {
+          "start": {
+            "localDate": "2026-11-22",
+            "timeTBA": true
+          },
+          "timezone": "America/Los_Angeles",
+          "status": {
+            "code": "onsale"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "name": "Music"
+            },
+            "genre": {
+              "name": "Jazz"
+            },
+            "subGenre": {
+              "name": "Undefined"
+            }
+          }
+        ],
+        "_embedded": {}
+      },
+      {
+        "id": "tm-005",
+        "name": "Moved Indefinitely",
+        "type": "event",
+        "url": "https://www.ticketmaster.com/event/tm-005",
+        "dates": {
+          "start": {
+            "localDate": "2026-11-23",
+            "localTime": "20:00:00"
+          },
+          "timezone": "America/Los_Angeles",
+          "status": {
+            "code": "postponed"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "name": "Music"
+            },
+            "genre": {
+              "name": "Rock"
+            },
+            "subGenre": {
+              "name": "Undefined"
+            }
+          }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "The Fonda Theatre",
+              "city": {
+                "name": "Los Angeles"
+              },
+              "timezone": "America/Los_Angeles"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "page": {
+    "size": 200,
+    "totalElements": 5,
+    "totalPages": 1,
+    "number": 0
+  }
+}

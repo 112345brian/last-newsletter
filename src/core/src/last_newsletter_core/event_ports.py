@@ -8,6 +8,7 @@ Signatures other packages build against:
     EmbeddedEventReader.read(message) -> list[EventCandidate]
     EventExtractor.extract(messages, *, now, home_tz) -> list[EventCandidate]
     #   (may raise ExtractionFailedError)
+    EventSource.fetch(query, *, now) -> list[EventCandidate]      # (may raise SourceFetchError)
     EventRepository.get(event_id) -> Event | None
     EventRepository.find_candidates(query) -> list[Event]
     EventRepository.list_open() -> list[Event]
@@ -77,6 +78,44 @@ class EventExtractor(Protocol):
     def extract(
         self, messages: Sequence[EmailMessage], *, now: datetime, home_tz: str
     ) -> list[EventCandidate]: ...
+
+
+class SourceFetchError(Exception):
+    """An `EventSource` could not fetch (network, quota, rejected key, unusable response). Unlike
+    an extraction failure it is not absorbed: nothing was ingested, so the caller reports it and a
+    rerun is safe because ingest is idempotent. The message must never contain a credential."""
+
+
+@dataclass(frozen=True, slots=True)
+class SourceQuery:
+    """What to ask a structured event source for: a place and a window of local dates.
+
+    `categories` are generic ("music"); each source maps them to its own classification. A
+    source may ignore a field it cannot honour but must say so in its own docs.
+    """
+
+    city: str
+    date_from: date
+    date_to: date
+    region: str = ""  # state or province code, e.g. "CA"
+    country: str = "US"
+    categories: tuple[str, ...] = ("music",)
+
+
+class EventSource(Protocol):
+    """A structured source of events (a ticketing API, a venue calendar feed). Returns candidates
+    that already carry their own identity: `uid` and `url` where the source has them, and a
+    `message_id` of the form "<name>:<source id>" so a mention can name where it came from.
+
+    `evidence` must be stable for unchanged facts and change when the title, date, time or venue
+    change; that is what lets a rerun count as unchanged and a reschedule count as new.
+    `sequence` is set so a later fetch of a changed event wins. A source performs the network
+    calls; it raises `SourceFetchError` for any failure to fetch."""
+
+    @property
+    def name(self) -> str: ...
+
+    def fetch(self, query: SourceQuery, *, now: datetime) -> list[EventCandidate]: ...
 
 
 @dataclass(frozen=True, slots=True)

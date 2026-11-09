@@ -20,6 +20,7 @@ members = [
     "last-newsletter-adapter-semantic",
     "last-newsletter-adapter-storage",
     "last-newsletter-adapter-summarizer",
+    "last-newsletter-adapter-ticketmaster",
     "last-newsletter-adapter-web",
     "last-newsletter-cli",
     "last-newsletter-core",
@@ -976,6 +977,33 @@ dev = [
 ]
 
 [[package]]
+name = "last-newsletter-adapter-ticketmaster"
+version = "0.1.0"
+source = { editable = "src/adapter_ticketmaster" }
+dependencies = [
+    { name = "last-newsletter-core" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "last-newsletter-core", editable = "src/core" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[[package]]
 name = "last-newsletter-adapter-web"
 version = "0.1.0"
 source = { editable = "src/adapter_web" }
@@ -1019,6 +1047,7 @@ dependencies = [
     { name = "last-newsletter-adapter-semantic" },
     { name = "last-newsletter-adapter-storage" },
     { name = "last-newsletter-adapter-summarizer" },
+    { name = "last-newsletter-adapter-ticketmaster" },
     { name = "last-newsletter-adapter-web" },
     { name = "last-newsletter-core" },
     { name = "process-lock" },
@@ -1043,6 +1072,7 @@ requires-dist = [
     { name = "last-newsletter-adapter-semantic", editable = "src/adapter_semantic" },
     { name = "last-newsletter-adapter-storage", editable = "src/adapter_storage" },
     { name = "last-newsletter-adapter-summarizer", editable = "src/adapter_summarizer" },
+    { name = "last-newsletter-adapter-ticketmaster", editable = "src/adapter_ticketmaster" },
     { name = "last-newsletter-adapter-web", editable = "src/adapter_web" },
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "process-lock", editable = "vendor/process_lock" },

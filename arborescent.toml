@@ -19,6 +19,7 @@ sources = [
     "src/adapter_semantic/src",
     "src/adapter_ledger/src",
     "src/adapter_events/src",
+    "src/adapter_ticketmaster/src",
     "src/cli/src",
     "vendor/urgency/src",
     "vendor/identity_dedupe/src",
@@ -45,6 +46,7 @@ source_roots = [
     "src/adapter_semantic/src",
     "src/adapter_ledger/src",
     "src/adapter_events/src",
+    "src/adapter_ticketmaster/src",
     "src/cli/src",
     "vendor/urgency/src",
     "vendor/identity_dedupe/src",
@@ -134,6 +136,8 @@ external = ["*"]
 "last_newsletter_adapter_ledger.*" = "adapters"
 "last_newsletter_adapter_events" = "adapters"
 "last_newsletter_adapter_events.*" = "adapters"
+"last_newsletter_adapter_ticketmaster" = "adapters"
+"last_newsletter_adapter_ticketmaster.*" = "adapters"
 "source_dates" = "adapters"
 "source_dates.*" = "adapters"
 "process_lock" = "adapters"

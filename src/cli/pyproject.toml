@@ -19,6 +19,7 @@ dependencies = [
     "last-newsletter-adapter-ledger",
     "last-newsletter-adapter-semantic",
     "last-newsletter-adapter-events",
+    "last-newsletter-adapter-ticketmaster",
     "process-lock",
 ]
 
@@ -40,6 +41,7 @@ last-newsletter-adapter-knowledge = { workspace = true }
 last-newsletter-adapter-ledger = { workspace = true }
 last-newsletter-adapter-semantic = { workspace = true }
 last-newsletter-adapter-events = { workspace = true }
+last-newsletter-adapter-ticketmaster = { workspace = true }
 process-lock = { workspace = true }
 
 [build-system]

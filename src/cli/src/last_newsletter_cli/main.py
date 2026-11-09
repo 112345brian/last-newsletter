@@ -39,6 +39,11 @@ from last_newsletter_adapter_summarizer.extractive_summarizer import ExtractiveS
 from last_newsletter_adapter_web.app import create_app
 from last_newsletter_cli.build_report import BuildFacts, describe_build
 from last_newsletter_cli.events_view import render_json, render_text
+from last_newsletter_cli.fetch_events_command import (
+    FetchEventsContext,
+    FetchEventsOptions,
+    execute_fetch_events,
+)
 from last_newsletter_cli.process_command import (
     EXTRACTOR_CHOICES,
     LEDGER_NAME,
@@ -351,6 +356,18 @@ def _run_process(options: ProcessOptions) -> int:
     return execute_process(context, options)
 
 
+def _run_fetch_events(options: FetchEventsOptions) -> int:
+    """Stage 2b: one structured source (Ticketmaster) straight into the ledger."""
+    context = FetchEventsContext(
+        data_dir=_DATA_DIR,
+        now=datetime.now(tz=UTC),
+        environ=os.environ,
+        out=sys.stdout,
+        err=sys.stderr,
+    )
+    return execute_fetch_events(context, options)
+
+
 def _run_events(*, as_json: bool) -> int:
     ledger_path = _DATA_DIR / "events" / LEDGER_NAME
     if not ledger_path.exists():
@@ -375,7 +392,7 @@ def _run_serve() -> None:
     app.run(host="127.0.0.1", port=_SERVE_PORT, debug=False)
 
 
-def main(argv: Sequence[str] | None = None) -> None:
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="last-newsletter")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -476,6 +493,35 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     process_parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
 
+    fetch_events_parser = subparsers.add_parser(
+        "fetch-events",
+        help="Fetch music events for a city from Ticketmaster ($TICKETMASTER_API_KEY) into the "
+        "event ledger. An event already known from a newsletter is cited, not duplicated.",
+    )
+    fetch_events_parser.add_argument("--city", required=True, help='e.g. "Los Angeles".')
+    fetch_events_parser.add_argument("--region", default="", help='State code, e.g. "CA".')
+    fetch_events_parser.add_argument("--country", default="US", help="Country code (default US).")
+    fetch_events_parser.add_argument(
+        "--days", type=int, default=30, help="Look this many days ahead (1-365, default 30)."
+    )
+    fetch_events_parser.add_argument(
+        "--dma-id",
+        default="",
+        help='Ticketmaster market id, e.g. "324" for Los Angeles: widens a city to its market.',
+    )
+    fetch_events_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Make the real API calls (they count against your quota) but work on a throwaway "
+        "copy of the ledger and save nothing; print counts only.",
+    )
+    fetch_events_parser.add_argument(
+        "--home-tz",
+        default=os.environ.get("LAST_NEWSLETTER_HOME_TZ", "UTC"),
+        help="IANA zone for 'today' and for dates without one (default: "
+        "$LAST_NEWSLETTER_HOME_TZ, else UTC).",
+    )
+
     events_parser = subparsers.add_parser(
         "events",
         help="List stored events: UUID, the mentions that cite each (message id, rung, evidence "
@@ -484,44 +530,81 @@ def main(argv: Sequence[str] | None = None) -> None:
     events_parser.add_argument("--json", action="store_true", help="Machine-readable output.")
 
     subparsers.add_parser("serve", help="Open the local digest browser in your web browser.")
+    return parser
 
+
+def _command_build(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    try:
+        _run_build(
+            BuildOptions(
+                cadence=args.cadence,
+                send=args.send,
+                summarizer=args.summarizer,
+                force=args.force,
+                direct_imap=args.imap,
+                events=not args.no_events,
+                event_days=args.event_days,
+                home_tz=args.home_tz,
+            )
+        )
+    except ConfigError as error:
+        parser.exit(2, f"last-newsletter: {error}\n")
+
+
+def _command_fetch(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    try:
+        _run_fetch(since=args.since, days=args.days, out=args.out)
+    except ConfigError as error:
+        parser.exit(2, f"last-newsletter: {error}\n")
+
+
+def _command_process(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    try:
+        code = _run_process(
+            ProcessOptions(
+                extractor=args.extractor,
+                home_tz=args.home_tz,
+                batch_size=args.batch_size,
+                dry_run=args.dry_run,
+                reprocess=args.reprocess,
+            )
+        )
+    except (ConfigError, TimeoutError) as error:
+        parser.exit(2, f"last-newsletter: {error}\n")
+    if code:
+        sys.exit(code)
+
+
+def _command_fetch_events(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    try:
+        code = _run_fetch_events(
+            FetchEventsOptions(
+                city=args.city,
+                region=args.region,
+                country=args.country,
+                days=args.days,
+                dma_id=args.dma_id,
+                home_tz=args.home_tz,
+                dry_run=args.dry_run,
+            )
+        )
+    except (ConfigError, TimeoutError) as error:
+        parser.exit(2, f"last-newsletter: {error}\n")
+    if code:
+        sys.exit(code)
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    parser = _build_parser()
     args = parser.parse_args(argv)
     if args.command == "build":
-        try:
-            _run_build(
-                BuildOptions(
-                    cadence=args.cadence,
-                    send=args.send,
-                    summarizer=args.summarizer,
-                    force=args.force,
-                    direct_imap=args.imap,
-                    events=not args.no_events,
-                    event_days=args.event_days,
-                    home_tz=args.home_tz,
-                )
-            )
-        except ConfigError as error:
-            parser.exit(2, f"last-newsletter: {error}\n")
+        _command_build(parser, args)
     elif args.command == "fetch":
-        try:
-            _run_fetch(since=args.since, days=args.days, out=args.out)
-        except ConfigError as error:
-            parser.exit(2, f"last-newsletter: {error}\n")
+        _command_fetch(parser, args)
     elif args.command == "process":
-        try:
-            code = _run_process(
-                ProcessOptions(
-                    extractor=args.extractor,
-                    home_tz=args.home_tz,
-                    batch_size=args.batch_size,
-                    dry_run=args.dry_run,
-                    reprocess=args.reprocess,
-                )
-            )
-        except (ConfigError, TimeoutError) as error:
-            parser.exit(2, f"last-newsletter: {error}\n")
-        if code:
-            sys.exit(code)
+        _command_process(parser, args)
+    elif args.command == "fetch-events":
+        _command_fetch_events(parser, args)
     elif args.command == "events":
         sys.exit(_run_events(as_json=args.json))
     elif args.command == "serve":

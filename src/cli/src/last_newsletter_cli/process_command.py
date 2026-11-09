@@ -133,7 +133,7 @@ def _extractor(
     raise ConfigError(msg)
 
 
-def _copy_for_dry_run(events_dir: Path, scratch: Path) -> Path:
+def copy_for_dry_run(events_dir: Path, scratch: Path) -> Path:
     """A throwaway copy of the state `process` writes, so a dry run can change nothing real.
 
     The index is not copied at all, so it is rebuilt from the copied ledger.
@@ -204,7 +204,7 @@ def execute_process(ctx: ProcessContext, options: ProcessOptions) -> int:
     with ExitStack() as stack:
         if options.dry_run:
             scratch = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="ln-dry-")))
-            events_dir = _copy_for_dry_run(ctx.data_dir / "events", scratch)
+            events_dir = copy_for_dry_run(ctx.data_dir / "events", scratch)
             notes.append("DRY RUN: nothing below was saved")
         else:
             events_dir = ctx.data_dir / "events"
