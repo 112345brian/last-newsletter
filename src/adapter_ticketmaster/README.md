@@ -3,14 +3,15 @@
 Implements core's `EventSource` port against the Ticketmaster
 [Discovery API v2](https://developer.ticketmaster.com/products-and-docs/apis/discovery-api/v2):
 music events for a city and a window of dates, mapped to event candidates and fed through the same
-identity ladder as email.
+identity ladder as email. It talks HTTP with `httpx` and retries with `tenacity`; the city, region and
+categories are this source's own configuration, and it is asked only for a window of dates.
 
 ## Using it
 
 ```bash
 export TICKETMASTER_API_KEY=...          # free key: https://developer.ticketmaster.com
-uv run last-newsletter fetch-events --city "Los Angeles" --region CA --days 60 --dry-run
-uv run last-newsletter fetch-events --city "Los Angeles" --region CA --days 60
+uv run last-newsletter fetch-events --source ticketmaster --city "Los Angeles" --region CA --days 60 --dry-run
+uv run last-newsletter fetch-events --source ticketmaster --city "Los Angeles" --region CA --days 60
 ```
 
 `--dry-run` makes the real API calls (they count against your quota) but works on a throwaway copy

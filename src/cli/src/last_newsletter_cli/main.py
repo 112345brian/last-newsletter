@@ -40,6 +40,9 @@ from last_newsletter_adapter_web.app import create_app
 from last_newsletter_cli.build_report import BuildFacts, describe_build
 from last_newsletter_cli.events_view import render_json, render_text
 from last_newsletter_cli.fetch_events_command import (
+    SOURCES as FETCH_EVENT_SOURCES,
+)
+from last_newsletter_cli.fetch_events_command import (
     FetchEventsContext,
     FetchEventsOptions,
     execute_fetch_events,
@@ -495,10 +498,26 @@ def _build_parser() -> argparse.ArgumentParser:
 
     fetch_events_parser = subparsers.add_parser(
         "fetch-events",
-        help="Fetch music events for a city from Ticketmaster ($TICKETMASTER_API_KEY) into the "
-        "event ledger. An event already known from a newsletter is cited, not duplicated.",
+        help="Fetch events from a structured source (Ticketmaster or Frequent Flyer) into the "
+        "event ledger. An event already known from a newsletter or another source is cited, "
+        "not duplicated.",
     )
-    fetch_events_parser.add_argument("--city", required=True, help='e.g. "Los Angeles".')
+    fetch_events_parser.add_argument(
+        "--source",
+        choices=FETCH_EVENT_SOURCES,
+        default="ticketmaster",
+        help="ticketmaster needs $TICKETMASTER_API_KEY and --city; frequentflyer needs neither "
+        "(Los Angeles only).",
+    )
+    fetch_events_parser.add_argument(
+        "--city", default="", help='ticketmaster only, e.g. "Los Angeles".'
+    )
+    fetch_events_parser.add_argument(
+        "--neighborhood", default="", help='frequentflyer only, a slug such as "echo-park".'
+    )
+    fetch_events_parser.add_argument(
+        "--vibe", default="music", help='frequentflyer only (default "music"; "" for everything).'
+    )
     fetch_events_parser.add_argument("--region", default="", help='State code, e.g. "CA".')
     fetch_events_parser.add_argument("--country", default="US", help="Country code (default US).")
     fetch_events_parser.add_argument(
@@ -579,11 +598,14 @@ def _command_fetch_events(parser: argparse.ArgumentParser, args: argparse.Namesp
     try:
         code = _run_fetch_events(
             FetchEventsOptions(
+                source=args.source,
                 city=args.city,
                 region=args.region,
                 country=args.country,
                 days=args.days,
                 dma_id=args.dma_id,
+                neighborhood=args.neighborhood,
+                vibe=args.vibe,
                 home_tz=args.home_tz,
                 dry_run=args.dry_run,
             )

@@ -1,10 +1,14 @@
-"""Application rule: a structured `EventSource` -> candidates -> the same validate -> identity
-ladder -> create-or-cite path as email (`IngestEvents`). No matching logic lives here.
+"""Application rule: a structured source's candidates -> the same validate -> identity ladder ->
+create-or-cite path as email (`IngestEvents`). No matching logic lives here.
 
 Each source candidate is wrapped in a synthetic message (id "<source>:<id>", sender and label the
 source's name, body the candidate's evidence) so mentions, idempotence and provenance work exactly
 as for mail. The candidates are handed to `IngestEvents` through its embedded-reader port, which
 is the path for already-structured data: the evidence is not checked against a body.
+
+Fetching is separate from ingesting on purpose: a caller can do the slow network part first and
+take the ledger lock only for the quick write (`fetch_and_ingest` does both for callers that
+don't care).
 """
 
 from __future__ import annotations
@@ -27,7 +31,8 @@ if TYPE_CHECKING:
         EventSource,
         IdGenerator,
         SimilarEventIndex,
-        SourceQuery,
+        SourceBatch,
+        SourceWindow,
     )
     from last_newsletter_core.events import EventCandidate
 
@@ -64,31 +69,30 @@ class _NoExtraction:
 class IngestSourceEvents:
     def __init__(
         self,
-        source: EventSource,
+        source_name: str,
         ports: SourceIngestPorts,
         *,
         home_tz: str,
         policy: IdentityPolicy | None = None,
     ) -> None:
-        self._source = source
+        self._name = source_name
         self._ports = ports
         self._home_tz = home_tz
         self._policy = policy
 
-    def ingest(self, query: SourceQuery, *, now: datetime) -> IngestResult:
-        """Fetch and ingest. `SourceFetchError` propagates: nothing was ingested, rerun is safe."""
-        candidates = self._source.fetch(query, now=now)
+    def ingest_batch(self, batch: SourceBatch, *, now: datetime) -> IngestResult:
+        """Ingest candidates a source already fetched."""
         by_message: dict[str, list[EventCandidate]] = {}
-        for candidate in candidates:
+        for candidate in batch.candidates:
             by_message.setdefault(candidate.message_id, []).append(candidate)
         messages = [
             EmailMessage(
                 message_id=message_id,
-                sender=self._source.name,
+                sender=self._name,
                 subject=group[0].title or "",
                 received_at=now,
                 body_text=group[0].evidence,
-                source_label=self._source.name,
+                source_label=self._name,
             )
             for message_id, group in by_message.items()
         ]
@@ -104,3 +108,9 @@ class IngestSourceEvents:
             policy=self._policy,
         )
         return ingest.ingest(messages, now=now)
+
+    def fetch_and_ingest(
+        self, source: EventSource, window: SourceWindow, *, now: datetime
+    ) -> IngestResult:
+        """Fetch then ingest. `SourceFetchError` propagates: nothing was ingested, rerun is safe."""
+        return self.ingest_batch(source.fetch(window, now=now), now=now)

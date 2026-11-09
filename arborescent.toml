@@ -8,7 +8,6 @@ sources = [
     "src/core/src",
     "libs/text_match/src",
     "libs/mailtext/src",
-    "libs/http_transport/src",
     "libs/llmhost/src",
     "libs/ranked_digest/src",
     "src/adapter_email/src",
@@ -21,6 +20,7 @@ sources = [
     "src/adapter_ledger/src",
     "src/adapter_events/src",
     "src/adapter_ticketmaster/src",
+    "src/adapter_frequentflyer/src",
     "src/cli/src",
     "vendor/urgency/src",
     "vendor/identity_dedupe/src",
@@ -36,7 +36,6 @@ source_roots = [
     "src/core/src",
     "libs/text_match/src",
     "libs/mailtext/src",
-    "libs/http_transport/src",
     "libs/llmhost/src",
     "libs/ranked_digest/src",
     "src/adapter_email/src",
@@ -49,6 +48,7 @@ source_roots = [
     "src/adapter_ledger/src",
     "src/adapter_events/src",
     "src/adapter_ticketmaster/src",
+    "src/adapter_frequentflyer/src",
     "src/cli/src",
     "vendor/urgency/src",
     "vendor/identity_dedupe/src",
@@ -90,7 +90,7 @@ external = ["anthropic"]
 may_import = ["core", "libs", "llm"]
 # Adapters own their effects (disk, network, clock for sleeping); only core is forbidden them.
 forbid = []
-external = ["imapclient", "flask", "dateparser", "filelock", "tenacity", "psutil"]
+external = ["imapclient", "flask", "dateparser", "filelock", "tenacity", "psutil", "httpx"]
 
 [ring.cli]
 may_import = ["*"]
@@ -105,8 +105,6 @@ external = ["*"]
 "text_match.*" = "libs"
 "mailtext" = "libs"
 "mailtext.*" = "libs"
-"http_transport" = "libs"
-"http_transport.*" = "libs"
 "llmhost" = "llm"
 "llmhost.*" = "llm"
 "urgency" = "core"
@@ -142,6 +140,8 @@ external = ["*"]
 "last_newsletter_adapter_events.*" = "adapters"
 "last_newsletter_adapter_ticketmaster" = "adapters"
 "last_newsletter_adapter_ticketmaster.*" = "adapters"
+"last_newsletter_adapter_frequentflyer" = "adapters"
+"last_newsletter_adapter_frequentflyer.*" = "adapters"
 "source_dates" = "adapters"
 "source_dates.*" = "adapters"
 "process_lock" = "adapters"

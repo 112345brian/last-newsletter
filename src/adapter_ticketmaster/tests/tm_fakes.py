@@ -1,14 +1,14 @@
-"""Hand-written transport fakes for the Ticketmaster adapter tests (no sockets, no mocks)."""
+"""Hand-written fakes for the Ticketmaster adapter tests: `httpx.MockTransport` answers, nothing
+touches a socket."""
 
 from __future__ import annotations
 
 import json
-import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from http_transport import HttpResponse
+import httpx
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -23,42 +23,52 @@ def fixture(name: str) -> dict[str, object]:
     return {str(k): v for k, v in data.items()}
 
 
-def ok(body: dict[str, object]) -> HttpResponse:
-    return HttpResponse(200, json.dumps(body).encode())
+def ok(body: dict[str, object]) -> httpx.Response:
+    return httpx.Response(200, json=body)
 
 
-def query_of(url: str) -> dict[str, str]:
-    return dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(url).query))
+def reply(status: int, content: bytes = b"{}", **headers: str) -> httpx.Response:
+    return httpx.Response(status, content=content, headers=headers)
+
+
+def query_of(request: httpx.Request) -> dict[str, str]:
+    return dict(request.url.params)
 
 
 @dataclass
-class ScriptedTransport:
+class Scripted:
     """Answers each request with the next scripted response (or raises the next scripted error)."""
 
-    script: list[HttpResponse | Exception]
-    urls: list[str] = field(default_factory=list)
+    script: list[httpx.Response | Exception]
+    requests: list[httpx.Request] = field(default_factory=list)
 
-    def get(self, url: str, *, timeout_s: float) -> HttpResponse:
-        _ = timeout_s
-        self.urls.append(url)
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        self.requests.append(request)
         item = self.script.pop(0)
         if isinstance(item, Exception):
             raise item
         return item
 
+    @property
+    def client(self) -> httpx.Client:
+        return httpx.Client(transport=httpx.MockTransport(self))
+
 
 @dataclass
-class HandlerTransport:
-    """Answers each request by calling `handler` with the decoded query parameters."""
+class Handled:
+    """Answers each request by calling `handler` with its decoded query parameters."""
 
-    handler: Callable[[dict[str, str]], HttpResponse]
+    handler: Callable[[dict[str, str]], httpx.Response]
     queries: list[dict[str, str]] = field(default_factory=list)
 
-    def get(self, url: str, *, timeout_s: float) -> HttpResponse:
-        _ = timeout_s
-        params = query_of(url)
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        params = query_of(request)
         self.queries.append(params)
         return self.handler(params)
+
+    @property
+    def client(self) -> httpx.Client:
+        return httpx.Client(transport=httpx.MockTransport(self))
 
 
 class Clock:

@@ -1,0 +1,23 @@
+[project]
+name = "last-newsletter-adapter-frequentflyer"
+version = "0.1.0"
+description = "Frequent Flyer LA implementation of core's EventSource port: a curated Los Angeles events guide with a keyless JSON API, mapped to event candidates that carry its own id and ticket link."
+readme = "README.md"
+authors = [
+    { name = "112345brian", email = "11creepman@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "last-newsletter-core",
+    "httpx>=0.27",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "ruff", "ty"]
+
+[tool.uv.sources]
+last-newsletter-core = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

@@ -11,7 +11,12 @@ from uuid import UUID
 import pytest
 from event_fakes import InMemoryEventRepository, SequentialIds
 
-from last_newsletter_core.event_ports import SourceFetchError, SourceQuery
+from last_newsletter_core.event_ports import (
+    SourceBatch,
+    SourceFetchError,
+    SourceReport,
+    SourceWindow,
+)
 from last_newsletter_core.event_rules import RejectReason
 from last_newsletter_core.events import (
     AllDay,
@@ -27,10 +32,10 @@ from last_newsletter_core.events import (
     Timed,
     local_date,
 )
-from last_newsletter_core.use_cases import IngestSourceEvents, SourceIngestPorts
+from last_newsletter_core.use_cases import IngestResult, IngestSourceEvents, SourceIngestPorts
 
 _NOW = datetime(2026, 11, 6, 12, 0, tzinfo=UTC)
-_QUERY = SourceQuery(city="Los Angeles", date_from=date(2026, 11, 6), date_to=date(2026, 12, 31))
+_WINDOW = SourceWindow(date_from=date(2026, 11, 6), date_to=date(2026, 12, 31))
 _TZ = "America/Los_Angeles"
 
 
@@ -67,23 +72,34 @@ class FakeSource:
     def name(self) -> str:
         return "fake"
 
-    def fetch(self, query: SourceQuery, *, now: datetime) -> list[EventCandidate]:
-        _ = (query, now)
+    def fetch(self, window: SourceWindow, *, now: datetime) -> SourceBatch:
+        _ = (window, now)
         self.calls += 1
         if self.error is not None:
             raise self.error
-        return list(self.candidates)
+        return SourceBatch(list(self.candidates), SourceReport(seen=len(self.candidates)))
 
 
-def _use_case(source: FakeSource, repo: InMemoryEventRepository) -> IngestSourceEvents:
-    ports = SourceIngestPorts(repository=repo, ids=SequentialIds(start=len(repo.events) + 1))
-    return IngestSourceEvents(source, ports, home_tz=_TZ)
+class _Run:
+    """The use case bound to a source, so tests read like "ingest this source"."""
+
+    def __init__(self, source: FakeSource, repo: InMemoryEventRepository) -> None:
+        self._source = source
+        ports = SourceIngestPorts(repository=repo, ids=SequentialIds(start=len(repo.events) + 1))
+        self._use_case = IngestSourceEvents(source.name, ports, home_tz=_TZ)
+
+    def ingest(self, window: SourceWindow, *, now: datetime) -> IngestResult:
+        return self._use_case.fetch_and_ingest(self._source, window, now=now)
+
+
+def _use_case(source: FakeSource, repo: InMemoryEventRepository) -> _Run:
+    return _Run(source, repo)
 
 
 def test_new_source_events_are_created_with_the_source_as_provenance() -> None:
     repo = InMemoryEventRepository()
     source = FakeSource([_candidate("1"), _candidate("2", title="Dub Club", venue="Zebulon")])
-    result = _use_case(source, repo).ingest(_QUERY, now=_NOW)
+    result = _use_case(source, repo).ingest(_WINDOW, now=_NOW)
     assert (result.created, result.mentioned, result.unchanged) == (2, 0, 0)
     first = next(e for e in repo.events.values() if e.title == "Mdou Moctar")
     assert first.uid == "fake:1"
@@ -97,9 +113,9 @@ def test_new_source_events_are_created_with_the_source_as_provenance() -> None:
 def test_a_rerun_changes_nothing() -> None:
     repo = InMemoryEventRepository()
     source = FakeSource([_candidate("1"), _candidate("2", title="Dub Club", venue="Zebulon")])
-    first = _use_case(source, repo).ingest(_QUERY, now=_NOW)
+    first = _use_case(source, repo).ingest(_WINDOW, now=_NOW)
     assert first.created == 2
-    again = _use_case(source, repo).ingest(_QUERY, now=_NOW)
+    again = _use_case(source, repo).ingest(_WINDOW, now=_NOW)
     assert (again.created, again.mentioned, again.unchanged) == (0, 0, 2)
     assert len(repo.events) == 2
     assert all(len(e.mentions) == 1 for e in repo.events.values())
@@ -136,7 +152,7 @@ def _seed_mail_event(repo: InMemoryEventRepository) -> EventId:
 def test_an_event_already_known_from_mail_is_cited_not_duplicated() -> None:
     repo = InMemoryEventRepository()
     _seed_mail_event(repo)
-    result = _use_case(FakeSource([_candidate("1")]), repo).ingest(_QUERY, now=_NOW)
+    result = _use_case(FakeSource([_candidate("1")]), repo).ingest(_WINDOW, now=_NOW)
     assert (result.created, result.mentioned) == (0, 1)
     (event,) = repo.events.values()
     assert [m.source for m in event.mentions] == ["venue newsletter", "fake"]
@@ -150,9 +166,9 @@ def test_a_rerun_after_citing_a_mail_event_is_unchanged() -> None:
     repo = InMemoryEventRepository()
     _seed_mail_event(repo)
     source = FakeSource([_candidate("1")])
-    first = _use_case(source, repo).ingest(_QUERY, now=_NOW)
+    first = _use_case(source, repo).ingest(_WINDOW, now=_NOW)
     assert first.mentioned == 1
-    again = _use_case(source, repo).ingest(_QUERY, now=_NOW)
+    again = _use_case(source, repo).ingest(_WINDOW, now=_NOW)
     assert (again.created, again.mentioned, again.unchanged) == (0, 0, 1)
     (event,) = repo.events.values()
     assert len(event.mentions) == 2
@@ -160,10 +176,10 @@ def test_a_rerun_after_citing_a_mail_event_is_unchanged() -> None:
 
 def test_a_rescheduled_event_updates_the_same_event() -> None:
     repo = InMemoryEventRepository()
-    seeded = _use_case(FakeSource([_candidate("1", sequence=1)]), repo).ingest(_QUERY, now=_NOW)
+    seeded = _use_case(FakeSource([_candidate("1", sequence=1)]), repo).ingest(_WINDOW, now=_NOW)
     assert seeded.created == 1
     moved = _candidate("1", day=(2026, 11, 27), sequence=2)
-    result = _use_case(FakeSource([moved]), repo).ingest(_QUERY, now=_NOW)
+    result = _use_case(FakeSource([moved]), repo).ingest(_WINDOW, now=_NOW)
     assert (result.created, result.mentioned) == (0, 1)
     (event,) = repo.events.values()
     assert local_date(event.when) == date(2026, 11, 27)
@@ -174,14 +190,14 @@ def test_a_rescheduled_event_updates_the_same_event() -> None:
 def test_the_same_title_on_another_date_is_a_separate_event() -> None:
     repo = InMemoryEventRepository()
     source = FakeSource([_candidate("1", day=(2026, 11, 20)), _candidate("2", day=(2026, 11, 21))])
-    result = _use_case(source, repo).ingest(_QUERY, now=_NOW)
+    result = _use_case(source, repo).ingest(_WINDOW, now=_NOW)
     assert (result.created, result.mentioned) == (2, 0)
 
 
 def test_a_past_event_is_rejected_and_counted_never_dropped_silently() -> None:
     repo = InMemoryEventRepository()
     result = _use_case(FakeSource([_candidate("1", day=(2026, 10, 1))]), repo).ingest(
-        _QUERY, now=_NOW
+        _WINDOW, now=_NOW
     )
     assert result.created == 0
     assert result.rejected == {RejectReason.PAST_DATE: 1}
@@ -189,7 +205,7 @@ def test_a_past_event_is_rejected_and_counted_never_dropped_silently() -> None:
 
 def test_a_source_candidate_without_a_venue_is_still_ingested() -> None:
     repo = InMemoryEventRepository()
-    result = _use_case(FakeSource([_candidate("1", venue=None)]), repo).ingest(_QUERY, now=_NOW)
+    result = _use_case(FakeSource([_candidate("1", venue=None)]), repo).ingest(_WINDOW, now=_NOW)
     assert result.created == 1
     assert next(iter(repo.events.values())).venue == ""
 
@@ -198,10 +214,18 @@ def test_a_failed_fetch_propagates_and_writes_nothing() -> None:
     repo = InMemoryEventRepository()
     source = FakeSource(error=SourceFetchError("quota exhausted"))
     with pytest.raises(SourceFetchError, match="quota exhausted"):
-        _ = _use_case(source, repo).ingest(_QUERY, now=_NOW)
+        _ = _use_case(source, repo).ingest(_WINDOW, now=_NOW)
     assert repo.events == {}
 
 
 def test_an_empty_fetch_is_a_quiet_success() -> None:
-    result = _use_case(FakeSource(), InMemoryEventRepository()).ingest(_QUERY, now=_NOW)
+    result = _use_case(FakeSource(), InMemoryEventRepository()).ingest(_WINDOW, now=_NOW)
     assert (result.created, result.mentioned, result.unchanged) == (0, 0, 0)
+
+
+def test_a_batch_fetched_earlier_can_be_ingested_without_the_source() -> None:
+    repo = InMemoryEventRepository()
+    ports = SourceIngestPorts(repository=repo, ids=SequentialIds())
+    batch = SourceBatch([_candidate("1"), _candidate("2", title="Dub Club", venue="Zebulon")])
+    result = IngestSourceEvents("fake", ports, home_tz=_TZ).ingest_batch(batch, now=_NOW)
+    assert (result.created, result.mentioned) == (2, 0)

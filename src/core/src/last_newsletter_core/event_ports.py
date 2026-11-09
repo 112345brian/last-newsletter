@@ -8,7 +8,7 @@ Signatures other packages build against:
     EmbeddedEventReader.read(message) -> list[EventCandidate]
     EventExtractor.extract(messages, *, now, home_tz) -> list[EventCandidate]
     #   (may raise ExtractionFailedError)
-    EventSource.fetch(query, *, now) -> list[EventCandidate]      # (may raise SourceFetchError)
+    EventSource.fetch(window, *, now) -> SourceBatch              # (may raise SourceFetchError)
     EventRepository.get(event_id) -> Event | None
     EventRepository.find_candidates(query) -> list[Event]
     EventRepository.list_open() -> list[Event]
@@ -24,7 +24,7 @@ from __future__ import annotations
 
 __arbor__ = {"ring": "core"}
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
@@ -87,19 +87,35 @@ class SourceFetchError(Exception):
 
 
 @dataclass(frozen=True, slots=True)
-class SourceQuery:
-    """What to ask a structured event source for: a place and a window of local dates.
+class SourceWindow:
+    """The one thing every source is asked: events on these local dates (inclusive). Everything
+    else a source needs (a city, a feed URL, a genre filter) is its own configuration."""
 
-    `categories` are generic ("music"); each source maps them to its own classification. A
-    source may ignore a field it cannot honour but must say so in its own docs.
-    """
-
-    city: str
     date_from: date
     date_to: date
-    region: str = ""  # state or province code, e.g. "CA"
-    country: str = "US"
-    categories: tuple[str, ...] = ("music",)
+
+
+@dataclass(frozen=True, slots=True)
+class SourceReport:
+    """What a source did, in counts only, so a quiet run and a lossy run look different.
+
+    `skipped` maps a short reason to how many events were left out (cancelled, no date yet);
+    `truncated` counts matches the source reported but could not be fetched (a paging cap);
+    `notes` carries lines the source requires us to show, such as an attribution.
+    """
+
+    requests: int = 0
+    seen: int = 0
+    skipped: dict[str, int] = field(default_factory=dict)
+    outside_window: int = 0
+    truncated: int = 0
+    notes: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class SourceBatch:
+    candidates: list[EventCandidate]
+    report: SourceReport = field(default_factory=SourceReport)
 
 
 class EventSource(Protocol):
@@ -115,7 +131,7 @@ class EventSource(Protocol):
     @property
     def name(self) -> str: ...
 
-    def fetch(self, query: SourceQuery, *, now: datetime) -> list[EventCandidate]: ...
+    def fetch(self, window: SourceWindow, *, now: datetime) -> SourceBatch: ...
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,10 +1,13 @@
-"""The `fetch-events` command: one structured source (Ticketmaster) into the event ledger.
+"""The `fetch-events` command: one structured source straight into the event ledger.
 
 The same shape as `process`: everything ambient (data directory, environment, clock, HTTP
-transport, id source) is handed in by `main`, so tests drive the exact code with a temp
-directory, a fixed clock and a scripted transport. The network is used first and the ledger
-lock second, so a slow API never holds up `process`. Output is counts only: no titles, venues,
-or key.
+client, id source) is handed in by `main`, so tests drive the exact code with a temp directory,
+a fixed clock and a scripted `httpx` transport. The network is used first and the ledger lock
+second, so a slow API never holds up `process`. Output is counts only (plus any attribution a
+source requires): no titles, venues, or keys.
+
+This module is the composition root for sources: it is the only place that knows which sources
+exist and what each needs. Adding one is a new adapter, a branch in `_build_source`, and its flags.
 """
 
 from __future__ import annotations
@@ -17,6 +20,11 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from last_newsletter_adapter_frequentflyer import (
+    FrequentFlyerClient,
+    FrequentFlyerConfig,
+    FrequentFlyerEventSource,
+)
 from last_newsletter_adapter_ticketmaster import (
     TicketmasterClient,
     TicketmasterConfig,
@@ -24,7 +32,7 @@ from last_newsletter_adapter_ticketmaster import (
 )
 from last_newsletter_cli.command_support import ConfigError, Uuid4Ids, ledger_session
 from last_newsletter_cli.similarity import LINK_ONLY_POLICY, CoreSimilarIndex
-from last_newsletter_core.event_ports import SourceFetchError, SourceQuery
+from last_newsletter_core.event_ports import SourceFetchError, SourceWindow
 from last_newsletter_core.use_cases import IngestSourceEvents, SourceIngestPorts
 
 if TYPE_CHECKING:
@@ -33,12 +41,13 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import TextIO
 
-    from http_transport import Getter
-    from last_newsletter_adapter_ticketmaster import FetchStats
-    from last_newsletter_cli.command_support import IdGenerator
-    from last_newsletter_core.events import EventCandidate
+    import httpx
 
-KEY_VARIABLE = "TICKETMASTER_API_KEY"
+    from last_newsletter_cli.command_support import IdGenerator
+    from last_newsletter_core.event_ports import EventSource, SourceReport
+
+SOURCES = ("ticketmaster", "frequentflyer")
+TICKETMASTER_KEY = "TICKETMASTER_API_KEY"
 MAX_DAYS = 365
 
 
@@ -50,42 +59,27 @@ class FetchEventsContext:
     out: TextIO
     err: TextIO
     ids: IdGenerator | None = None
-    transport: Getter | None = None
+    http: httpx.Client | None = None
     sleep: Callable[[float], None] | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class FetchEventsOptions:
-    city: str
-    region: str = ""
-    country: str = "US"
+    source: str = "ticketmaster"
     days: int = 30
-    dma_id: str = ""
     home_tz: str = "UTC"
     dry_run: bool = False
+    # ticketmaster
+    city: str = ""
+    region: str = ""
+    country: str = "US"
+    dma_id: str = ""
+    # frequentflyer
+    neighborhood: str = ""
+    vibe: str = "music"
 
 
-class _Fetched:
-    """An `EventSource` over candidates already fetched, so the ledger lock is taken only after
-    the slow network part is over."""
-
-    def __init__(self, name: str, candidates: list[EventCandidate]) -> None:
-        self._name = name
-        self._candidates = candidates
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    def fetch(self, query: SourceQuery, *, now: datetime) -> list[EventCandidate]:
-        _ = (query, now)
-        return list(self._candidates)
-
-
-def _query(ctx: FetchEventsContext, options: FetchEventsOptions) -> SourceQuery:
-    if not options.city.strip():
-        msg = "--city must not be blank"
-        raise ConfigError(msg)
+def _window(ctx: FetchEventsContext, options: FetchEventsOptions) -> SourceWindow:
     if not 1 <= options.days <= MAX_DAYS:
         msg = f"--days must be between 1 and {MAX_DAYS}"
         raise ConfigError(msg)
@@ -95,29 +89,46 @@ def _query(ctx: FetchEventsContext, options: FetchEventsOptions) -> SourceQuery:
         msg = f"unknown time zone {options.home_tz!r} (--home-tz or LAST_NEWSLETTER_HOME_TZ)"
         raise ConfigError(msg) from None
     today = ctx.now.astimezone(zone).date()
-    return SourceQuery(
-        city=options.city.strip(),
-        region=options.region.strip(),
-        country=options.country.strip() or "US",
-        date_from=today,
-        date_to=today + timedelta(days=options.days),
-    )
+    return SourceWindow(date_from=today, date_to=today + timedelta(days=options.days))
+
+
+def _build_source(ctx: FetchEventsContext, options: FetchEventsOptions) -> EventSource:
+    if options.source == "ticketmaster":
+        key = ctx.environ.get(TICKETMASTER_KEY, "").strip()
+        if not key:
+            msg = f"{TICKETMASTER_KEY} is not set (a free key: https://developer.ticketmaster.com)"
+            raise ConfigError(msg)
+        if not options.city.strip():
+            msg = "--city is required for the ticketmaster source"
+            raise ConfigError(msg)
+        client = TicketmasterClient(key, http=ctx.http, sleep=ctx.sleep or time.sleep)
+        return TicketmasterEventSource(
+            client,
+            TicketmasterConfig(
+                city=options.city.strip(),
+                region=options.region.strip(),
+                country=options.country.strip() or "US",
+                dma_id=options.dma_id.strip(),
+            ),
+        )
+    if options.source == "frequentflyer":
+        return FrequentFlyerEventSource(
+            FrequentFlyerClient(http=ctx.http),
+            FrequentFlyerConfig(
+                vibe=options.vibe.strip(), neighborhood=options.neighborhood.strip()
+            ),
+        )
+    msg = f"unknown source {options.source!r} (one of: {', '.join(SOURCES)})"
+    raise ConfigError(msg)
 
 
 def execute_fetch_events(ctx: FetchEventsContext, options: FetchEventsOptions) -> int:
     """Fetch, ingest, and print counts. Returns the exit code: 0 on success, 1 when the fetch
     failed (nothing was written; a rerun is safe)."""
-    key = ctx.environ.get(KEY_VARIABLE, "").strip()
-    if not key:
-        msg = f"{KEY_VARIABLE} is not set (a free key: https://developer.ticketmaster.com)"
-        raise ConfigError(msg)
-    query = _query(ctx, options)
-    source = TicketmasterEventSource(
-        TicketmasterClient(key, transport=ctx.transport, sleep=ctx.sleep or time.sleep),
-        TicketmasterConfig(dma_id=options.dma_id.strip()),
-    )
+    source = _build_source(ctx, options)
+    window = _window(ctx, options)
     try:
-        candidates = source.fetch(query, now=ctx.now)
+        batch = source.fetch(window, now=ctx.now)
     except SourceFetchError as error:
         ctx.err.write(f"last-newsletter: {error}; nothing was saved, a rerun is safe\n")
         return 1
@@ -125,7 +136,7 @@ def execute_fetch_events(ctx: FetchEventsContext, options: FetchEventsOptions) -
     with ledger_session(ctx.data_dir, dry_run=options.dry_run) as session:
         session.sync_index()
         result = IngestSourceEvents(
-            _Fetched(source.name, candidates),
+            source.name,
             SourceIngestPorts(
                 repository=session.ledger,
                 ids=ctx.ids or Uuid4Ids(),
@@ -133,18 +144,17 @@ def execute_fetch_events(ctx: FetchEventsContext, options: FetchEventsOptions) -
             ),
             home_tz=options.home_tz,
             policy=LINK_ONLY_POLICY,
-        ).ingest(query, now=ctx.now)
-    where = ", ".join(part for part in (query.city, query.region) if part)
+        ).ingest_batch(batch, now=ctx.now)
     header = (
-        f"{source.name}: {len(candidates)} event(s) for {where}, "
-        f"{query.date_from.isoformat()} to {query.date_to.isoformat()} "
-        f"({source.stats.requests} request(s))"
+        f"{source.name}: {len(batch.candidates)} event(s), "
+        f"{window.date_from.isoformat()} to {window.date_to.isoformat()} "
+        f"({batch.report.requests} request(s))"
     )
     tally = (
         f"events: {result.created} created, {result.mentioned} new mentions, "
         f"{result.unchanged} unchanged, {result.possible_duplicates} possible duplicates"
     )
-    lines = [*session.notes, header, *_skipped_lines(source.stats), tally]
+    lines = [*session.notes, header, *_report_lines(batch.report), tally]
     if result.rejected_total:
         reasons = ", ".join(f"{r.value} {n}" for r, n in sorted(result.rejected.items()))
         lines.append(f"rejected: {result.rejected_total} ({reasons})")
@@ -152,16 +162,17 @@ def execute_fetch_events(ctx: FetchEventsContext, options: FetchEventsOptions) -
     return 0
 
 
-def _skipped_lines(stats: FetchStats) -> list[str]:
+def _report_lines(report: SourceReport) -> list[str]:
     lines: list[str] = []
-    if stats.skipped:
-        reasons = ", ".join(f"{reason} {n}" for reason, n in sorted(stats.skipped.items()))
+    if report.skipped:
+        reasons = ", ".join(f"{reason} {n}" for reason, n in sorted(report.skipped.items()))
         lines.append(f"skipped: {reasons}")
-    if stats.outside_window:
-        lines.append(f"outside the requested dates: {stats.outside_window}")
-    if stats.truncated:
+    if report.outside_window:
+        lines.append(f"outside the requested dates: {report.outside_window}")
+    if report.truncated:
         lines.append(
-            f"WARNING: {stats.truncated} match(es) beyond the API's 1,000-result cap were not "
-            "fetched; narrow the search (--days, --city, --dma-id)"
+            f"WARNING: {report.truncated} match(es) the source reported were not fetched "
+            "(its paging cap); narrow the search (--days, or a source filter)"
         )
+    lines.extend(f"note: {note}" for note in report.notes)
     return lines
