@@ -7,12 +7,12 @@ fetches it with `httpx`.
 
 ```bash
 uv run last-newsletter fetch-events --source ical --home-tz America/Los_Angeles \
-  --ical-url 'https://caldiscovery.com/los-angeles-ca/this-weekend-music.ics' \
-  --ical-name caldiscovery --dry-run
+  --feed-url 'https://caldiscovery.com/los-angeles-ca/this-weekend-music.ics' \
+  --feed-name caldiscovery --dry-run
 ```
 
-- `--ical-url` is the feed. `--ical-name` is a short stable label recorded on every mention
-  (default: the URL's host). `--ical-venue` fixes the venue when the whole feed is one room's
+- `--feed-url` is the feed. `--feed-name` is a short stable label recorded on every mention
+  (default: the URL's host). `--feed-venue` fixes the venue when the whole feed is one room's
   calendar.
 - **Times are shown in `--home-tz`.** Most feeds publish UTC (`...Z`); a 04:00Z start is 8pm the
   evening before in Los Angeles, and the date moves with it. Set `--home-tz` (or
@@ -36,7 +36,7 @@ uv run last-newsletter fetch-events --source ical --home-tz America/Los_Angeles 
 **Venue from `LOCATION` is a guess.** "The Mayan, 1038 S Hill St, Los Angeles" gives "The Mayan";
 "Globe Theatre" gives "Globe Theatre"; "Pomona, CA", "Los Angeles, CA 90015" and a bare street
 address give none; a `Location X [/link]` label some feeds add is removed. A wrong or missing venue
-only weakens matching against other sources, it never merges anything. Use `--ical-venue` when you
+only weakens matching against other sources, it never merges anything. Use `--feed-venue` when you
 know better.
 
 ## What is skipped, and counted

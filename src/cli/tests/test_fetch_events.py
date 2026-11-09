@@ -159,8 +159,8 @@ def _run(
     days: int = 60,
     key: str | None = _KEY,
     city: str = "Los Angeles",
-    ical_url: str = "",
-    ical_name: str = "",
+    feed_url: str = "",
+    feed_name: str = "",
 ) -> Run:
     out, err = io.StringIO(), io.StringIO()
     environ = {TICKETMASTER_KEY: key} if key is not None else {}
@@ -182,8 +182,8 @@ def _run(
             days=days,
             home_tz=_TZ,
             dry_run=dry_run,
-            ical_url=ical_url,
-            ical_name=ical_name,
+            feed_url=feed_url,
+            feed_name=feed_name,
         ),
     )
     return Run(code, out.getvalue(), err.getvalue())
@@ -353,7 +353,7 @@ _FEED = "https://calendar.example.com/feed.ics?token=SECRET-TOKEN"
 
 def test_an_ical_feed_needs_no_key_and_is_labelled_by_its_name(tmp_path: Path) -> None:
     world = FakeWorld()
-    result = _run(tmp_path, world, source="ical", key=None, ical_url=_FEED, ical_name="mycal")
+    result = _run(tmp_path, world, source="ical", key=None, feed_url=_FEED, feed_name="mycal")
     assert result.code == 0
     assert "events: 2 created" in result.out
     assert set(world.hosts) == {"calendar.example.com"}
@@ -366,14 +366,14 @@ def test_an_ical_feed_needs_no_key_and_is_labelled_by_its_name(tmp_path: Path) -
 
 
 def test_the_feed_host_names_the_source_when_no_name_is_given(tmp_path: Path) -> None:
-    _run(tmp_path, FakeWorld(), source="ical", key=None, ical_url=_FEED)
+    _run(tmp_path, FakeWorld(), source="ical", key=None, feed_url=_FEED)
     sources = {m.source for e in _stored(tmp_path) for m in e.mentions}
     assert sources == {"calendar.example.com"}
 
 
 def test_an_ical_rerun_changes_nothing_and_the_token_is_never_printed(tmp_path: Path) -> None:
-    _run(tmp_path, FakeWorld(), source="ical", key=None, ical_url=_FEED)
-    again = _run(tmp_path, FakeWorld(), source="ical", key=None, ical_url=_FEED)
+    _run(tmp_path, FakeWorld(), source="ical", key=None, feed_url=_FEED)
+    again = _run(tmp_path, FakeWorld(), source="ical", key=None, feed_url=_FEED)
     assert "events: 0 created, 0 new mentions, 2 unchanged" in again.out
     assert "SECRET-TOKEN" not in again.out + again.err
 
@@ -382,7 +382,7 @@ def test_a_calendar_event_matching_a_ticketmaster_event_is_cited_not_duplicated(
     tmp_path: Path,
 ) -> None:
     _run(tmp_path, FakeWorld())
-    result = _run(tmp_path, FakeWorld(), source="ical", key=None, ical_url=_FEED, ical_name="mycal")
+    result = _run(tmp_path, FakeWorld(), source="ical", key=None, feed_url=_FEED, feed_name="mycal")
     assert "events: 1 created, 1 new mentions" in result.out
     stored = {e.title: e for e in _stored(tmp_path)}
     assert [m.source for m in stored["Mdou Moctar"].mentions] == ["ticketmaster", "mycal"]
@@ -392,13 +392,13 @@ def test_a_calendar_event_matching_a_ticketmaster_event_is_cited_not_duplicated(
 @pytest.mark.parametrize("url", ["", "calendar.example.com/feed.ics", "file:///etc/passwd"])
 def test_an_ical_source_needs_a_web_url(tmp_path: Path, url: str) -> None:
     world = FakeWorld()
-    with pytest.raises(ConfigError, match="--ical-url"):
-        _run(tmp_path, world, source="ical", key=None, ical_url=url)
+    with pytest.raises(ConfigError, match="--feed-url"):
+        _run(tmp_path, world, source="ical", key=None, feed_url=url)
     assert world.hosts == []
 
 
 def test_a_broken_feed_url_fails_cleanly_without_the_token(tmp_path: Path) -> None:
-    result = _run(tmp_path, FakeWorld(ics_status=404), source="ical", key=None, ical_url=_FEED)
+    result = _run(tmp_path, FakeWorld(ics_status=404), source="ical", key=None, feed_url=_FEED)
     assert result.code == 1
     assert "HTTP 404" in result.err
     assert "SECRET-TOKEN" not in result.out + result.err

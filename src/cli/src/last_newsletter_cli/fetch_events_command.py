@@ -80,9 +80,9 @@ class FetchEventsOptions:
     neighborhood: str = ""
     vibe: str = "music"
     # ical: any published calendar; the name labels its mentions and defaults to the URL's host
-    ical_url: str = ""
-    ical_name: str = ""
-    ical_venue: str = ""
+    feed_url: str = ""
+    feed_name: str = ""
+    feed_venue: str = ""
 
 
 def _window(ctx: FetchEventsContext, options: FetchEventsOptions) -> SourceWindow:
@@ -131,14 +131,14 @@ def _build_source(ctx: FetchEventsContext, options: FetchEventsOptions) -> Event
 
 
 def _ical_source(ctx: FetchEventsContext, options: FetchEventsOptions) -> EventSource:
-    url = options.ical_url.strip()
+    url = options.feed_url.strip()
     if urlsplit(url).scheme not in {"http", "https"}:
-        msg = "--ical-url must be an http or https URL for the ical source"
+        msg = "--feed-url must be an http or https URL for the ical source"
         raise ConfigError(msg)
-    name = options.ical_name.strip() or (urlsplit(url).hostname or "ical")
+    name = options.feed_name.strip() or (urlsplit(url).hostname or "ical")
     return IcalEventSource(
         IcalClient(http=ctx.http),
-        IcalConfig(name=name, url=url, tz=options.home_tz, venue=options.ical_venue.strip()),
+        IcalConfig(name=name, url=url, tz=options.home_tz, venue=options.feed_venue.strip()),
     )
 
 
