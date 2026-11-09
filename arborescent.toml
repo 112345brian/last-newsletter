@@ -22,6 +22,7 @@ sources = [
     "src/adapter_ticketmaster/src",
     "src/adapter_frequentflyer/src",
     "src/adapter_ical/src",
+    "src/adapter_squarespace/src",
     "src/cli/src",
     "vendor/urgency/src",
     "vendor/identity_dedupe/src",
@@ -51,6 +52,7 @@ source_roots = [
     "src/adapter_ticketmaster/src",
     "src/adapter_frequentflyer/src",
     "src/adapter_ical/src",
+    "src/adapter_squarespace/src",
     "src/cli/src",
     "vendor/urgency/src",
     "vendor/identity_dedupe/src",
@@ -146,6 +148,8 @@ external = ["*"]
 "last_newsletter_adapter_frequentflyer.*" = "adapters"
 "last_newsletter_adapter_ical" = "adapters"
 "last_newsletter_adapter_ical.*" = "adapters"
+"last_newsletter_adapter_squarespace" = "adapters"
+"last_newsletter_adapter_squarespace.*" = "adapters"
 "source_dates" = "adapters"
 "source_dates.*" = "adapters"
 "process_lock" = "adapters"

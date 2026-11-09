@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
@@ -93,6 +94,24 @@ def _ff_body(events: list[dict[str, object]]) -> dict[str, object]:
     }
 
 
+def _ss_item(item_id: str, title: str, day: int = 20) -> dict[str, object]:
+    start = int(datetime(2026, 11, day, 20, 0, tzinfo=ZoneInfo(_TZ)).timestamp() * 1000)
+    return {
+        "id": item_id,
+        "title": title,
+        "startDate": start,
+        "endDate": start + 7_200_000,
+        "fullUrl": f"/events/{item_id}",
+        "excerpt": "<p>Doors at eight.</p>",
+        "tags": [],
+        "updatedOn": 1_794_000_000_000,
+    }
+
+
+def _ss_page(*upcoming: dict[str, object]) -> dict[str, object]:
+    return {"collection": {}, "upcoming": list(upcoming), "past": []}
+
+
 @dataclass
 class FakeWorld:
     """Routes requests by host, like the real two services."""
@@ -114,6 +133,9 @@ class FakeWorld:
         "END:VEVENT\r\nEND:VCALENDAR\r\n"
     )
     ics_status: int = 200
+    ss_body: dict[str, object] = field(
+        default_factory=lambda: _ss_page(_ss_item("s1", "Zebulon Matinee"))
+    )
     hosts: list[str] = field(default_factory=list)
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
@@ -122,6 +144,8 @@ class FakeWorld:
             return httpx.Response(self.tm_status, json=self.tm_body)
         if request.url.host == "frequentflyerla.com":
             return httpx.Response(200, json=self.ff_body)
+        if request.url.host == "www.venue.example":
+            return httpx.Response(200, json=self.ss_body)
         if request.url.host == "calendar.example.com":
             return httpx.Response(
                 self.ics_status, text=self.ics, headers={"content-type": "text/calendar"}
@@ -161,6 +185,8 @@ def _run(
     city: str = "Los Angeles",
     feed_url: str = "",
     feed_name: str = "",
+    feed_venue: str = "",
+    feed_organizer: str = "",
 ) -> Run:
     out, err = io.StringIO(), io.StringIO()
     environ = {TICKETMASTER_KEY: key} if key is not None else {}
@@ -184,6 +210,8 @@ def _run(
             dry_run=dry_run,
             feed_url=feed_url,
             feed_name=feed_name,
+            feed_venue=feed_venue,
+            feed_organizer=feed_organizer,
         ),
     )
     return Run(code, out.getvalue(), err.getvalue())
@@ -403,6 +431,97 @@ def test_a_broken_feed_url_fails_cleanly_without_the_token(tmp_path: Path) -> No
     assert "HTTP 404" in result.err
     assert "SECRET-TOKEN" not in result.out + result.err
     assert not (tmp_path / "events" / LEDGER_NAME).exists()
+
+
+# --- squarespace -------------------------------------------------------------------------------
+
+_PAGE = "https://www.venue.example/events"
+
+
+def test_a_squarespace_events_page_needs_no_key_and_is_labelled_by_its_name(tmp_path: Path) -> None:
+    world = FakeWorld()
+    result = _run(
+        tmp_path,
+        world,
+        source="squarespace",
+        key=None,
+        feed_url=_PAGE,
+        feed_name="room",
+        feed_venue="Zebulon",
+    )
+    assert result.code == 0
+    assert "events: 1 created" in result.out
+    assert set(world.hosts) == {"www.venue.example"}
+    (event,) = _stored(tmp_path)
+    assert (event.title, event.venue, event.uid) == ("Zebulon Matinee", "Zebulon", "room:s1")
+    assert [m.source for m in event.mentions] == ["room"]
+
+
+def test_a_promoters_feed_records_an_organizer_and_no_venue(tmp_path: Path) -> None:
+    _run(
+        tmp_path,
+        FakeWorld(),
+        source="squarespace",
+        key=None,
+        feed_url=_PAGE,
+        feed_organizer="Living Earth",
+    )
+    (event,) = _stored(tmp_path)
+    assert event.venue == ""
+    assert [(e.name, e.role) for e in event.entities] == [("Living Earth", EntityRole.ORGANIZER)]
+
+
+def test_a_squarespace_rerun_changes_nothing(tmp_path: Path) -> None:
+    for _ in range(2):
+        again = _run(
+            tmp_path,
+            FakeWorld(),
+            source="squarespace",
+            key=None,
+            feed_url=_PAGE,
+            feed_venue="Zebulon",
+        )
+    assert "events: 0 created, 0 new mentions, 1 unchanged" in again.out
+
+
+def test_a_squarespace_show_matching_a_ticketmaster_event_is_cited(tmp_path: Path) -> None:
+    _run(tmp_path, FakeWorld())
+    world = FakeWorld(ss_body=_ss_page(_ss_item("s9", "Mdou Moctar")))
+    result = _run(
+        tmp_path,
+        world,
+        source="squarespace",
+        key=None,
+        feed_url=_PAGE,
+        feed_name="fonda",
+        feed_venue="The Fonda Theatre",
+    )
+    assert "events: 0 created, 1 new mentions" in result.out
+    stored = {e.title: e for e in _stored(tmp_path)}
+    assert [m.source for m in stored["Mdou Moctar"].mentions] == ["ticketmaster", "fonda"]
+
+
+@pytest.mark.parametrize(("venue", "organizer"), [("", ""), ("A room", "A promoter")])
+def test_a_squarespace_feed_must_say_exactly_one_of_venue_or_organizer(
+    tmp_path: Path, venue: str, organizer: str
+) -> None:
+    world = FakeWorld()
+    with pytest.raises(ConfigError, match="exactly one of"):
+        _run(
+            tmp_path,
+            world,
+            source="squarespace",
+            key=None,
+            feed_url=_PAGE,
+            feed_venue=venue,
+            feed_organizer=organizer,
+        )
+    assert world.hosts == []
+
+
+def test_an_organizer_makes_no_sense_for_an_ical_feed(tmp_path: Path) -> None:
+    with pytest.raises(ConfigError, match="not used by the ical source"):
+        _run(tmp_path, FakeWorld(), source="ical", key=None, feed_url=_FEED, feed_organizer="X")
 
 
 # --- wiring ------------------------------------------------------------------------------------

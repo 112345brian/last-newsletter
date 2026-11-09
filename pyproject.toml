@@ -32,6 +32,7 @@ members = [
     "src/adapter_ticketmaster",
     "src/adapter_frequentflyer",
     "src/adapter_ical",
+    "src/adapter_squarespace",
     "libs/text_match",
     "libs/mailtext",
     "libs/llmhost",
@@ -105,6 +106,7 @@ root_packages = [
     "last_newsletter_adapter_ticketmaster",
     "last_newsletter_adapter_frequentflyer",
     "last_newsletter_adapter_ical",
+    "last_newsletter_adapter_squarespace",
     "last_newsletter_adapter_semantic",
     "last_newsletter_adapter_ledger",
     "last_newsletter_cli",
@@ -127,7 +129,7 @@ name = "Clean Architecture dependency rule (README.md#architecture)"
 type = "layers"
 layers = [
     "last_newsletter_cli",
-    "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge | last_newsletter_adapter_semantic | last_newsletter_adapter_ledger | last_newsletter_adapter_events | last_newsletter_adapter_ticketmaster | last_newsletter_adapter_frequentflyer | last_newsletter_adapter_ical",
+    "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge | last_newsletter_adapter_semantic | last_newsletter_adapter_ledger | last_newsletter_adapter_events | last_newsletter_adapter_ticketmaster | last_newsletter_adapter_frequentflyer | last_newsletter_adapter_ical | last_newsletter_adapter_squarespace",
     "last_newsletter_core",
     "ranked_digest | text_match | mailtext | llmhost | urgency | identity_dedupe | source_dates | text_normalize | notification_port | usage_ledger_port | durable_outbox | tracker_state",
     "process_lock",

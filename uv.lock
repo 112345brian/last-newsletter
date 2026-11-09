@@ -20,6 +20,7 @@ members = [
     "last-newsletter-adapter-ledger",
     "last-newsletter-adapter-publish",
     "last-newsletter-adapter-semantic",
+    "last-newsletter-adapter-squarespace",
     "last-newsletter-adapter-storage",
     "last-newsletter-adapter-summarizer",
     "last-newsletter-adapter-ticketmaster",
@@ -1028,6 +1029,37 @@ dev = [
 ]
 
 [[package]]
+name = "last-newsletter-adapter-squarespace"
+version = "0.1.0"
+source = { editable = "src/adapter_squarespace" }
+dependencies = [
+    { name = "httpx" },
+    { name = "last-newsletter-core" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "last-newsletter-core", editable = "src/core" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[[package]]
 name = "last-newsletter-adapter-storage"
 version = "0.1.0"
 source = { editable = "src/adapter_storage" }
@@ -1171,6 +1203,7 @@ dependencies = [
     { name = "last-newsletter-adapter-ledger" },
     { name = "last-newsletter-adapter-publish" },
     { name = "last-newsletter-adapter-semantic" },
+    { name = "last-newsletter-adapter-squarespace" },
     { name = "last-newsletter-adapter-storage" },
     { name = "last-newsletter-adapter-summarizer" },
     { name = "last-newsletter-adapter-ticketmaster" },
@@ -1199,6 +1232,7 @@ requires-dist = [
     { name = "last-newsletter-adapter-ledger", editable = "src/adapter_ledger" },
     { name = "last-newsletter-adapter-publish", editable = "src/adapter_publish" },
     { name = "last-newsletter-adapter-semantic", editable = "src/adapter_semantic" },
+    { name = "last-newsletter-adapter-squarespace", editable = "src/adapter_squarespace" },
     { name = "last-newsletter-adapter-storage", editable = "src/adapter_storage" },
     { name = "last-newsletter-adapter-summarizer", editable = "src/adapter_summarizer" },
     { name = "last-newsletter-adapter-ticketmaster", editable = "src/adapter_ticketmaster" },

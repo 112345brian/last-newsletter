@@ -507,7 +507,8 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=FETCH_EVENT_SOURCES,
         default="ticketmaster",
         help="ticketmaster needs $TICKETMASTER_API_KEY and --city; frequentflyer needs neither "
-        "(Los Angeles only); ical needs --feed-url. Times in a feed are shown in --home-tz.",
+        "(Los Angeles only); ical and squarespace need --feed-url (squarespace also one of "
+        "--feed-venue or --feed-organizer). Times in a feed are shown in --home-tz.",
     )
     fetch_events_parser.add_argument(
         "--city", default="", help='ticketmaster only, e.g. "Los Angeles".'
@@ -516,7 +517,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--neighborhood", default="", help='frequentflyer only, a slug such as "echo-park".'
     )
     fetch_events_parser.add_argument(
-        "--feed-url", default="", help="ical (and other feed sources): the feed URL to read."
+        "--feed-url", default="", help="ical and squarespace: the feed or events-page URL to read."
     )
     fetch_events_parser.add_argument(
         "--feed-name",
@@ -526,7 +527,12 @@ def _build_parser() -> argparse.ArgumentParser:
     fetch_events_parser.add_argument(
         "--feed-venue",
         default="",
-        help="feed sources: set when the whole feed is one venue's calendar.",
+        help="feed sources: set when the whole feed is one room's calendar.",
+    )
+    fetch_events_parser.add_argument(
+        "--feed-organizer",
+        default="",
+        help="squarespace: the promoter whose feed it is, when their shows are at various places.",
     )
     fetch_events_parser.add_argument(
         "--vibe", default="music", help='frequentflyer only (default "music"; "" for everything).'
@@ -622,6 +628,7 @@ def _command_fetch_events(parser: argparse.ArgumentParser, args: argparse.Namesp
                 feed_url=args.feed_url,
                 feed_name=args.feed_name,
                 feed_venue=args.feed_venue,
+                feed_organizer=args.feed_organizer,
                 home_tz=args.home_tz,
                 dry_run=args.dry_run,
             )

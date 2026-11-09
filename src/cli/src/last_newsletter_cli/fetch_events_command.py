@@ -27,6 +27,11 @@ from last_newsletter_adapter_frequentflyer import (
     FrequentFlyerEventSource,
 )
 from last_newsletter_adapter_ical import IcalClient, IcalConfig, IcalEventSource
+from last_newsletter_adapter_squarespace import (
+    SquarespaceClient,
+    SquarespaceConfig,
+    SquarespaceEventSource,
+)
 from last_newsletter_adapter_ticketmaster import (
     TicketmasterClient,
     TicketmasterConfig,
@@ -48,7 +53,7 @@ if TYPE_CHECKING:
     from last_newsletter_cli.command_support import IdGenerator
     from last_newsletter_core.event_ports import EventSource, SourceReport
 
-SOURCES = ("ticketmaster", "frequentflyer", "ical")
+SOURCES = ("ticketmaster", "frequentflyer", "ical", "squarespace")
 TICKETMASTER_KEY = "TICKETMASTER_API_KEY"
 MAX_DAYS = 365
 
@@ -83,6 +88,7 @@ class FetchEventsOptions:
     feed_url: str = ""
     feed_name: str = ""
     feed_venue: str = ""
+    feed_organizer: str = ""
 
 
 def _window(ctx: FetchEventsContext, options: FetchEventsOptions) -> SourceWindow:
@@ -124,21 +130,37 @@ def _build_source(ctx: FetchEventsContext, options: FetchEventsOptions) -> Event
                 vibe=options.vibe.strip(), neighborhood=options.neighborhood.strip()
             ),
         )
-    if options.source == "ical":
-        return _ical_source(ctx, options)
+    if options.source in {"ical", "squarespace"}:
+        return _feed_source(ctx, options)
     msg = f"unknown source {options.source!r} (one of: {', '.join(SOURCES)})"
     raise ConfigError(msg)
 
 
-def _ical_source(ctx: FetchEventsContext, options: FetchEventsOptions) -> EventSource:
+def _feed_source(ctx: FetchEventsContext, options: FetchEventsOptions) -> EventSource:
+    """The sources that read one feed URL, labelled by `--feed-name` (default: the URL's host)."""
     url = options.feed_url.strip()
     if urlsplit(url).scheme not in {"http", "https"}:
-        msg = "--feed-url must be an http or https URL for the ical source"
+        msg = f"--feed-url must be an http or https URL for the {options.source} source"
         raise ConfigError(msg)
-    name = options.feed_name.strip() or (urlsplit(url).hostname or "ical")
-    return IcalEventSource(
-        IcalClient(http=ctx.http),
-        IcalConfig(name=name, url=url, tz=options.home_tz, venue=options.feed_venue.strip()),
+    name = options.feed_name.strip() or (urlsplit(url).hostname or options.source)
+    venue, organizer = options.feed_venue.strip(), options.feed_organizer.strip()
+    if options.source == "ical":
+        if organizer:
+            msg = "--feed-organizer is not used by the ical source (use --feed-venue)"
+            raise ConfigError(msg)
+        return IcalEventSource(
+            IcalClient(http=ctx.http),
+            IcalConfig(name=name, url=url, tz=options.home_tz, venue=venue),
+        )
+    if bool(venue) == bool(organizer):
+        msg = (
+            "the squarespace source needs exactly one of --feed-venue (a room's own calendar) "
+            "or --feed-organizer (a promoter whose shows are at various places)"
+        )
+        raise ConfigError(msg)
+    return SquarespaceEventSource(
+        SquarespaceClient(http=ctx.http),
+        SquarespaceConfig(name=name, url=url, tz=options.home_tz, venue=venue, organizer=organizer),
     )
 
 
