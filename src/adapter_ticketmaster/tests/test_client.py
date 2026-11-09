@@ -3,7 +3,8 @@ from __future__ import annotations
 import pytest
 from tm_fakes import KEY, Clock, ScriptedTransport, ok, query_of
 
-from last_newsletter_adapter_ticketmaster import HttpResponse, TicketmasterClient
+from http_transport import HttpResponse
+from last_newsletter_adapter_ticketmaster import TicketmasterClient
 from last_newsletter_adapter_ticketmaster.client import MIN_INTERVAL_S, parse_reset_seconds
 from last_newsletter_core.event_ports import SourceFetchError
 

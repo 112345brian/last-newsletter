@@ -8,14 +8,10 @@ from last_newsletter_adapter_ticketmaster.source import (
     TicketmasterConfig,
     TicketmasterEventSource,
 )
-from last_newsletter_adapter_ticketmaster.transport import HttpResponse, Transport, UrllibTransport
 
 __all__ = [
     "FetchStats",
-    "HttpResponse",
     "TicketmasterClient",
     "TicketmasterConfig",
     "TicketmasterEventSource",
-    "Transport",
-    "UrllibTransport",
 ]

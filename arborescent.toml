@@ -8,6 +8,7 @@ sources = [
     "src/core/src",
     "libs/text_match/src",
     "libs/mailtext/src",
+    "libs/http_transport/src",
     "libs/llmhost/src",
     "libs/ranked_digest/src",
     "src/adapter_email/src",
@@ -35,6 +36,7 @@ source_roots = [
     "src/core/src",
     "libs/text_match/src",
     "libs/mailtext/src",
+    "libs/http_transport/src",
     "libs/llmhost/src",
     "libs/ranked_digest/src",
     "src/adapter_email/src",
@@ -103,6 +105,8 @@ external = ["*"]
 "text_match.*" = "libs"
 "mailtext" = "libs"
 "mailtext.*" = "libs"
+"http_transport" = "libs"
+"http_transport.*" = "libs"
 "llmhost" = "llm"
 "llmhost.*" = "llm"
 "urgency" = "core"

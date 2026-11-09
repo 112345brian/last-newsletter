@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from tm_fakes import KEY, Clock, HandlerTransport, fixture, ok, query_of
 
 from last_newsletter_adapter_ticketmaster import (
-    HttpResponse,
     TicketmasterClient,
     TicketmasterConfig,
     TicketmasterEventSource,
 )
 from last_newsletter_adapter_ticketmaster.source import RESULT_CAP
 from last_newsletter_core.event_ports import EventSource, SourceQuery
+
+if TYPE_CHECKING:
+    from http_transport import HttpResponse
 
 _NOW = datetime(2026, 11, 6, 12, 0, tzinfo=UTC)
 _QUERY = SourceQuery(

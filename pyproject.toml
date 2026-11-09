@@ -32,6 +32,7 @@ members = [
     "src/adapter_ticketmaster",
     "libs/text_match",
     "libs/mailtext",
+    "libs/http_transport",
     "libs/llmhost",
     "libs/ranked_digest",
     "vendor/urgency",
@@ -106,6 +107,7 @@ root_packages = [
     "last_newsletter_cli",
     "text_match",
     "mailtext",
+    "http_transport",
     "llmhost",
     "urgency",
     "identity_dedupe",
@@ -126,5 +128,5 @@ layers = [
     "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge | last_newsletter_adapter_semantic | last_newsletter_adapter_ledger | last_newsletter_adapter_events | last_newsletter_adapter_ticketmaster",
     "last_newsletter_core",
     "ranked_digest | text_match | mailtext | llmhost | urgency | identity_dedupe | source_dates | text_normalize | notification_port | usage_ledger_port | durable_outbox | tracker_state",
-    "process_lock",
+    "process_lock | http_transport",
 ]

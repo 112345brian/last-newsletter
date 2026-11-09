@@ -10,6 +10,7 @@ resolution-markers = [
 [manifest]
 members = [
     "durable-outbox",
+    "http-transport",
     "identity-dedupe",
     "last-newsletter",
     "last-newsletter-adapter-email",
@@ -464,6 +465,29 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f8/27/e158d86ba1e82967cc2f790b0cb02030d4a8bef58e0c79a8590e9678107f/html2text-2025.4.15.tar.gz", hash = "sha256:948a645f8f0bc3abe7fd587019a2197a12436cd73d0d4908af95bfc8da337588", size = 64316, upload-time = "2025-04-15T04:02:30.045Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1d/84/1a0f9555fd5f2b1c924ff932d99b40a0f8a6b12f6dd625e2a47f415b00ea/html2text-2025.4.15-py3-none-any.whl", hash = "sha256:00569167ffdab3d7767a4cdf589b7f57e777a5ed28d12907d8c58769ec734acc", size = 34656, upload-time = "2025-04-15T04:02:28.44Z" },
+]
+
+[[package]]
+name = "http-transport"
+version = "0.1.0"
+source = { editable = "libs/http_transport" }
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
 ]
 
 [[package]]
@@ -981,6 +1005,7 @@ name = "last-newsletter-adapter-ticketmaster"
 version = "0.1.0"
 source = { editable = "src/adapter_ticketmaster" }
 dependencies = [
+    { name = "http-transport" },
     { name = "last-newsletter-core" },
 ]
 
@@ -993,7 +1018,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "last-newsletter-core", editable = "src/core" }]
+requires-dist = [
+    { name = "http-transport", editable = "libs/http_transport" },
+    { name = "last-newsletter-core", editable = "src/core" },
+]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1039,6 +1067,7 @@ name = "last-newsletter-cli"
 version = "0.1.0"
 source = { editable = "src/cli" }
 dependencies = [
+    { name = "http-transport" },
     { name = "last-newsletter-adapter-email" },
     { name = "last-newsletter-adapter-events" },
     { name = "last-newsletter-adapter-knowledge" },
@@ -1064,6 +1093,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "http-transport", editable = "libs/http_transport" },
     { name = "last-newsletter-adapter-email", editable = "src/adapter_email" },
     { name = "last-newsletter-adapter-events", editable = "src/adapter_events" },
     { name = "last-newsletter-adapter-knowledge", editable = "src/adapter_knowledge" },

@@ -12,8 +12,8 @@ from uuid import UUID
 
 import pytest
 
+from http_transport import HttpResponse
 from last_newsletter_adapter_ledger import SqliteEventRepository
-from last_newsletter_adapter_ticketmaster import HttpResponse
 from last_newsletter_cli.fetch_events_command import (
     KEY_VARIABLE,
     FetchEventsContext,

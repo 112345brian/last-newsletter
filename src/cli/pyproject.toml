@@ -21,6 +21,7 @@ dependencies = [
     "last-newsletter-adapter-events",
     "last-newsletter-adapter-ticketmaster",
     "process-lock",
+    "http-transport",
 ]
 
 [project.scripts]
@@ -42,6 +43,7 @@ last-newsletter-adapter-ledger = { workspace = true }
 last-newsletter-adapter-semantic = { workspace = true }
 last-newsletter-adapter-events = { workspace = true }
 last-newsletter-adapter-ticketmaster = { workspace = true }
+http-transport = { workspace = true }
 process-lock = { workspace = true }
 
 [build-system]

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from last_newsletter_adapter_ticketmaster import HttpResponse
+from http_transport import HttpResponse
 
 if TYPE_CHECKING:
     from collections.abc import Callable

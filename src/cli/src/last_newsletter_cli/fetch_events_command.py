@@ -11,40 +11,31 @@ from __future__ import annotations
 
 __arbor__ = {"ring": "cli"}
 
-import tempfile
 import time
-from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import timedelta
-from pathlib import Path
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from last_newsletter_adapter_ledger import SqliteEventRepository, ledger_write_lock
-from last_newsletter_adapter_semantic import HashedNgramIndex
 from last_newsletter_adapter_ticketmaster import (
     TicketmasterClient,
     TicketmasterConfig,
     TicketmasterEventSource,
 )
-from last_newsletter_cli.process_command import (
-    INDEX_NAME,
-    LEDGER_NAME,
-    ConfigError,
-    Uuid4Ids,
-    copy_for_dry_run,
-)
-from last_newsletter_cli.similarity import LINK_ONLY_POLICY, CoreSimilarIndex, sync_index
+from last_newsletter_cli.command_support import ConfigError, Uuid4Ids, ledger_session
+from last_newsletter_cli.similarity import LINK_ONLY_POLICY, CoreSimilarIndex
 from last_newsletter_core.event_ports import SourceFetchError, SourceQuery
 from last_newsletter_core.use_cases import IngestSourceEvents, SourceIngestPorts
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
     from datetime import datetime
+    from pathlib import Path
     from typing import TextIO
 
-    from last_newsletter_adapter_ticketmaster import FetchStats, Transport
-    from last_newsletter_cli.process_command import IdGenerator
+    from http_transport import Getter
+    from last_newsletter_adapter_ticketmaster import FetchStats
+    from last_newsletter_cli.command_support import IdGenerator
     from last_newsletter_core.events import EventCandidate
 
 KEY_VARIABLE = "TICKETMASTER_API_KEY"
@@ -59,7 +50,7 @@ class FetchEventsContext:
     out: TextIO
     err: TextIO
     ids: IdGenerator | None = None
-    transport: Transport | None = None
+    transport: Getter | None = None
     sleep: Callable[[float], None] | None = None
 
 
@@ -131,31 +122,18 @@ def execute_fetch_events(ctx: FetchEventsContext, options: FetchEventsOptions) -
         ctx.err.write(f"last-newsletter: {error}; nothing was saved, a rerun is safe\n")
         return 1
 
-    notes: list[str] = []
-    with ExitStack() as stack:
-        if options.dry_run:
-            scratch = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="ln-dry-")))
-            events_dir = copy_for_dry_run(ctx.data_dir / "events", scratch)
-            notes.append("DRY RUN: nothing below was saved")
-        else:
-            events_dir = ctx.data_dir / "events"
-            events_dir.mkdir(parents=True, exist_ok=True)
-        ledger = stack.enter_context(SqliteEventRepository(events_dir / LEDGER_NAME))
-        index = HashedNgramIndex(events_dir / INDEX_NAME)
-        stack.callback(index.close)
-        with ledger_write_lock(events_dir / LEDGER_NAME, timeout_s=5.0):
-            if sync_index(index, ledger.list_all()):
-                notes.append("rebuilt the similarity index from the ledger")
-            result = IngestSourceEvents(
-                _Fetched(source.name, candidates),
-                SourceIngestPorts(
-                    repository=ledger,
-                    ids=ctx.ids or Uuid4Ids(),
-                    similar_index=CoreSimilarIndex(index),
-                ),
-                home_tz=options.home_tz,
-                policy=LINK_ONLY_POLICY,
-            ).ingest(query, now=ctx.now)
+    with ledger_session(ctx.data_dir, dry_run=options.dry_run) as session:
+        session.sync_index()
+        result = IngestSourceEvents(
+            _Fetched(source.name, candidates),
+            SourceIngestPorts(
+                repository=session.ledger,
+                ids=ctx.ids or Uuid4Ids(),
+                similar_index=CoreSimilarIndex(session.index),
+            ),
+            home_tz=options.home_tz,
+            policy=LINK_ONLY_POLICY,
+        ).ingest(query, now=ctx.now)
     where = ", ".join(part for part in (query.city, query.region) if part)
     header = (
         f"{source.name}: {len(candidates)} event(s) for {where}, "
@@ -166,7 +144,7 @@ def execute_fetch_events(ctx: FetchEventsContext, options: FetchEventsOptions) -
         f"events: {result.created} created, {result.mentioned} new mentions, "
         f"{result.unchanged} unchanged, {result.possible_duplicates} possible duplicates"
     )
-    lines = [*notes, header, *_skipped_lines(source.stats), tally]
+    lines = [*session.notes, header, *_skipped_lines(source.stats), tally]
     if result.rejected_total:
         reasons = ", ".join(f"{r.value} {n}" for r, n in sorted(result.rejected.items()))
         lines.append(f"rejected: {result.rejected_total} ({reasons})")

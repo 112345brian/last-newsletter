@@ -16,7 +16,7 @@ import time
 import urllib.parse
 from typing import TYPE_CHECKING
 
-from last_newsletter_adapter_ticketmaster.transport import HttpResponse, Transport, UrllibTransport
+from http_transport import Getter, HttpResponse, UrllibTransport
 from last_newsletter_core.event_ports import SourceFetchError
 
 if TYPE_CHECKING:
@@ -55,7 +55,7 @@ class TicketmasterClient:
         self,
         api_key: str,
         *,
-        transport: Transport | None = None,
+        transport: Getter | None = None,
         sleep: Callable[[float], None] = time.sleep,
         monotonic: Callable[[], float] = time.monotonic,
         wall_clock: Callable[[], float] = time.time,
