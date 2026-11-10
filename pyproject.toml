@@ -33,15 +33,7 @@ members = [
     "libs/mailtext",
     "libs/llmhost",
     "libs/ranked_digest",
-    "vendor/urgency",
-    "vendor/identity_dedupe",
-    "vendor/source_dates",
-    "vendor/text_normalize",
-    "vendor/notification_port",
-    "vendor/usage_ledger_port",
     "vendor/process_lock",
-    "vendor/durable_outbox",
-    "vendor/tracker_state",
 ]
 
 [tool.ruff]
@@ -105,15 +97,7 @@ root_packages = [
     "text_match",
     "mailtext",
     "llmhost",
-    "urgency",
-    "identity_dedupe",
-    "source_dates",
-    "text_normalize",
-    "notification_port",
-    "usage_ledger_port",
     "process_lock",
-    "durable_outbox",
-    "tracker_state",
 ]
 
 [[tool.importlinter.contracts]]
@@ -123,6 +107,6 @@ layers = [
     "last_newsletter_cli",
     "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge | last_newsletter_adapter_semantic | last_newsletter_adapter_ledger | last_newsletter_adapter_events",
     "last_newsletter_core",
-    "ranked_digest | text_match | mailtext | llmhost | urgency | identity_dedupe | source_dates | text_normalize | notification_port | usage_ledger_port | durable_outbox | tracker_state",
+    "ranked_digest | text_match | mailtext | llmhost",
     "process_lock",
 ]

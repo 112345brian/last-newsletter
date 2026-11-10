@@ -7,40 +7,7 @@ manifest:
     - name: github
       url-base: https://github.com/112345brian
   projects:
-    - name: urgency
-      dst: vendor/urgency
-      repo-path: urgency.git
-      tag: v0.1.0
-    - name: identity_dedupe
-      dst: vendor/identity_dedupe
-      repo-path: identity-dedupe.git
-      tag: v0.1.0
-    - name: source_dates
-      dst: vendor/source_dates
-      repo-path: source-dates.git
-      tag: v0.1.0
-    - name: text_normalize
-      dst: vendor/text_normalize
-      repo-path: text-normalize.git
-      tag: v0.1.0
-    - name: notification_port
-      dst: vendor/notification_port
-      repo-path: notification-port.git
-      tag: v0.1.0
-    - name: usage_ledger_port
-      dst: vendor/usage_ledger_port
-      repo-path: usage-ledger-port.git
-      tag: v0.1.0
     - name: process_lock
       dst: vendor/process_lock
       repo-path: process-lock.git
       tag: v0.1.1
-    - name: durable_outbox
-      dst: vendor/durable_outbox
-      repo-path: durable-outbox.git
-      tag: v0.1.1
-      patch: patches/durable_outbox.patch
-    - name: tracker_state
-      dst: vendor/tracker_state
-      repo-path: tracker-state.git
-      tag: v0.1.0
