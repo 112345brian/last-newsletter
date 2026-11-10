@@ -13,14 +13,14 @@ __arbor__ = {"ring": "adapters"}
 import re
 from typing import TYPE_CHECKING
 
-from last_newsletter_core.events import EventCandidate, EventKind, PartialWhen
+from concert_tracker_core.events import EventCandidate, EventKind, PartialWhen
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import datetime
 
-    from last_newsletter_core.events import EventCandidate as Candidate
-    from ranked_digest.entities import EmailMessage
+    from concert_tracker_core.documents import SourceDocument
+    from concert_tracker_core.events import EventCandidate as Candidate
 
 _ISO_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
 _MAX_PER_MESSAGE = 50
@@ -30,13 +30,13 @@ _SEPARATORS = " \t-|,:;\u2013\u2014"
 class NoEmbeddedEvents:
     """`EmbeddedEventReader` that finds nothing, so every message goes to the extractor."""
 
-    def read(self, message: EmailMessage) -> list[Candidate]:
+    def read(self, message: SourceDocument) -> list[Candidate]:
         return []
 
 
 class DatedLineExtractor:
     def extract(
-        self, messages: Sequence[EmailMessage], *, now: datetime, home_tz: str
+        self, messages: Sequence[SourceDocument], *, now: datetime, home_tz: str
     ) -> list[Candidate]:
         del now, home_tz  # dates are explicit in the text; ingest resolves and validates them
         found: list[Candidate] = []

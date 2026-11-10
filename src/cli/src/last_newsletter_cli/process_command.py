@@ -16,17 +16,23 @@ from __future__ import annotations
 __arbor__ = {"ring": "cli"}
 
 import shutil
-import tempfile
-from contextlib import ExitStack
 from dataclasses import dataclass
-from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
-from uuid import uuid4
+from typing import TYPE_CHECKING
+
+from concert_tracker_adapter_ledger import ledger_write_lock
+from concert_tracker_app import (
+    INDEX_NAME,
+    LEDGER_NAME,
+    LINK_ONLY_POLICY,
+    ConfigError,
+    IdGenerator,
+    Uuid4Ids,
+    ledger_session,
+)
+from concert_tracker_core.use_cases import IngestEvents, IngestPorts
 
 from last_newsletter_adapter_events import LocalLlmEventExtractor, OllamaClient, OllamaConfig
-from last_newsletter_adapter_ledger import SqliteEventRepository, ledger_write_lock
-from last_newsletter_adapter_semantic import HashedNgramIndex
-from last_newsletter_adapter_storage import FileRawMessageStore, ProcessedMarkers
+from last_newsletter_adapter_storage import FileRawMessageStore, ProcessedMarkers, RawStoreDocuments
 from last_newsletter_adapter_summarizer.dated_line_extractor import (
     DatedLineExtractor,
     NoEmbeddedEvents,
@@ -38,39 +44,21 @@ from last_newsletter_cli.process_stage import (
     ProcessSummary,
     process_raw,
 )
-from last_newsletter_cli.similarity import LINK_ONLY_POLICY, CoreSimilarIndex, sync_index
-from last_newsletter_core.events import EventId
-from last_newsletter_core.use_cases import IngestEvents, IngestPorts
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
     from datetime import datetime
+    from pathlib import Path
     from typing import TextIO
 
-    from last_newsletter_core.event_ports import EventExtractor
+    from concert_tracker_core.event_ports import EventExtractor
+
     from llmhost.transport import Transport
 
 DEFAULT_OLLAMA_MODEL = "gpt-oss:120b"
 EXTRACTOR_CHOICES = ("dated-lines", "local-llm")
 # Stop after this many consecutive-looking failed batches: an offline model fails every batch.
 _MAX_FAILED_BATCHES = 2
-LEDGER_NAME = "ledger.sqlite"
-INDEX_NAME = "similar.sqlite"
-
-
-class ConfigError(Exception):
-    """A setting is missing or invalid. Its message names the variable to fix."""
-
-
-class IdGenerator(Protocol):
-    def new_event_id(self) -> EventId: ...
-
-
-class Uuid4Ids:
-    """`IdGenerator`: random UUIDs (randomness is an effect, so it lives outside core)."""
-
-    def new_event_id(self) -> EventId:
-        return EventId(uuid4())
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,31 +121,6 @@ def _extractor(
     raise ConfigError(msg)
 
 
-def _copy_for_dry_run(events_dir: Path, scratch: Path) -> Path:
-    """A throwaway copy of the state `process` writes, so a dry run can change nothing real.
-
-    The index is not copied at all, so it is rebuilt from the copied ledger.
-    """
-    target = scratch / "events"
-    if events_dir.is_dir():
-        shutil.copytree(
-            events_dir, target, ignore=shutil.ignore_patterns(f"{LEDGER_NAME}*", f"{INDEX_NAME}*")
-        )
-    else:
-        target.mkdir(parents=True)
-    ledger = events_dir / LEDGER_NAME
-    if ledger.exists():
-        # Copy the database with its WAL under the write lock (so no run is mid-write), then
-        # let SQLite recover the copy. Opening the original, even read-only, can leave -shm/-wal
-        # files behind, and a dry run must leave the real directory exactly as it found it.
-        with ledger_write_lock(ledger, timeout_s=5.0):
-            for suffix in ("", "-wal", "-shm"):
-                part = events_dir / f"{LEDGER_NAME}{suffix}"
-                if part.exists():
-                    shutil.copy2(part, target / part.name)
-    return target
-
-
 def _reset_state(events_dir: Path, *, now: datetime, keep_backup: bool) -> Path | None:
     """Clear the ledger, the index and the processed markers so the raw store is processed anew.
 
@@ -200,53 +163,44 @@ def execute_process(ctx: ProcessContext, options: ProcessOptions) -> int:
     they are retried by the next run. A dry run copies the state first and writes nothing real.
     """
     raw_dir = ctx.data_dir / "raw"
-    notes: list[str] = []
-    with ExitStack() as stack:
-        if options.dry_run:
-            scratch = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="ln-dry-")))
-            events_dir = _copy_for_dry_run(ctx.data_dir / "events", scratch)
-            notes.append("DRY RUN: nothing below was saved")
+    extractor = _extractor(options.extractor, ctx.environ, ctx.transport, ctx.sleep)
+
+    def prepare(events_dir: Path, notes: list[str]) -> None:
+        if not options.reprocess:
+            return
+        backup = _reset_state(events_dir, now=ctx.now, keep_backup=not options.dry_run)
+        if backup is not None:
+            notes.append(f"backed up the previous ledger to {backup}; processing from scratch")
         else:
-            events_dir = ctx.data_dir / "events"
-            events_dir.mkdir(parents=True, exist_ok=True)
-        if options.reprocess:
-            backup = _reset_state(events_dir, now=ctx.now, keep_backup=not options.dry_run)
-            if backup is not None:
-                notes.append(f"backed up the previous ledger to {backup}; processing from scratch")
-            else:
-                notes.append("--reprocess: started from an empty ledger")
-        extractor = _extractor(options.extractor, ctx.environ, ctx.transport, ctx.sleep)
-        ledger = stack.enter_context(SqliteEventRepository(events_dir / LEDGER_NAME))
-        index = HashedNgramIndex(events_dir / INDEX_NAME)
-        stack.callback(index.close)
-        # One run at a time over the ledger, the index and the processed markers.
-        with ledger_write_lock(events_dir / LEDGER_NAME, timeout_s=5.0):
-            imported = import_json_ledger(events_dir / "events.json", ledger)
-            if imported:
-                notes.append(f"imported {imported} event(s) from the old JSON ledger")
-            if sync_index(index, ledger.list_all()):
-                notes.append("rebuilt the similarity index from the ledger")
-            ingest = IngestEvents(
-                IngestPorts(
-                    repository=ledger,
-                    reader=NoEmbeddedEvents(),
-                    extractor=extractor,
-                    ids=ctx.ids or Uuid4Ids(),
-                    raw_store=FileRawMessageStore(raw_dir),
-                    similar_index=CoreSimilarIndex(index),
-                ),
-                home_tz=options.home_tz,
-                policy=LINK_ONLY_POLICY,
-            )
-            local = options.extractor == "local-llm"
-            summary = process_raw(
-                FileRawMessageStore(raw_dir),
-                ProcessedMarkers(events_dir / "processed.json"),
-                ingest,
-                now=ctx.now,
-                batching=Batching(options.batch_size, _MAX_FAILED_BATCHES if local else None),
-            )
-    return _report(summary, notes, options, extractor, ctx)
+            notes.append("--reprocess: started from an empty ledger")
+
+    with ledger_session(ctx.data_dir, dry_run=options.dry_run, prepare=prepare) as session:
+        imported = import_json_ledger(session.events_dir / "events.json", session.ledger)
+        if imported:
+            session.notes.append(f"imported {imported} event(s) from the old JSON ledger")
+        session.sync_index()
+        raw_store = FileRawMessageStore(raw_dir)
+        ingest = IngestEvents(
+            IngestPorts(
+                repository=session.ledger,
+                reader=NoEmbeddedEvents(),
+                extractor=extractor,
+                ids=ctx.ids or Uuid4Ids(),
+                raw_store=RawStoreDocuments(raw_store),
+                similar_index=session.similar_index,
+            ),
+            home_tz=options.home_tz,
+            policy=LINK_ONLY_POLICY,
+        )
+        local = options.extractor == "local-llm"
+        summary = process_raw(
+            raw_store,
+            ProcessedMarkers(session.events_dir / "processed.json"),
+            ingest,
+            now=ctx.now,
+            batching=Batching(options.batch_size, _MAX_FAILED_BATCHES if local else None),
+        )
+    return _report(summary, session.notes, options, extractor, ctx)
 
 
 def _report(

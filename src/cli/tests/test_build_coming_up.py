@@ -15,13 +15,8 @@ from uuid import UUID
 from zoneinfo import ZoneInfo
 
 import pytest
-from test_local_pipeline_e2e import _SINCE, FakeOllama, _Mailbox, _process
-
-from last_newsletter_adapter_ledger import MIGRATIONS, SqliteEventRepository, migrate
-from last_newsletter_adapter_publish.render import render_html
-from last_newsletter_adapter_storage import FileRawMessageStore
-from last_newsletter_cli.main import fetch_raw
-from last_newsletter_core.events import (
+from concert_tracker_adapter_ledger import MIGRATIONS, SqliteEventRepository, migrate
+from concert_tracker_core.events import (
     AllDay,
     EntityRef,
     EntityRole,
@@ -33,6 +28,11 @@ from last_newsletter_core.events import (
     Mention,
     Timed,
 )
+from test_local_pipeline_e2e import _SINCE, FakeOllama, _Mailbox, _process
+
+from last_newsletter_adapter_publish.render import render_html
+from last_newsletter_adapter_storage import FileRawMessageStore
+from last_newsletter_cli.main import fetch_raw
 from ranked_digest.entities import Cadence, Digest, EmailMessage
 
 if TYPE_CHECKING:

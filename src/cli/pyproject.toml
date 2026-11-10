@@ -16,8 +16,10 @@ dependencies = [
     "last-newsletter-adapter-storage",
     "last-newsletter-adapter-web",
     "last-newsletter-adapter-knowledge",
-    "last-newsletter-adapter-ledger",
-    "last-newsletter-adapter-semantic",
+    "concert-tracker-core",
+    "concert-tracker-adapter-ledger",
+    "concert-tracker-ngram-index",
+    "concert-tracker-app",
     "last-newsletter-adapter-events",
     "process-lock",
 ]
@@ -37,8 +39,10 @@ last-newsletter-adapter-publish = { workspace = true }
 last-newsletter-adapter-storage = { workspace = true }
 last-newsletter-adapter-web = { workspace = true }
 last-newsletter-adapter-knowledge = { workspace = true }
-last-newsletter-adapter-ledger = { workspace = true }
-last-newsletter-adapter-semantic = { workspace = true }
+concert-tracker-core = { workspace = true }
+concert-tracker-adapter-ledger = { workspace = true }
+concert-tracker-ngram-index = { workspace = true }
+concert-tracker-app = { workspace = true }
 last-newsletter-adapter-events = { workspace = true }
 process-lock = { workspace = true }
 

@@ -30,7 +30,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from pathlib import Path
 
-    from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
+    from concert_tracker_core.use_cases.list_upcoming_events import UpcomingEvents
+
     from ranked_digest.entities import Digest
     from ranked_digest.ports import DigestPublisher
 

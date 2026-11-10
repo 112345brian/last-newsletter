@@ -12,8 +12,9 @@ __arbor__ = {"ring": "adapters"}
 import json
 from typing import TYPE_CHECKING
 
+from concert_tracker_core.events import RawRef
+
 from last_newsletter_adapter_storage.atomic_file import write_text_atomic
-from last_newsletter_core.events import RawRef
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

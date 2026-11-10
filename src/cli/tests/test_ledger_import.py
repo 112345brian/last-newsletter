@@ -6,13 +6,9 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import pytest
-
-from last_newsletter_adapter_ledger import SqliteEventRepository
-from last_newsletter_adapter_semantic import HashedNgramIndex
-from last_newsletter_adapter_storage import JsonEventRepository
-from last_newsletter_cli.ledger_import import import_json_ledger
-from last_newsletter_cli.similarity import sync_index
-from last_newsletter_core.events import (
+from concert_tracker_adapter_ledger import SqliteEventRepository
+from concert_tracker_app import sync_index
+from concert_tracker_core.events import (
     AllDay,
     Event,
     EventId,
@@ -20,6 +16,10 @@ from last_newsletter_core.events import (
     MatchRule,
     Mention,
 )
+from concert_tracker_ngram_index import HashedNgramIndex
+
+from last_newsletter_adapter_storage import JsonEventRepository
+from last_newsletter_cli.ledger_import import import_json_ledger
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

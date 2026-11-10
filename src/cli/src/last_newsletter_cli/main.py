@@ -19,10 +19,16 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from concert_tracker_adapter_ledger import SqliteEventRepository
+from concert_tracker_app import render_json, render_text
+from concert_tracker_core.use_cases.list_upcoming_events import (
+    DEFAULT_WINDOW_DAYS,
+    MAX_WINDOW_DAYS,
+)
+
 from last_newsletter_adapter_email.filtered_source import FilteredEmailSource
 from last_newsletter_adapter_email.imap_source import ImapConfig, ImapEmailSource
 from last_newsletter_adapter_knowledge import SqliteKnowledgeWeigher
-from last_newsletter_adapter_ledger import SqliteEventRepository
 from last_newsletter_adapter_publish.email_publisher import (
     CompositePublisher,
     SmtpConfig,
@@ -38,7 +44,6 @@ from last_newsletter_adapter_summarizer.anthropic_summarizer import AnthropicSum
 from last_newsletter_adapter_summarizer.extractive_summarizer import ExtractiveSummarizer
 from last_newsletter_adapter_web.app import create_app
 from last_newsletter_cli.build_report import BuildFacts, describe_build
-from last_newsletter_cli.events_view import render_json, render_text
 from last_newsletter_cli.process_command import (
     EXTRACTOR_CHOICES,
     LEDGER_NAME,
@@ -50,18 +55,15 @@ from last_newsletter_cli.process_command import (
 from last_newsletter_cli.process_stage import DEFAULT_BATCH_SIZE
 from last_newsletter_cli.upcoming_section import UpcomingOutcome, load_upcoming
 from last_newsletter_core.default_filters import DEFAULT_FILTERS
-from last_newsletter_core.use_cases.list_upcoming_events import (
-    DEFAULT_WINDOW_DAYS,
-    MAX_WINDOW_DAYS,
-)
 from ranked_digest.entities import Cadence, digest_slug
 from ranked_digest.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
+    from concert_tracker_core.use_cases.list_upcoming_events import UpcomingEvents
+
     from last_newsletter_adapter_storage.raw_message_store import ListableRawMessageStore
-    from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
     from ranked_digest.ports import (
         DigestPublisher,
         EmailSource,

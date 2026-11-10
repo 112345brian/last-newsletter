@@ -9,13 +9,15 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "concert-tracker-adapter-ledger",
+    "concert-tracker-app",
+    "concert-tracker-core",
+    "concert-tracker-ngram-index",
     "last-newsletter",
     "last-newsletter-adapter-email",
     "last-newsletter-adapter-events",
     "last-newsletter-adapter-knowledge",
-    "last-newsletter-adapter-ledger",
     "last-newsletter-adapter-publish",
-    "last-newsletter-adapter-semantic",
     "last-newsletter-adapter-storage",
     "last-newsletter-adapter-summarizer",
     "last-newsletter-adapter-web",
@@ -103,6 +105,116 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93a6792e2acffb9d9d5cb0a5cfd8802644b7b1c9a02e4/colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44", size = 27697, upload-time = "2022-10-25T02:36:22.414Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6", size = 25335, upload-time = "2022-10-25T02:36:20.889Z" },
+]
+
+[[package]]
+name = "concert-tracker-adapter-ledger"
+version = "0.1.0"
+source = { editable = "vendor/concert_tracker/src/adapter_ledger" }
+dependencies = [
+    { name = "concert-tracker-core" },
+    { name = "process-lock" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "concert-tracker-core", editable = "vendor/concert_tracker/src/core" },
+    { name = "process-lock", editable = "vendor/process_lock" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[[package]]
+name = "concert-tracker-app"
+version = "0.1.0"
+source = { editable = "vendor/concert_tracker/src/app" }
+dependencies = [
+    { name = "concert-tracker-adapter-ledger" },
+    { name = "concert-tracker-core" },
+    { name = "concert-tracker-ngram-index" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "concert-tracker-adapter-ledger", editable = "vendor/concert_tracker/src/adapter_ledger" },
+    { name = "concert-tracker-core", editable = "vendor/concert_tracker/src/core" },
+    { name = "concert-tracker-ngram-index", editable = "vendor/concert_tracker/src/ngram_index" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[[package]]
+name = "concert-tracker-core"
+version = "0.1.0"
+source = { editable = "vendor/concert_tracker/src/core" }
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[[package]]
+name = "concert-tracker-ngram-index"
+version = "0.1.0"
+source = { editable = "vendor/concert_tracker/src/ngram_index" }
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
 ]
 
 [[package]]
@@ -700,6 +812,7 @@ name = "last-newsletter-adapter-events"
 version = "0.1.0"
 source = { editable = "src/adapter_events" }
 dependencies = [
+    { name = "concert-tracker-core" },
     { name = "last-newsletter-core" },
     { name = "llmhost" },
     { name = "ranked-digest" },
@@ -715,6 +828,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "concert-tracker-core", editable = "vendor/concert_tracker/src/core" },
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "llmhost", editable = "libs/llmhost" },
     { name = "ranked-digest", editable = "libs/ranked_digest" },
@@ -762,43 +876,11 @@ dev = [
 ]
 
 [[package]]
-name = "last-newsletter-adapter-ledger"
-version = "0.1.0"
-source = { editable = "src/adapter_ledger" }
-dependencies = [
-    { name = "last-newsletter-core" },
-    { name = "process-lock" },
-    { name = "ranked-digest" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "ty" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "last-newsletter-core", editable = "src/core" },
-    { name = "process-lock", editable = "vendor/process_lock" },
-    { name = "ranked-digest", editable = "libs/ranked_digest" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "ty" },
-]
-
-[[package]]
 name = "last-newsletter-adapter-publish"
 version = "0.1.0"
 source = { editable = "src/adapter_publish" }
 dependencies = [
+    { name = "concert-tracker-core" },
     { name = "last-newsletter-core" },
     { name = "ranked-digest" },
 ]
@@ -813,32 +895,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "concert-tracker-core", editable = "vendor/concert_tracker/src/core" },
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "ranked-digest", editable = "libs/ranked_digest" },
 ]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "ty" },
-]
-
-[[package]]
-name = "last-newsletter-adapter-semantic"
-version = "0.1.0"
-source = { editable = "src/adapter_semantic" }
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "ty" },
-]
-
-[package.metadata]
 
 [package.metadata.requires-dev]
 dev = [
@@ -853,6 +913,7 @@ name = "last-newsletter-adapter-storage"
 version = "0.1.0"
 source = { editable = "src/adapter_storage" }
 dependencies = [
+    { name = "concert-tracker-core" },
     { name = "last-newsletter-core" },
     { name = "process-lock" },
     { name = "ranked-digest" },
@@ -868,6 +929,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "concert-tracker-core", editable = "vendor/concert_tracker/src/core" },
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "process-lock", editable = "vendor/process_lock" },
     { name = "ranked-digest", editable = "libs/ranked_digest" },
@@ -886,6 +948,7 @@ name = "last-newsletter-adapter-summarizer"
 version = "0.1.0"
 source = { editable = "src/adapter_summarizer" }
 dependencies = [
+    { name = "concert-tracker-core" },
     { name = "last-newsletter-core" },
     { name = "llmhost" },
     { name = "ranked-digest" },
@@ -901,6 +964,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "concert-tracker-core", editable = "vendor/concert_tracker/src/core" },
     { name = "last-newsletter-core", editable = "src/core" },
     { name = "llmhost", editable = "libs/llmhost" },
     { name = "ranked-digest", editable = "libs/ranked_digest" },
@@ -950,12 +1014,14 @@ name = "last-newsletter-cli"
 version = "0.1.0"
 source = { editable = "src/cli" }
 dependencies = [
+    { name = "concert-tracker-adapter-ledger" },
+    { name = "concert-tracker-app" },
+    { name = "concert-tracker-core" },
+    { name = "concert-tracker-ngram-index" },
     { name = "last-newsletter-adapter-email" },
     { name = "last-newsletter-adapter-events" },
     { name = "last-newsletter-adapter-knowledge" },
-    { name = "last-newsletter-adapter-ledger" },
     { name = "last-newsletter-adapter-publish" },
-    { name = "last-newsletter-adapter-semantic" },
     { name = "last-newsletter-adapter-storage" },
     { name = "last-newsletter-adapter-summarizer" },
     { name = "last-newsletter-adapter-web" },
@@ -974,12 +1040,14 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "concert-tracker-adapter-ledger", editable = "vendor/concert_tracker/src/adapter_ledger" },
+    { name = "concert-tracker-app", editable = "vendor/concert_tracker/src/app" },
+    { name = "concert-tracker-core", editable = "vendor/concert_tracker/src/core" },
+    { name = "concert-tracker-ngram-index", editable = "vendor/concert_tracker/src/ngram_index" },
     { name = "last-newsletter-adapter-email", editable = "src/adapter_email" },
     { name = "last-newsletter-adapter-events", editable = "src/adapter_events" },
     { name = "last-newsletter-adapter-knowledge", editable = "src/adapter_knowledge" },
-    { name = "last-newsletter-adapter-ledger", editable = "src/adapter_ledger" },
     { name = "last-newsletter-adapter-publish", editable = "src/adapter_publish" },
-    { name = "last-newsletter-adapter-semantic", editable = "src/adapter_semantic" },
     { name = "last-newsletter-adapter-storage", editable = "src/adapter_storage" },
     { name = "last-newsletter-adapter-summarizer", editable = "src/adapter_summarizer" },
     { name = "last-newsletter-adapter-web", editable = "src/adapter_web" },
@@ -1001,6 +1069,7 @@ name = "last-newsletter-core"
 version = "0.1.0"
 source = { editable = "src/core" }
 dependencies = [
+    { name = "concert-tracker-core" },
     { name = "ranked-digest" },
 ]
 
@@ -1013,7 +1082,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "ranked-digest", editable = "libs/ranked_digest" }]
+requires-dist = [
+    { name = "concert-tracker-core", editable = "vendor/concert_tracker/src/core" },
+    { name = "ranked-digest", editable = "libs/ranked_digest" },
+]
 
 [package.metadata.requires-dev]
 dev = [

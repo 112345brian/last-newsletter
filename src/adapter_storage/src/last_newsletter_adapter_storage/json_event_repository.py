@@ -2,7 +2,7 @@
 
 SEAM: this is the stand-in until the SQLite `EventRepository` adapter exists. It is fine for
 thousands of events; it loads the whole file once and writes it whole on each change. The
-contract is the port's in `last_newsletter_core.event_ports`; swap it in the CLI's
+contract is the port's in `concert_tracker_core.event_ports`; swap it in the CLI's
 `_event_repository()` and nothing else changes.
 """
 
@@ -16,8 +16,7 @@ from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from last_newsletter_adapter_storage.atomic_file import write_text_atomic
-from last_newsletter_core.events import (
+from concert_tracker_core.events import (
     AllDay,
     EntityRef,
     EntityRole,
@@ -34,10 +33,12 @@ from last_newsletter_core.events import (
     local_date,
 )
 
+from last_newsletter_adapter_storage.atomic_file import write_text_atomic
+
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from last_newsletter_core.event_ports import CandidateQuery
+    from concert_tracker_core.event_ports import CandidateQuery
 
 _SCHEMA = 1
 

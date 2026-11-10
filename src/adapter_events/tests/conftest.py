@@ -4,8 +4,9 @@ import json
 from datetime import UTC, datetime
 from typing import Any
 
+from concert_tracker_core.documents import SourceDocument
+
 from last_newsletter_adapter_events import OllamaClient, OllamaConfig
-from ranked_digest.entities import EmailMessage
 
 NOW = datetime(2026, 11, 6, 12, 0, tzinfo=UTC)
 
@@ -63,8 +64,8 @@ def _no_sleep(_s: float) -> None:
     return None
 
 
-def msg(body: str, *, subject: str = "Weekend", message_id: str = "m1") -> EmailMessage:
-    return EmailMessage(
+def msg(body: str, *, subject: str = "Weekend", message_id: str = "m1") -> SourceDocument:
+    return SourceDocument(
         message_id=message_id,
         sender="a@b.c",
         subject=subject,

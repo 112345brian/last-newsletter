@@ -13,18 +13,18 @@ import sqlite3
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from last_newsletter_adapter_ledger import (
+from concert_tracker_adapter_ledger import (
     SchemaTooNewError,
     SchemaTooOldError,
     SqliteEventRepository,
 )
-from last_newsletter_core.use_cases.list_upcoming_events import ListUpcomingEventsUseCase
+from concert_tracker_core.use_cases.list_upcoming_events import ListUpcomingEventsUseCase
 
 if TYPE_CHECKING:
     from datetime import datetime
     from pathlib import Path
 
-    from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
+    from concert_tracker_core.use_cases.list_upcoming_events import UpcomingEvents
 
 LOCK_WAIT_S = 3.0  # a digest must not hang behind a long `process` run
 

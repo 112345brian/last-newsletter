@@ -6,10 +6,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from concert_tracker_core.events import RawRef
 
 from last_newsletter_adapter_storage import FileRawMessageStore
 from last_newsletter_adapter_storage.raw_message_store import raw_ref_for
-from last_newsletter_core.events import RawRef
 from ranked_digest.entities import EmailMessage
 
 

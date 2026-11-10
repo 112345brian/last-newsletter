@@ -1,0 +1,26 @@
+[project]
+name = "concert-tracker-app"
+version = "0.1.0"
+description = "Concert Tracker's application layer: open the event ledger for writing under its lock, keep the similarity index in step with it, and show what it holds. The logic a front end needs, with no front end in it."
+readme = "README.md"
+authors = [
+    { name = "112345brian", email = "11creepman@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "concert-tracker-core",
+    "concert-tracker-adapter-ledger",
+    "concert-tracker-ngram-index",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "ruff", "ty"]
+
+[tool.uv.sources]
+concert-tracker-core = { workspace = true }
+concert-tracker-adapter-ledger = { workspace = true }
+concert-tracker-ngram-index = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

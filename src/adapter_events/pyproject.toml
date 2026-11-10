@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = [
+    "concert-tracker-core",
     "last-newsletter-core",
     "ranked-digest",
     "llmhost",
@@ -17,6 +18,7 @@ dependencies = [
 dev = ["pytest", "pytest-cov", "ruff", "ty"]
 
 [tool.uv.sources]
+concert-tracker-core = { workspace = true }
 last-newsletter-core = { workspace = true }
 ranked-digest = { workspace = true }
 llmhost = { workspace = true }

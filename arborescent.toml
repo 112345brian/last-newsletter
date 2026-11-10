@@ -16,11 +16,13 @@ sources = [
     "src/adapter_storage/src",
     "src/adapter_web/src",
     "src/adapter_knowledge/src",
-    "src/adapter_semantic/src",
-    "src/adapter_ledger/src",
     "src/adapter_events/src",
     "src/cli/src",
     "vendor/process_lock/src",
+    "vendor/concert_tracker/src/core/src",
+    "vendor/concert_tracker/src/adapter_ledger/src",
+    "vendor/concert_tracker/src/ngram_index/src",
+    "vendor/concert_tracker/src/app/src",
 ]
 source_roots = [
     "src/core/src",
@@ -34,11 +36,13 @@ source_roots = [
     "src/adapter_storage/src",
     "src/adapter_web/src",
     "src/adapter_knowledge/src",
-    "src/adapter_semantic/src",
-    "src/adapter_ledger/src",
     "src/adapter_events/src",
     "src/cli/src",
     "vendor/process_lock/src",
+    "vendor/concert_tracker/src/core/src",
+    "vendor/concert_tracker/src/adapter_ledger/src",
+    "vendor/concert_tracker/src/ngram_index/src",
+    "vendor/concert_tracker/src/app/src",
 ]
 exclude = ["tests", "docs", ".venv", "scripts"]
 scan_vendors = true
@@ -46,7 +50,7 @@ type_checkers = ["ty"]
 preset = "relaxed"
 # tach cannot follow several source_roots; import-linter owns package edges here.
 disabled_tools = ["tach"]
-rings = ["core", "libs", "llm", "adapters", "cli"]
+rings = ["core", "libs", "llm", "adapters", "app", "cli"]
 
 # core: domain rules and ports plus the standalone pure helpers. No effects at all.
 [ring.core]
@@ -71,6 +75,11 @@ may_import = ["core", "libs", "llm"]
 # Adapters own their effects (disk, network, clock for sleeping); only core is forbidden them.
 forbid = []
 external = ["imapclient", "flask", "dateparser", "filelock", "tenacity", "psutil"]
+
+# app: concert-tracker's application layer (vendored): opens the ledger, keeps the index in step.
+[ring.app]
+may_import = ["core", "adapters"]
+external = []
 
 [ring.cli]
 may_import = ["*"]
@@ -99,10 +108,14 @@ external = ["*"]
 "last_newsletter_adapter_web.*" = "adapters"
 "last_newsletter_adapter_knowledge" = "adapters"
 "last_newsletter_adapter_knowledge.*" = "adapters"
-"last_newsletter_adapter_semantic" = "adapters"
-"last_newsletter_adapter_semantic.*" = "adapters"
-"last_newsletter_adapter_ledger" = "adapters"
-"last_newsletter_adapter_ledger.*" = "adapters"
+"concert_tracker_core" = "core"
+"concert_tracker_core.*" = "core"
+"concert_tracker_adapter_ledger" = "adapters"
+"concert_tracker_adapter_ledger.*" = "adapters"
+"concert_tracker_ngram_index" = "adapters"
+"concert_tracker_ngram_index.*" = "adapters"
+"concert_tracker_app" = "app"
+"concert_tracker_app.*" = "app"
 "last_newsletter_adapter_events" = "adapters"
 "last_newsletter_adapter_events.*" = "adapters"
 "process_lock" = "adapters"

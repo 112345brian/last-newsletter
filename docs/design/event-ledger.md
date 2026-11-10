@@ -1,3 +1,8 @@
+> **Moved.** The ledger, identity rules and similar-event index described here now live in the
+> [concert-tracker](https://github.com/112345brian/concert-tracker) repo and are vendored under
+> `vendor/concert_tracker/` (see `vendor/VENDORED.md`). This document is kept for history; paths below
+> that name `adapter_ledger`, `adapter_semantic` or `core/events.py` are in that repo now.
+
 # Event and task ledger: design
 
 Status: draft 2, 2026-11-06 (adds the six gaps in section 13, the IO-discipline test, and the verified state of job-repo libs). Inputs: `PRODUCT.md`, `docs/research/*.md`.

@@ -5,10 +5,8 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import pytest
-
-from last_newsletter_adapter_storage import JsonEventRepository, ProcessedMarkers
-from last_newsletter_core.event_ports import CandidateQuery
-from last_newsletter_core.events import (
+from concert_tracker_core.event_ports import CandidateQuery
+from concert_tracker_core.events import (
     AllDay,
     EntityRef,
     EntityRole,
@@ -20,6 +18,8 @@ from last_newsletter_core.events import (
     RawRef,
     Timed,
 )
+
+from last_newsletter_adapter_storage import JsonEventRepository, ProcessedMarkers
 
 if TYPE_CHECKING:
     from pathlib import Path

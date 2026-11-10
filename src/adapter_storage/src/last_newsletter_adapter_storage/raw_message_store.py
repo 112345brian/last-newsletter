@@ -1,7 +1,8 @@
 """File-backed raw message store: one JSON file per source email, keyed by a stable id.
 
-Implements core's `RawMessageStore` port (`put(message) -> RawRef`, `get(ref)`), plus `list`
-for iteration (`ListableRawMessageStore`).
+Stores `EmailMessage`s: `put(message) -> RawRef`, `get(ref)`, plus `list` for iteration
+(`ListableRawMessageStore`). The event ledger's `DocumentStore` port speaks `SourceDocument`;
+`documents.RawStoreDocuments` is the thin view that adapts this store to it.
 
 Guarantees:
 - Idempotent: the id is a hash of the Message-ID (or, when missing, of the message's
@@ -25,11 +26,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
+from concert_tracker_core.events import RawRef
 from process_lock.file_lock import cross_process_file_lock, replace_with_retry
 
 from last_newsletter_adapter_storage.atomic_file import write_text_atomic
-from last_newsletter_core.event_ports import RawMessageStore
-from last_newsletter_core.events import RawRef
 from ranked_digest.entities import EmailMessage
 
 if TYPE_CHECKING:
@@ -44,8 +44,12 @@ _ID_LENGTH = 64  # hex sha256
 _PREFIX = "raw:"
 
 
-class ListableRawMessageStore(RawMessageStore, Protocol):
-    """Core's `RawMessageStore` plus iteration, which the `process` stage needs."""
+class ListableRawMessageStore(Protocol):
+    """A store of raw emails that can also be iterated, which the `process` stage needs."""
+
+    def put(self, message: EmailMessage) -> RawRef: ...
+
+    def get(self, ref: RawRef) -> EmailMessage | None: ...
 
     def list(self) -> Iterator[RawRef]: ...
 

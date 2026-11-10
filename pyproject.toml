@@ -26,14 +26,16 @@ members = [
     "src/adapter_storage",
     "src/adapter_web",
     "src/adapter_knowledge",
-    "src/adapter_semantic",
-    "src/adapter_ledger",
     "src/adapter_events",
     "libs/text_match",
     "libs/mailtext",
     "libs/llmhost",
     "libs/ranked_digest",
     "vendor/process_lock",
+    "vendor/concert_tracker/src/core",
+    "vendor/concert_tracker/src/adapter_ledger",
+    "vendor/concert_tracker/src/ngram_index",
+    "vendor/concert_tracker/src/app",
 ]
 
 [tool.ruff]
@@ -91,13 +93,15 @@ root_packages = [
     "last_newsletter_adapter_web",
     "last_newsletter_adapter_knowledge",
     "last_newsletter_adapter_events",
-    "last_newsletter_adapter_semantic",
-    "last_newsletter_adapter_ledger",
     "last_newsletter_cli",
     "text_match",
     "mailtext",
     "llmhost",
     "process_lock",
+    "concert_tracker_core",
+    "concert_tracker_adapter_ledger",
+    "concert_tracker_ngram_index",
+    "concert_tracker_app",
 ]
 
 [[tool.importlinter.contracts]]
@@ -105,8 +109,10 @@ name = "Clean Architecture dependency rule (README.md#architecture)"
 type = "layers"
 layers = [
     "last_newsletter_cli",
-    "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge | last_newsletter_adapter_semantic | last_newsletter_adapter_ledger | last_newsletter_adapter_events",
+    "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge | last_newsletter_adapter_events",
+    "concert_tracker_app",
     "last_newsletter_core",
-    "ranked_digest | text_match | mailtext | llmhost",
+    "concert_tracker_adapter_ledger | concert_tracker_ngram_index",
+    "ranked_digest | text_match | mailtext | llmhost | concert_tracker_core",
     "process_lock",
 ]

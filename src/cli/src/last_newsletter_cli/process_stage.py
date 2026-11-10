@@ -13,13 +13,16 @@ __arbor__ = {"ring": "cli"}
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from last_newsletter_core.use_cases import IngestResult
+from concert_tracker_core.use_cases import IngestResult
+
+from last_newsletter_adapter_storage import to_document
 
 if TYPE_CHECKING:
     from datetime import datetime
 
+    from concert_tracker_core.use_cases import IngestEvents
+
     from last_newsletter_adapter_storage import ListableRawMessageStore, ProcessedMarkers
-    from last_newsletter_core.use_cases import IngestEvents
 
 DEFAULT_BATCH_SIZE = 10
 
@@ -107,7 +110,7 @@ def process_raw(
         summary.unreadable += len(loaded) - len(pairs)
         if not pairs:
             continue
-        result = ingest.ingest([m for _, m in pairs], now=now)
+        result = ingest.ingest([to_document(m) for _, m in pairs], now=now)
         summary.result = _merge(summary.result, result)
         if result.extraction_failures:
             summary.retry_later += len(pairs)

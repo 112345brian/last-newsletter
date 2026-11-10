@@ -1,3 +1,6 @@
+> **Moved.** The index is `ngram_index` in [concert-tracker](https://github.com/112345brian/concert-tracker),
+> vendored under `vendor/concert_tracker/` (it was `adapter_semantic` when this was written).
+
 # Local similar-event index: decision note
 
 **Need.** Match a new email's event against events already in the ledger without spending LLM tokens, offline, over thousands of events. A hit proposes a *possible duplicate* link only. It never merges (event-ledger.md sections 5 and 6).

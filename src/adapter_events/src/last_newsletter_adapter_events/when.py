@@ -13,7 +13,7 @@ from datetime import date
 from datetime import time as clock_time
 from itertools import pairwise
 
-from last_newsletter_core.events import PartialWhen
+from concert_tracker_core.events import PartialWhen
 
 _MONTHS = {
     m: i + 1

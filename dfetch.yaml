@@ -11,3 +11,29 @@ manifest:
       dst: vendor/process_lock
       repo-path: process-lock.git
       tag: v0.1.1
+    # One private repo. dfetch cannot copy a nested package whose own directory holds a `src/`, so the
+    # whole repo comes in and `ignore` prunes what this project does not import: the source adapters,
+    # the CLI, the embedding backend, the tests (concert-tracker runs those) and its own vendored copy
+    # of process_lock (this repo has its own).
+    - name: concert_tracker
+      dst: vendor/concert_tracker
+      repo-path: concert-tracker.git
+      tag: v0.2.1
+      ignore:
+        - src/adapter_ticketmaster
+        - src/adapter_frequentflyer
+        - src/adapter_ical
+        - src/adapter_squarespace
+        - src/adapter_venues
+        - src/adapter_embeddings
+        - src/cli
+        - "src/*/tests"
+        - vendor
+        - docs
+        - Makefile
+        - uv.lock
+        - dfetch.yaml
+        - arborescent.toml
+        - .github
+        - .arborescent
+        - pyproject.toml

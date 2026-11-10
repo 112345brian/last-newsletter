@@ -6,9 +6,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 import pytest
+from concert_tracker_core.event_ports import ExtractionFailedError
 
 from last_newsletter_adapter_events import LocalLlmEventExtractor, OllamaClient, OllamaConfig
-from last_newsletter_core.event_ports import ExtractionFailedError
 from llmhost import (
     REGISTRY,
     CompletionRequest,

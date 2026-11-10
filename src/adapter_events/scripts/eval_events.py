@@ -18,13 +18,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import NamedTuple
 
+from concert_tracker_core.documents import SourceDocument
+from concert_tracker_core.event_ports import ExtractionFailedError
+
 from last_newsletter_adapter_events import (
     LocalLlmEventExtractor,
     OllamaClient,
     OllamaConfig,
 )
-from last_newsletter_core.event_ports import ExtractionFailedError
-from ranked_digest.entities import EmailMessage
 
 
 class Case(NamedTuple):
@@ -64,8 +65,8 @@ def _extractor(model: str, base_url: str, timeout: float) -> LocalLlmEventExtrac
     return LocalLlmEventExtractor(OllamaClient(config))
 
 
-def _message(case: Case) -> EmailMessage:
-    return EmailMessage(
+def _message(case: Case) -> SourceDocument:
+    return SourceDocument(
         message_id=case.id,
         sender="synthetic@example.com",
         subject=case.subject,
@@ -159,7 +160,7 @@ def run_raw_dir(
     for path in files:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-            message = EmailMessage(
+            message = SourceDocument(
                 message_id=data["message_id"],
                 sender=data["sender"],
                 subject=data["subject"],

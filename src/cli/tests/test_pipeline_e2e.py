@@ -11,12 +11,17 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
+from concert_tracker_core.event_ports import ExtractionFailedError
+from concert_tracker_core.events import EventCandidate, EventId, MatchRule
+from concert_tracker_core.use_cases import IngestEvents, IngestPorts
+
 from last_newsletter_adapter_publish.markdown_publisher import MarkdownPublisher
 from last_newsletter_adapter_storage import (
     FileRawMessageStore,
     JsonDigestRepository,
     JsonEventRepository,
     ProcessedMarkers,
+    RawStoreDocuments,
     RawStoreEmailSource,
 )
 from last_newsletter_adapter_summarizer.dated_line_extractor import (
@@ -26,15 +31,14 @@ from last_newsletter_adapter_summarizer.dated_line_extractor import (
 from last_newsletter_adapter_summarizer.extractive_summarizer import ExtractiveSummarizer
 from last_newsletter_cli.main import FetchRawResult, fetch_raw
 from last_newsletter_cli.process_stage import Batching, ProcessSummary, process_raw
-from last_newsletter_core.event_ports import ExtractionFailedError
-from last_newsletter_core.events import EventCandidate, EventId, MatchRule
-from last_newsletter_core.use_cases import IngestEvents, IngestPorts
 from ranked_digest.entities import Cadence, Digest, EmailMessage
 from ranked_digest.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
+
+    from concert_tracker_core.documents import SourceDocument
 
 _NOW = datetime(2026, 11, 7, 12, tzinfo=UTC)
 _SINCE = datetime(2026, 11, 1, tzinfo=UTC)
@@ -82,7 +86,7 @@ def _ingest(tmp_path: Path) -> IngestEvents:
             reader=NoEmbeddedEvents(),
             extractor=DatedLineExtractor(),
             ids=_Ids(),
-            raw_store=FileRawMessageStore(tmp_path / "raw"),
+            raw_store=RawStoreDocuments(FileRawMessageStore(tmp_path / "raw")),
         ),
         home_tz="UTC",
     )
@@ -165,7 +169,7 @@ def test_process_needs_no_mail_source_and_retries_a_failed_batch(tmp_path: Path)
             self.fail = True
 
         def extract(
-            self, messages: Sequence[EmailMessage], *, now: datetime, home_tz: str
+            self, messages: Sequence[SourceDocument], *, now: datetime, home_tz: str
         ) -> list[EventCandidate]:
             if self.fail:
                 msg = "model down"

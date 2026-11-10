@@ -5,15 +5,15 @@ import json
 from typing import TYPE_CHECKING
 
 import pytest
+from concert_tracker_core.event_ports import ExtractionFailedError
+from concert_tracker_core.events import EntityRole, EventCandidate, EventKind
 
 from last_newsletter_adapter_events import Escalator, FakeEscalator, LocalLlmEventExtractor
 from last_newsletter_adapter_events.schema import RawEvent
 from last_newsletter_adapter_events.text import MAX_BODY_CHARS, clean_text
-from last_newsletter_core.event_ports import ExtractionFailedError
-from last_newsletter_core.events import EntityRole, EventCandidate, EventKind
 
 if TYPE_CHECKING:
-    from ranked_digest.entities import EmailMessage
+    from concert_tracker_core.documents import SourceDocument
 
 from .conftest import NOW, ScriptedTransport, answer, client_for, envelope, event, msg
 
@@ -22,7 +22,7 @@ BODY = "Moon Party Sat Dec 12, 9pm at The Echo\nbring friends"
 
 def _run(
     transport: ScriptedTransport,
-    *messages: EmailMessage,
+    *messages: SourceDocument,
     escalator: Escalator | None = None,
     escalate: bool = False,
 ) -> tuple[LocalLlmEventExtractor, list[EventCandidate]]:

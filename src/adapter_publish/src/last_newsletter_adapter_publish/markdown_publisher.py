@@ -16,7 +16,8 @@ from ranked_digest.entities import digest_slug
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from last_newsletter_core.use_cases.list_upcoming_events import UpcomingEvents
+    from concert_tracker_core.use_cases.list_upcoming_events import UpcomingEvents
+
     from ranked_digest.entities import Digest
 
 

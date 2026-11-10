@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import Any
 
 _ROOT = Path(__file__).resolve().parents[3]
+# Where packages live. concert-tracker is vendored whole, so its packages sit one level deeper.
+_PACKAGE_PARENTS = ("src", "libs", "vendor", "vendor/concert_tracker/src")
 
 
 def _pyproject() -> dict[str, Any]:
@@ -21,7 +23,7 @@ def _pyproject() -> dict[str, Any]:
 def _member_dirs() -> set[str]:
     return {
         f"{root}/{path.name}"
-        for root in ("src", "libs", "vendor")
+        for root in _PACKAGE_PARENTS
         for path in (_ROOT / root).iterdir()
         if (path / "pyproject.toml").is_file()
     }
@@ -30,7 +32,7 @@ def _member_dirs() -> set[str]:
 def _import_names_on_disk() -> set[str]:
     return {
         init.parent.name
-        for root in ("src", "libs", "vendor")
+        for root in _PACKAGE_PARENTS
         for init in (_ROOT / root).glob("*/src/*/__init__.py")
     }
 

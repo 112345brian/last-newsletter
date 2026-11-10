@@ -127,6 +127,11 @@ at it, close it" doesn't need a service kept alive in between.
 
 ## Pipeline: inbox to event ledger to digest
 
+The event ledger itself (what counts as the same event, the SQLite store, the similar-event index) is
+[concert-tracker](https://github.com/112345brian/concert-tracker), vendored under
+`vendor/concert_tracker/`. Mail is one source for it; this repo reads the mail and builds the digest.
+To pull events from ticketing APIs, calendar feeds or venue pages instead, use that project's own CLI.
+
 ```bash
 uv run last-newsletter fetch --days 7                  # IMAP -> ~/.last-newsletter/raw (only step with network)
 uv run last-newsletter process --extractor local-llm   # raw -> SQLite event ledger (Ollama on this machine)

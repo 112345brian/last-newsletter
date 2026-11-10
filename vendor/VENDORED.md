@@ -4,8 +4,18 @@ Managed by [dfetch](https://dfetch.readthedocs.io) — see `dfetch.yaml` at the 
 `vendor/` is a copy of a standalone repo `github.com/112345brian/<name-with-dashes>`, pinned to its own tag. Do not
 hand-edit `vendor/`; run `uvx dfetch update` to re-fetch.
 
-Only `process_lock` (`v0.1.1`) is vendored now. It is the one shared library this repo imports (the raw message store,
-the atomic file writer and the ledger take its cross-process lock).
+Two things are vendored now:
+
+- `process_lock` (`v0.1.1`): the cross-process lock the raw message store and the atomic file writer take.
+- `concert_tracker` (`v0.2.1`, private repo `112345brian/concert-tracker`): the event ledger. This repo imports four of
+  its packages: `core` (what counts as the same event, ingest use cases, ports), `adapter_ledger` (SQLite), `ngram_index`
+  (the local similar-event index) and `app` (open the ledger under its lock, keep the index in step). They live at
+  `vendor/concert_tracker/src/<name>`. dfetch cannot copy a nested package whose own directory holds a `src/`, so the
+  whole repo comes in and `ignore` in `dfetch.yaml` prunes the rest: the source adapters (Ticketmaster, calendars, venue
+  pages), its CLI, the optional embedding backend, its tests (they run upstream) and its own copy of `process_lock`.
+  Mail is just one more source for that ledger: `last_newsletter_adapter_storage.documents` maps `EmailMessage` to the
+  ledger's `SourceDocument`. To change event behaviour, change concert-tracker, tag it, bump `tag:` in `dfetch.yaml`
+  and run `uvx dfetch update concert_tracker`; do not edit the copy.
 
 **Rule: vendor only what is imported.** Eight more libraries (`urgency`, `identity_dedupe`, `source_dates`,
 `text_normalize`, `notification_port`, `usage_ledger_port`, `durable_outbox`, `tracker_state`) were vendored when the

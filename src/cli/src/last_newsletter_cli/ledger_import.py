@@ -16,7 +16,7 @@ from last_newsletter_adapter_storage import JsonEventRepository
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from last_newsletter_adapter_ledger import SqliteEventRepository
+    from concert_tracker_adapter_ledger import SqliteEventRepository
 
 IMPORTED_SUFFIX = ".imported"
 

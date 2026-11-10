@@ -7,6 +7,9 @@ __arbor__ = {"ring": "adapters"}
 import dataclasses
 from typing import TYPE_CHECKING
 
+from concert_tracker_core.event_ports import ExtractionFailedError
+from concert_tracker_core.events import EntityRef, EntityRole, EventCandidate, EventKind
+
 from last_newsletter_adapter_events.compat import OllamaClient
 from last_newsletter_adapter_events.errors import EscalationError
 from last_newsletter_adapter_events.prefilter import has_date_signal
@@ -15,24 +18,23 @@ from last_newsletter_adapter_events.schema import EVENT_TOOL, RawEvent, parse_ev
 from last_newsletter_adapter_events.stats import ExtractionStats
 from last_newsletter_adapter_events.text import clean_text, squash
 from last_newsletter_adapter_events.when import parse_when, split_listing
-from last_newsletter_core.event_ports import ExtractionFailedError
-from last_newsletter_core.events import EntityRef, EntityRole, EventCandidate, EventKind
 from llmhost import CompletionRequest, LlmError, LlmOutputError, resolve_model
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import datetime
 
+    from concert_tracker_core.documents import SourceDocument
+
     from last_newsletter_adapter_events.escalation import Escalator
     from llmhost import Provider
-    from ranked_digest.entities import EmailMessage
 
 _MAX_EVENTS_PER_EMAIL = 60
 _FIELDS = {f.name for f in dataclasses.fields(EventCandidate)}
 
 
 class LocalLlmEventExtractor:
-    """Implements `last_newsletter_core.event_ports.EventExtractor`.
+    """Implements `concert_tracker_core.event_ports.EventExtractor`.
 
     Backend trouble (Ollama down, timeout) raises `ExtractionFailedError` for the batch, so ingest
     leaves those messages unprocessed and retries later. A model answer that stays invalid after
@@ -75,14 +77,14 @@ class LocalLlmEventExtractor:
         return cls(resolved.provider, resolved.model, escalator=escalator, escalate=escalate)
 
     def extract(
-        self, messages: Sequence[EmailMessage], *, now: datetime, home_tz: str
+        self, messages: Sequence[SourceDocument], *, now: datetime, home_tz: str
     ) -> list[EventCandidate]:
         out: list[EventCandidate] = []
         for message in messages:
             out.extend(self._one(message, now=now, home_tz=home_tz))
         return out
 
-    def _one(self, message: EmailMessage, *, now: datetime, home_tz: str) -> list[EventCandidate]:
+    def _one(self, message: SourceDocument, *, now: datetime, home_tz: str) -> list[EventCandidate]:
         stats = self.stats
         stats.messages += 1
         body = clean_text(message.body_text)
@@ -103,7 +105,7 @@ class LocalLlmEventExtractor:
         return accepted
 
     def _ask_local(
-        self, message: EmailMessage, subject: str, body: str, *, now: datetime, home_tz: str
+        self, message: SourceDocument, subject: str, body: str, *, now: datetime, home_tz: str
     ) -> tuple[list[RawEvent], bool]:
         user = build_user_prompt(
             PromptInput(
@@ -136,7 +138,7 @@ class LocalLlmEventExtractor:
         return [], True
 
     def _escalate(
-        self, escalator: Escalator, message: EmailMessage, subject: str, body: str
+        self, escalator: Escalator, message: SourceDocument, subject: str, body: str
     ) -> list[RawEvent]:
         self.stats.escalated += 1
         try:

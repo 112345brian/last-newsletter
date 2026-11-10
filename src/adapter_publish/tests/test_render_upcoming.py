@@ -6,15 +6,16 @@ from datetime import UTC, date, datetime, time
 from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
-from last_newsletter_adapter_publish.email_publisher import SmtpConfig, SmtpEmailPublisher
-from last_newsletter_adapter_publish.markdown_publisher import MarkdownPublisher
-from last_newsletter_adapter_publish.render import MAX_TITLE_CHARS, render_html, render_markdown
-from last_newsletter_core.events import EventId
-from last_newsletter_core.use_cases.list_upcoming_events import (
+from concert_tracker_core.events import EventId
+from concert_tracker_core.use_cases.list_upcoming_events import (
     UpcomingDay,
     UpcomingEvent,
     UpcomingEvents,
 )
+
+from last_newsletter_adapter_publish.email_publisher import SmtpConfig, SmtpEmailPublisher
+from last_newsletter_adapter_publish.markdown_publisher import MarkdownPublisher
+from last_newsletter_adapter_publish.render import MAX_TITLE_CHARS, render_html, render_markdown
 from ranked_digest.entities import Cadence, Digest, Theme
 
 if TYPE_CHECKING:

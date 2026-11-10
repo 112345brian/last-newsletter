@@ -8,10 +8,12 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = [
+    "concert-tracker-core",
     "ranked-digest",
 ]
 
 [tool.uv.sources]
+concert-tracker-core = { workspace = true }
 ranked-digest = { workspace = true }
 
 [dependency-groups]
