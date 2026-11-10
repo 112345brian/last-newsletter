@@ -37,6 +37,13 @@ from last_newsletter_adapter_ticketmaster import (
     TicketmasterConfig,
     TicketmasterEventSource,
 )
+from last_newsletter_adapter_venues import (
+    JsonClient,
+    LodgeRoomConfig,
+    LodgeRoomEventSource,
+    ScribbleConfig,
+    ScribbleEventSource,
+)
 from last_newsletter_cli.command_support import ConfigError, Uuid4Ids, ledger_session
 from last_newsletter_cli.similarity import LINK_ONLY_POLICY, CoreSimilarIndex
 from last_newsletter_core.event_ports import SourceFetchError, SourceWindow
@@ -53,7 +60,7 @@ if TYPE_CHECKING:
     from last_newsletter_cli.command_support import IdGenerator
     from last_newsletter_core.event_ports import EventSource, SourceReport
 
-SOURCES = ("ticketmaster", "frequentflyer", "ical", "squarespace")
+SOURCES = ("ticketmaster", "frequentflyer", "ical", "squarespace", "lodgeroom", "scribble")
 TICKETMASTER_KEY = "TICKETMASTER_API_KEY"
 MAX_DAYS = 365
 
@@ -132,6 +139,14 @@ def _build_source(ctx: FetchEventsContext, options: FetchEventsOptions) -> Event
         )
     if options.source in {"ical", "squarespace"}:
         return _feed_source(ctx, options)
+    if options.source == "lodgeroom":
+        return LodgeRoomEventSource(
+            JsonClient(http=ctx.http),
+            LodgeRoomConfig(tz=options.home_tz),
+            sleep=ctx.sleep or time.sleep,
+        )
+    if options.source == "scribble":
+        return ScribbleEventSource(JsonClient(http=ctx.http), ScribbleConfig(tz=options.home_tz))
     msg = f"unknown source {options.source!r} (one of: {', '.join(SOURCES)})"
     raise ConfigError(msg)
 

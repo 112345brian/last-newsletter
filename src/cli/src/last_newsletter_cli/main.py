@@ -508,7 +508,8 @@ def _build_parser() -> argparse.ArgumentParser:
         default="ticketmaster",
         help="ticketmaster needs $TICKETMASTER_API_KEY and --city; frequentflyer needs neither "
         "(Los Angeles only); ical and squarespace need --feed-url (squarespace also one of "
-        "--feed-venue or --feed-organizer). Times in a feed are shown in --home-tz.",
+        "--feed-venue or --feed-organizer); lodgeroom and scribble are single venues and need "
+        "nothing. Times are shown in --home-tz.",
     )
     fetch_events_parser.add_argument(
         "--city", default="", help='ticketmaster only, e.g. "Los Angeles".'

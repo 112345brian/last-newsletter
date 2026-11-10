@@ -35,6 +35,7 @@ from last_newsletter_core.events import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
 
 cli_main = importlib.import_module("last_newsletter_cli.main")
@@ -112,6 +113,27 @@ def _ss_page(*upcoming: dict[str, object]) -> dict[str, object]:
     return {"collection": {}, "upcoming": list(upcoming), "past": []}
 
 
+def _lodge_show(show_id: int, title: str) -> dict[str, object]:
+    return {
+        "id": show_id,
+        "link": f"https://www.lodgeroomhlp.com/shows/s{show_id}/",
+        "title": {"rendered": title},
+        "modified_gmt": "2026-11-04T22:23:09",
+        "acf": {
+            "date_and_time_of_show": "11/24/2026 8:00 pm",
+            "headliner": [{"post_title": title}],
+            "additional_artists": [[{"post_title": "Opener"}]],
+            "venue": {"post_title": "Lodge Room"},
+            "ages": {"label": "ALL AGES"},
+        },
+    }
+
+
+def _scribble_result(title: str) -> dict[str, object]:
+    record = {"_id": "sc1", "title": title, "date": "2026-11-26T03:30:00.000Z"}
+    return {"query": "q", "result": [record]}
+
+
 @dataclass
 class FakeWorld:
     """Routes requests by host, like the real two services."""
@@ -132,6 +154,12 @@ class FakeWorld:
         "DTSTART:20261121T040000Z\r\nLOCATION:The Fonda Theatre\\, 6126 Hollywood Blvd\r\n"
         "END:VEVENT\r\nEND:VCALENDAR\r\n"
     )
+    lodge_body: list[dict[str, object]] = field(
+        default_factory=lambda: [_lodge_show(1, "Lodge Band")]
+    )
+    scribble_body: dict[str, object] = field(
+        default_factory=lambda: _scribble_result("Scribble Night")
+    )
     ics_status: int = 200
     ss_body: dict[str, object] = field(
         default_factory=lambda: _ss_page(_ss_item("s1", "Zebulon Matinee"))
@@ -139,18 +167,21 @@ class FakeWorld:
     hosts: list[str] = field(default_factory=list)
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
-        self.hosts.append(request.url.host)
-        if request.url.host == "app.ticketmaster.com":
-            return httpx.Response(self.tm_status, json=self.tm_body)
-        if request.url.host == "frequentflyerla.com":
-            return httpx.Response(200, json=self.ff_body)
-        if request.url.host == "www.venue.example":
-            return httpx.Response(200, json=self.ss_body)
-        if request.url.host == "calendar.example.com":
-            return httpx.Response(
+        host = request.url.host
+        self.hosts.append(host)
+        routes: dict[str, Callable[[], httpx.Response]] = {
+            "app.ticketmaster.com": lambda: httpx.Response(self.tm_status, json=self.tm_body),
+            "frequentflyerla.com": lambda: httpx.Response(200, json=self.ff_body),
+            "www.lodgeroomhlp.com": lambda: httpx.Response(
+                200, json=self.lodge_body, headers={"X-WP-TotalPages": "1"}
+            ),
+            "59zw0zbs.apicdn.sanity.io": lambda: httpx.Response(200, json=self.scribble_body),
+            "www.venue.example": lambda: httpx.Response(200, json=self.ss_body),
+            "calendar.example.com": lambda: httpx.Response(
                 self.ics_status, text=self.ics, headers={"content-type": "text/calendar"}
-            )
-        return httpx.Response(404)
+            ),
+        }
+        return routes.get(host, lambda: httpx.Response(404))()
 
     @property
     def client(self) -> httpx.Client:
@@ -522,6 +553,33 @@ def test_a_squarespace_feed_must_say_exactly_one_of_venue_or_organizer(
 def test_an_organizer_makes_no_sense_for_an_ical_feed(tmp_path: Path) -> None:
     with pytest.raises(ConfigError, match="not used by the ical source"):
         _run(tmp_path, FakeWorld(), source="ical", key=None, feed_url=_FEED, feed_organizer="X")
+
+
+# --- single venues -----------------------------------------------------------------------------
+
+
+def test_lodge_room_needs_no_flags_and_records_headliner_support_and_venue(tmp_path: Path) -> None:
+    world = FakeWorld()
+    result = _run(tmp_path, world, source="lodgeroom", key=None, city="")
+    assert result.code == 0
+    assert "events: 1 created" in result.out
+    assert set(world.hosts) == {"www.lodgeroomhlp.com"}
+    (event,) = _stored(tmp_path)
+    assert (event.title, event.uid, event.venue) == ("Lodge Band", "lodgeroom:1", "Lodge Room")
+    roles = {(e.name, e.role) for e in event.entities}
+    assert ("Lodge Band", EntityRole.HEADLINER) in roles
+    assert ("Opener", EntityRole.SUPPORT) in roles
+    assert [m.source for m in event.mentions] == ["lodgeroom"]
+
+
+def test_scribble_is_shown_in_the_home_zone_and_a_rerun_changes_nothing(tmp_path: Path) -> None:
+    first = _run(tmp_path, FakeWorld(), source="scribble", key=None, city="")
+    assert "events: 1 created" in first.out
+    (event,) = _stored(tmp_path)
+    assert event.venue == "Scribble"
+    assert event.uid == "scribble:sc1"
+    again = _run(tmp_path, FakeWorld(), source="scribble", key=None, city="")
+    assert "events: 0 created, 0 new mentions, 1 unchanged" in again.out
 
 
 # --- wiring ------------------------------------------------------------------------------------
