@@ -1,18 +1,22 @@
 # Vendored code
 
 Managed by [dfetch](https://dfetch.readthedocs.io) — see `dfetch.yaml` at the repo root. Each directory under
-`vendor/` is a copy of a standalone repo `github.com/112345brian/<name-with-dashes>`, pinned to its own tag
-(`v0.1.0`; `process_lock` and `durable_outbox` are `v0.1.1`). Do not hand-edit `vendor/`; run `uvx dfetch update` to re-fetch.
+`vendor/` is a copy of a standalone repo `github.com/112345brian/<name-with-dashes>`, pinned to its own tag. Do not
+hand-edit `vendor/`; run `uvx dfetch update` to re-fetch.
 
-Consumer-specific changes live in `patches/<name>.patch` and are re-applied on every fetch. Today that is only
-`durable_outbox`'s `pyproject.toml`, which points `process-lock` at the workspace member instead of its git tag.
+Only `process_lock` (`v0.1.1`) is vendored now. It is the one shared library this repo imports (the raw message store,
+the atomic file writer and the ledger take its cross-process lock).
+
+**Rule: vendor only what is imported.** Eight more libraries (`urgency`, `identity_dedupe`, `source_dates`,
+`text_normalize`, `notification_port`, `usage_ledger_port`, `durable_outbox`, `tracker_state`) were vendored when the
+project was started from the job-search template, but nothing here ever imported them, and several of the things they
+do (event identity, text normalisation) are done differently on purpose for events. They were removed; vendor one again
+only in the commit that first imports it.
+
 Ring membership (`core`/`adapters`/...) is a property of how *this* repo uses each library, so it is not annotated in
 the vendored source: `arborescent.toml`'s `[classify]` table maps these modules to rings by name.
-The tests for `process_lock` and `durable_outbox` ship with the upstream repos (v0.1.1) under `vendor/*/tests`.
 
-Rules: ruff and ty skip `vendor/`; import-linter and the workspace-layout test do not. `core` must
-not import any of these (it owns its own defaults); they sit beside `core`, `text_match` and `mailtext` and are
-used only through adapters.
+Rules: ruff and ty skip `vendor/`; import-linter and the workspace-layout test do not.
 
 ## Not vendored: `libs/llmhost`
 
