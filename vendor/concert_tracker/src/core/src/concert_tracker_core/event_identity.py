@@ -31,7 +31,7 @@ from difflib import SequenceMatcher
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
-from concert_tracker_core.event_rules import normalize_text
+from concert_tracker_core.event_rules import normalize_text, normalize_without_leading_article
 from concert_tracker_core.events import EventId, MatchRule, Timed, local_date
 
 if TYPE_CHECKING:
@@ -87,7 +87,10 @@ def _linked(events: Sequence[Event]) -> tuple[EventId, ...]:
 
 
 def _venues_conflict(draft: EventDraft, event: Event) -> bool:
-    a, b = normalize_text(draft.venue), normalize_text(event.venue)
+    a, b = (
+        normalize_without_leading_article(draft.venue),
+        normalize_without_leading_article(event.venue),
+    )
     return bool(a and b and a != b)
 
 
@@ -95,7 +98,8 @@ def _is_dated_sibling(draft: EventDraft, event: Event) -> bool:
     """Same title and venue, different listed date: separate by design, so not a duplicate."""
     return (
         normalize_text(event.title) == normalize_text(draft.title)
-        and normalize_text(event.venue) == normalize_text(draft.venue)
+        and normalize_without_leading_article(event.venue)
+        == normalize_without_leading_article(draft.venue)
         and not _same_day(draft, event)
     )
 
@@ -172,9 +176,9 @@ def identify(
         soft.update({e.id: e for e in same_url if _same_day(draft, e)})
 
     title = normalize_text(draft.title)
-    venue = normalize_text(draft.venue)
+    venue = normalize_without_leading_article(draft.venue)
     same_title = [e for e in pool if normalize_text(e.title) == title and _same_day(draft, e)]
-    same_venue = [e for e in same_title if normalize_text(e.venue) == venue]
+    same_venue = [e for e in same_title if normalize_without_leading_article(e.venue) == venue]
     if same_venue:
         return _decide(MatchRule.TITLE_DATE_VENUE, _closest(draft, same_venue), soft)
     soft.update({e.id: e for e in same_title if not _venues_conflict(draft, e)})

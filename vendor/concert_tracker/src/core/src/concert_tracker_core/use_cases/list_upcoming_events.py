@@ -34,6 +34,8 @@ from concert_tracker_core.events import (
     local_date,
     require_aware,
 )
+from concert_tracker_core.source_runs import source_key
+from concert_tracker_core.venue_categories import Screening
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -41,6 +43,7 @@ if TYPE_CHECKING:
 
     from concert_tracker_core.event_ports import EventRepository
     from concert_tracker_core.events import EventId
+    from concert_tracker_core.venue_categories import VenueCategory, VenueFilter
 
 DEFAULT_WINDOW_DAYS = 14
 MAX_WINDOW_DAYS = 366
@@ -62,6 +65,8 @@ class UpcomingEvent:
     city: str = ""
     url: str | None = None
     mention_count: int = 1  # distinct documents that mentioned it
+    venue_categories: frozenset[VenueCategory] = frozenset()  # empty: no directory, or unclassified
+    sources: tuple[str, ...] = ()  # every source that listed it, sorted: where we found the event
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +82,9 @@ class UpcomingEvents:
     first_day: date
     last_day: date
     days: tuple[UpcomingDay, ...]
+    # Events in the window left out only because their venue is unclassified while a category
+    # filter was on. Never silent: whoever shows the list says so.
+    unclassified_hidden: int = 0
 
     @property
     def event_count(self) -> int:
@@ -103,6 +111,22 @@ def _is_listable(event: Event, now: datetime) -> bool:
     return False
 
 
+def _sources_of(event: Event) -> tuple[str, ...]:
+    return tuple(sorted({m.source for m in event.mentions}, key=str.casefold))
+
+
+def only_from_sources(events: Iterable[Event], sources: Iterable[str]) -> list[Event]:
+    """`events` that at least one of `sources` listed (case-insensitive); all when none are named.
+
+    An event several sources list stays when any of them is named. A blank name is refused.
+    """
+    wanted = frozenset(source_key(name) for name in sources)
+    if "" in wanted:
+        msg = "a source name must not be blank"
+        raise ValueError(msg)
+    return [e for e in events if not wanted or any(source_key(s) in wanted for s in _sources_of(e))]
+
+
 def _entry(event: Event) -> tuple[UpcomingEvent, datetime | None, date]:
     """The line for `event`, the moment it is over (None: when its date ends) and its date."""
     base = UpcomingEvent(
@@ -114,6 +138,7 @@ def _entry(event: Event) -> tuple[UpcomingEvent, datetime | None, date]:
         city=event.city,
         url=event.url,
         mention_count=len({m.message_id for m in event.mentions}),
+        sources=_sources_of(event),
     )
     when = event.when
     if isinstance(when, AllDay):
@@ -151,14 +176,38 @@ def _sort_key(line: UpcomingEvent) -> tuple[bool, time, int, str, str]:
     )
 
 
+def _in_window(
+    day: date, over: datetime | None, *, today: date, last_day: date, now: datetime
+) -> bool:
+    """Not past `last_day`, and not over yet (an all-day event is over once its date has passed)."""
+    if day > last_day:
+        return False
+    return day >= today if over is None else over > now
+
+
+def _screen(
+    event: Event, venue_filter: VenueFilter | None
+) -> tuple[frozenset[VenueCategory], Screening]:
+    if venue_filter is None:
+        return frozenset(), Screening.KEEP
+    return venue_filter.screen(event.venue)
+
+
 def upcoming_from_events(
     events: Iterable[Event],
     *,
     now: datetime,
     days: int = DEFAULT_WINDOW_DAYS,
     tz_name: str = "UTC",
+    venue_filter: VenueFilter | None = None,
 ) -> UpcomingEvents:
-    """Pick, filter and group `events` for the window starting today in `tz_name`."""
+    """Pick, filter and group `events` for the window starting today in `tz_name`.
+
+    With a `venue_filter` each line carries its venue's categories, and when the filter names
+    categories only events at such venues are kept. An event whose venue is unclassified is left
+    out and counted in `unclassified_hidden`, never silently dropped. Each line carries every
+    source that listed it; narrow by source first with `only_from_sources`.
+    """
     require_aware(now, "now")
     if not 1 <= days <= MAX_WINDOW_DAYS:
         msg = f"days must be between 1 and {MAX_WINDOW_DAYS}"
@@ -167,22 +216,29 @@ def upcoming_from_events(
     today = now.astimezone(zone).date()
     last_day = today + timedelta(days=days - 1)
     by_day: dict[date, list[UpcomingEvent]] = {}
+    unclassified_hidden = 0
     for event in events:
         if not _is_listable(event, now):
             continue
         line, over, day = _entry(event)
-        if day > last_day:
+        if not _in_window(day, over, today=today, last_day=last_day, now=now):
             continue
-        if over is None:
-            if day < today:
-                continue
-        elif over <= now:
+        categories, screening = _screen(event, venue_filter)
+        if screening is Screening.UNCLASSIFIED:
+            unclassified_hidden += 1
             continue
-        by_day.setdefault(line.day, []).append(line)
+        if screening is Screening.EXCLUDED:
+            continue
+        by_day.setdefault(line.day, []).append(replace(line, venue_categories=categories))
     grouped = tuple(
         UpcomingDay(day=d, events=tuple(sorted(by_day[d], key=_sort_key))) for d in sorted(by_day)
     )
-    return UpcomingEvents(first_day=today, last_day=last_day, days=grouped)
+    return UpcomingEvents(
+        first_day=today,
+        last_day=last_day,
+        days=grouped,
+        unclassified_hidden=unclassified_hidden,
+    )
 
 
 class ListUpcomingEventsUseCase:
@@ -196,6 +252,18 @@ class ListUpcomingEventsUseCase:
         self._events = events
 
     def execute(
-        self, *, now: datetime, days: int = DEFAULT_WINDOW_DAYS, tz_name: str = "UTC"
+        self,
+        *,
+        now: datetime,
+        days: int = DEFAULT_WINDOW_DAYS,
+        tz_name: str = "UTC",
+        venue_filter: VenueFilter | None = None,
+        sources: Iterable[str] = (),
     ) -> UpcomingEvents:
-        return upcoming_from_events(self._events.list_open(), now=now, days=days, tz_name=tz_name)
+        return upcoming_from_events(
+            only_from_sources(self._events.list_open(), sources),
+            now=now,
+            days=days,
+            tz_name=tz_name,
+            venue_filter=venue_filter,
+        )

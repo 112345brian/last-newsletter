@@ -65,6 +65,20 @@ def normalize_text(text: str) -> str:
     return " ".join(re.sub(r"[\W_]+", " ", stripped).split())
 
 
+def normalize_without_leading_article(name: str) -> str:
+    """`normalize_text`, minus one leading "the", for comparing names.
+
+    "The Echo", "the ECHO!" and "Echo" compare equal. Only a leading article goes (so "Lodge of the
+    Room" and "Thebes" are untouched), and a name that is only the article keeps it, so a name is
+    never normalized to nothing and mistaken for a missing one. Used for venue names today; any
+    other name that readers write with or without "The" can use it.
+    """
+    words = normalize_text(name).split()
+    if len(words) > 1 and words[0] == "the":
+        words = words[1:]
+    return " ".join(words)
+
+
 def canonical_url(url: str) -> str | None:
     """A comparable form of an http(s) URL, or None when it is not one.
 

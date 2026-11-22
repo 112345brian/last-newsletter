@@ -18,7 +18,7 @@ manifest:
     - name: concert_tracker
       dst: vendor/concert_tracker
       repo-path: concert-tracker.git
-      tag: v0.2.1
+      tag: v0.3.0
       ignore:
         - src/adapter_ticketmaster
         - src/adapter_frequentflyer

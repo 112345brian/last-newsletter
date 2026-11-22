@@ -1,0 +1,15 @@
+{
+  "sources": [
+    {"name": "frequentflyer", "kind": "frequentflyer"},
+    {"name": "lodgeroom", "kind": "lodgeroom"},
+    {"name": "scribble", "kind": "scribble"},
+    {"name": "moshradar", "kind": "ical",
+     "options": {"feed_url": "https://moshradar.com/calendar/city/los-angeles.ics"}},
+    {"name": "caldiscovery", "kind": "ical",
+     "options": {"feed_url": "https://caldiscovery.com/los-angeles-ca/this-weekend-music.ics"}},
+    {"name": "thesmell", "kind": "squarespace",
+     "options": {"feed_url": "https://www.thesmell.org/events", "feed_venue": "The Smell"}},
+    {"name": "livingearth", "kind": "squarespace",
+     "options": {"feed_url": "https://www.livingearth.la/gatherings", "feed_organizer": "Living Earth"}}
+  ]
+}

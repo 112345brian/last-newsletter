@@ -2,9 +2,9 @@
 # For more info see https://dfetch.rtfd.io/en/latest/getting_started.html
 dfetch:
   branch: main
-  hash: ea2bc2696735330399b014609fa95c49
-  last_fetch: 10/11/2026, 04:57:27
+  hash: 4d9738fafb45477a6a53c7fcef7d5407
+  last_fetch: 22/11/2026, 21:03:02
   patch: ''
   remote_url: https://github.com/112345brian/concert-tracker.git
   revision: ''
-  tag: v0.2.1
+  tag: v0.3.0
