@@ -59,6 +59,8 @@ def describe_included(upcoming: UpcomingEvents) -> str:
     count = upcoming.event_count
     hidden = upcoming.unclassified_hidden
     note = f"; {hidden} more not shown: venue not classified" if hidden else ""
+    if upcoming.taste_unknown_hidden:
+        note += f"; {upcoming.taste_unknown_hidden} more not shown: artists' genres unknown"
     if count == 0:
         return (
             f"coming up: 0 upcoming events in the next {_span(upcoming)} day(s); "

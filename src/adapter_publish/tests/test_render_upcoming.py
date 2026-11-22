@@ -202,3 +202,30 @@ def test_the_email_carries_the_section_in_both_parts(tmp_path: Path) -> None:
     assert html is not None
     assert "## Coming up" in str(text.get_content())
     assert "Coming up" in str(html.get_content())
+
+
+def test_genres_and_plays_show_on_the_line_with_a_last_fm_credit_in_both_formats() -> None:
+    event = _event(genres=("punk", "garage"), plays=12)
+    text = render_markdown(_digest(_theme()), _window(event))
+    assert "*punk, garage \u00b7 \u2605 12 plays*" in text
+    assert "[Last.fm](https://www.last.fm)" in text
+    html = render_html(_digest(_theme()), _window(event))
+    assert '<span class="up-taste">punk, garage \u00b7 \u2605 12 plays</span>' in html
+    assert 'href="https://www.last.fm"' in html
+
+
+def test_without_last_fm_data_there_is_no_taste_text_and_no_credit() -> None:
+    plain = _window(_event())
+    assert "Last.fm" not in render_markdown(_digest(_theme()), plain)
+    assert "up-taste" not in render_html(_digest(_theme()), plain).split("</style>")[1]
+    assert "Last.fm" not in render_html(_digest(_theme()), plain).split("</style>")[1]
+
+
+def test_genres_alone_or_plays_alone_still_credit_last_fm() -> None:
+    for event in (_event(genres=("jazz",)), _event(plays=3)):
+        assert "Last.fm" in render_markdown(_digest(_theme()), _window(event))
+
+
+def test_last_fm_text_is_escaped() -> None:
+    html = render_html(_digest(_theme()), _window(_event(genres=("<b>x</b>",))))
+    assert "<b>x</b>" not in html

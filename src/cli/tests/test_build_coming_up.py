@@ -140,7 +140,7 @@ def _build(data_dir: Path, capsys: pytest.CaptureFixture[str], *args: str) -> tu
     cli_main.main(["build", "--home-tz", _LA, *args])
     captured = capsys.readouterr()
     [path] = sorted((data_dir / "markdown").glob("*.md"))
-    return captured.out, captured.err, path.read_text()
+    return captured.out, captured.err, path.read_text(encoding="utf-8")
 
 
 def test_build_lists_upcoming_events_by_date_and_prints_one_count_line(

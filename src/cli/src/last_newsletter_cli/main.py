@@ -54,6 +54,15 @@ from last_newsletter_cli.process_command import (
     execute_process,
 )
 from last_newsletter_cli.process_stage import DEFAULT_BATCH_SIZE
+from last_newsletter_cli.taste_section import (
+    DEFAULT_LISTENED_MONTHS,
+    KEY_VARIABLE,
+    LISTENED_MONTHS,
+    NO_TASTE,
+    USER_VARIABLE,
+    TasteOptions,
+    apply_taste_section,
+)
 from last_newsletter_cli.upcoming_section import (
     UpcomingOutcome,
     load_upcoming,
@@ -222,6 +231,7 @@ class BuildOptions:
     event_days: int = DEFAULT_WINDOW_DAYS
     home_tz: str = "UTC"
     venue_types: tuple[str, ...] = ()
+    taste: TasteOptions = NO_TASTE
 
 
 def _run_build(options: BuildOptions) -> None:
@@ -249,6 +259,10 @@ def _run_build(options: BuildOptions) -> None:
         )
         if outcome.warning is not None:
             sys.stderr.write(outcome.warning + "\n")
+        tasted = apply_taste_section(outcome, options.taste, _DATA_DIR, os.environ, _now)
+        outcome = tasted.section
+        if tasted.warning is not None:
+            sys.stderr.write(tasted.warning + "\n")
     else:
         outcome = UpcomingOutcome(None, "coming up: skipped (--no-events)")
 
@@ -385,6 +399,42 @@ def _run_serve() -> None:
     app.run(host="127.0.0.1", port=_SERVE_PORT, debug=False)
 
 
+def _add_taste_arguments(build_parser: argparse.ArgumentParser) -> None:
+    build_parser.add_argument(
+        "--genre",
+        action="append",
+        default=[],
+        help="Coming up: only events with an artist of this Last.fm genre (e.g. punk; repeat for "
+        f"any-of). Needs ${KEY_VARIABLE}. Events whose artists have no known genre are left out "
+        "and counted.",
+    )
+    build_parser.add_argument(
+        "--listened",
+        type=int,
+        default=0,
+        metavar="PLAYS",
+        help="Coming up: only events with an artist you played at least this many times lately. "
+        f"Needs ${USER_VARIABLE}.",
+    )
+    build_parser.add_argument(
+        "--rank",
+        action="store_true",
+        help="Coming up: within each day, the artists you have listened to most come first.",
+    )
+    build_parser.add_argument(
+        "--listened-months",
+        type=int,
+        choices=LISTENED_MONTHS,
+        default=DEFAULT_LISTENED_MONTHS,
+        help=f"How far back your plays count (default {DEFAULT_LISTENED_MONTHS}).",
+    )
+    build_parser.add_argument(
+        "--taste",
+        action="store_true",
+        help="Coming up: show each event's genres and your plays without filtering.",
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="last-newsletter")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -445,6 +495,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "venues not yet classified are left out and counted; `concert-tracker venues` lists "
         "them, and <data dir>/venues.json classifies them.",
     )
+    _add_taste_arguments(build_parser)
 
     raw_parser = subparsers.add_parser(
         "fetch",
@@ -519,6 +570,13 @@ def main(argv: Sequence[str] | None = None) -> None:
                     event_days=args.event_days,
                     home_tz=args.home_tz,
                     venue_types=tuple(args.venue_type),
+                    taste=TasteOptions(
+                        genres=tuple(args.genre),
+                        min_plays=args.listened,
+                        rank=args.rank,
+                        show=args.taste,
+                        months=args.listened_months,
+                    ),
                 )
             )
         except ConfigError as error:

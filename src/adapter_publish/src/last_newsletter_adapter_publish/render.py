@@ -75,6 +75,24 @@ def upcoming_where(event: UpcomingEvent) -> str:
     return ", ".join(_one_line(p, 80) for p in (event.venue, event.city) if p.strip())
 
 
+LASTFM_CREDIT = "Genres and listening data from"
+LASTFM_URL = "https://www.last.fm"
+
+
+def upcoming_taste(event: UpcomingEvent) -> str:
+    """Genres and your recent plays for the line, or "" when Last.fm told us nothing."""
+    parts = []
+    if event.genres:
+        parts.append(", ".join(event.genres))
+    if event.plays:
+        parts.append(f"★ {event.plays} plays")
+    return " · ".join(parts)
+
+
+def _shows_lastfm_data(upcoming: UpcomingEvents) -> bool:
+    return any(e.genres or e.plays for day in upcoming.days for e in day.events)
+
+
 def upcoming_heading(upcoming: UpcomingEvents) -> str:
     return f"Coming up: {_day_label(upcoming.first_day)} to {_day_label(upcoming.last_day)}"
 
@@ -88,6 +106,9 @@ def _markdown_upcoming_line(event: UpcomingEvent) -> str:
     where = upcoming_where(event)
     if where:
         parts.append(_md_escape(where))
+    taste = upcoming_taste(event)
+    if taste:
+        parts.append(f"*{_md_escape(taste)}*")
     line = "- " + " \u2014 ".join(parts)
     if event.mention_count > 1:
         line += f" *(in {event.mention_count} emails)*"
@@ -103,6 +124,8 @@ def _markdown_upcoming(upcoming: UpcomingEvents) -> str:
         lines = [f"### {_day_label(day.day)}", ""]
         lines += [_markdown_upcoming_line(e) for e in day.events]
         blocks.append("\n".join(lines))
+    if _shows_lastfm_data(upcoming):
+        blocks.append(f"*{LASTFM_CREDIT} [Last.fm]({LASTFM_URL}).*")
     return "\n\n".join(blocks)
 
 
@@ -183,6 +206,9 @@ def _html_upcoming_row(event: UpcomingEvent) -> str:
     ]
     if where:
         pieces.append(f'<span class="up-where">{escape(where)}</span>')
+    taste = upcoming_taste(event)
+    if taste:
+        pieces.append(f'<span class="up-taste">{escape(taste)}</span>')
     if event.mention_count > 1:
         pieces.append(f'<span class="badge badge-streak">in {event.mention_count} emails</span>')
     url = _safe_url(event.url)
@@ -204,10 +230,16 @@ def _html_upcoming_day(day: UpcomingDay) -> str:
 
 def _html_upcoming(upcoming: UpcomingEvents) -> str:
     days = "".join(_html_upcoming_day(d) for d in upcoming.days)
+    credit = (
+        f'<p class="up-credit">{escape(LASTFM_CREDIT)} '
+        f'<a href="{LASTFM_URL}" rel="noopener noreferrer">Last.fm</a>.</p>'
+        if _shows_lastfm_data(upcoming)
+        else ""
+    )
     return (
         '<div class="card upcoming">'
         f'<div class="card-title">{escape(upcoming_heading(upcoming))}</div>'
-        f"{days}</div>"
+        f"{days}{credit}</div>"
     )
 
 
@@ -243,6 +275,8 @@ body {
 .badge-streak { background: #ddf4ff; color: #0550ae; border-color: #54aeff; }
 .card-summary { color: #57606a; font-size: 13px; margin-top: 10px; }
 .card.upcoming { border-left-color: #8250df; }
+.up-taste { color: #57606a; font-style: italic; }
+.up-credit { color: #57606a; font-size: 12px; margin-top: 8px; }
 .up-day { margin-top: 12px; }
 .up-date { font-size: 12px; font-weight: 600; color: #57606a; text-transform: uppercase; }
 .up-list { list-style: none; margin-top: 4px; }

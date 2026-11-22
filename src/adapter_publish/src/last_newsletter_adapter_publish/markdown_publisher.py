@@ -32,4 +32,4 @@ class MarkdownPublisher:
 
     def publish(self, digest: Digest) -> None:
         path = self._output_dir / f"{digest_slug(digest)}.md"
-        path.write_text(render_markdown(digest, self._upcoming))
+        path.write_text(render_markdown(digest, self._upcoming), encoding="utf-8")

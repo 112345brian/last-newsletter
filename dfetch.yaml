@@ -26,7 +26,6 @@ manifest:
         - src/adapter_squarespace
         - src/adapter_venues
         - src/adapter_embeddings
-        - src/adapter_lastfm
         - src/cli
         - "src/*/tests"
         - vendor

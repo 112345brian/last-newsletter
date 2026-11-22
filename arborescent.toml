@@ -21,6 +21,7 @@ sources = [
     "vendor/process_lock/src",
     "vendor/concert_tracker/src/core/src",
     "vendor/concert_tracker/src/adapter_ledger/src",
+    "vendor/concert_tracker/src/adapter_lastfm/src",
     "vendor/concert_tracker/src/ngram_index/src",
     "vendor/concert_tracker/src/app/src",
 ]
@@ -41,6 +42,7 @@ source_roots = [
     "vendor/process_lock/src",
     "vendor/concert_tracker/src/core/src",
     "vendor/concert_tracker/src/adapter_ledger/src",
+    "vendor/concert_tracker/src/adapter_lastfm/src",
     "vendor/concert_tracker/src/ngram_index/src",
     "vendor/concert_tracker/src/app/src",
 ]
@@ -74,7 +76,7 @@ external = ["anthropic"]
 may_import = ["core", "libs", "llm"]
 # Adapters own their effects (disk, network, clock for sleeping); only core is forbidden them.
 forbid = []
-external = ["imapclient", "flask", "dateparser", "filelock", "tenacity", "psutil"]
+external = ["imapclient", "flask", "dateparser", "filelock", "tenacity", "psutil", "httpx"]
 
 # app: concert-tracker's application layer (vendored): opens the ledger, keeps the index in step.
 [ring.app]
@@ -112,6 +114,8 @@ external = ["*"]
 "concert_tracker_core.*" = "core"
 "concert_tracker_adapter_ledger" = "adapters"
 "concert_tracker_adapter_ledger.*" = "adapters"
+"concert_tracker_adapter_lastfm" = "adapters"
+"concert_tracker_adapter_lastfm.*" = "adapters"
 "concert_tracker_ngram_index" = "adapters"
 "concert_tracker_ngram_index.*" = "adapters"
 "concert_tracker_app" = "app"
