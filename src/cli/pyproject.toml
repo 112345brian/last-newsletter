@@ -22,6 +22,8 @@ dependencies = [
     "concert-tracker-app",
     "last-newsletter-adapter-events",
     "process-lock",
+    # Windows has no system IANA database; the event ledger resolves zones like America/Los_Angeles.
+    "tzdata; sys_platform == 'win32'",
 ]
 
 [project.scripts]
