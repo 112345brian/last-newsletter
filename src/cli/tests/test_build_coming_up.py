@@ -10,7 +10,7 @@ import importlib
 import sqlite3
 from dataclasses import replace
 from datetime import UTC, date, datetime, time
-from typing import TYPE_CHECKING
+from pathlib import Path
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -34,9 +34,6 @@ from last_newsletter_adapter_publish.render import render_html
 from last_newsletter_adapter_storage import FileRawMessageStore
 from last_newsletter_cli.main import fetch_raw
 from ranked_digest.entities import Cadence, Digest, EmailMessage
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 cli_main = importlib.import_module("last_newsletter_cli.main")
 upcoming_section = importlib.import_module("last_newsletter_cli.upcoming_section")
@@ -403,3 +400,108 @@ def test_end_to_end_raw_mail_to_process_to_build_has_a_coming_up_section(
     assert "Moon Party" in md
     assert "(in 2 emails)" in md  # the repeated mention is cited on the one event
     assert "<!-- event:" in md
+
+
+def _venue_ledger(data_dir: Path) -> None:
+    def at(n: int, title: str, venue: str, day: int) -> Event:
+        entities = (EntityRef(venue, EntityRole.VENUE),) if venue else ()
+        return _event(n, _timed(_la(11, day, 20)), title, entities=entities)
+
+    make_ledger(
+        data_dir,
+        [
+            at(1, "Gig At The Echo", "The Echo", 10),
+            at(2, "Midnight Film", "The Frida Cinema", 11),
+            at(3, "Mystery Show", "Elsewhere Hall", 12),
+            at(4, "Nowhere Show", "", 12),
+        ],
+    )
+
+
+def test_venue_type_keeps_only_that_kind_and_says_how_many_were_not_classified(
+    data_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _venue_ledger(data_dir)
+    out, err, md = _build(data_dir, capsys, "--venue-type", "music_venue")
+    assert err == ""
+    assert "Gig At The Echo" in md
+    assert "Midnight Film" not in md
+    assert "Mystery Show" not in md
+    assert "1 upcoming event(s)" in out
+    assert "2 more not shown: venue not classified" in out
+
+
+def test_without_venue_type_the_section_is_what_it_always_was(
+    data_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _venue_ledger(data_dir)
+    out, _, md = _build(data_dir, capsys)
+    for title in ("Gig At The Echo", "Midnight Film", "Mystery Show", "Nowhere Show"):
+        assert title in md
+    assert "not shown" not in out
+
+
+def test_venue_type_can_repeat_and_the_owners_venues_file_applies(
+    data_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _venue_ledger(data_dir)
+    (data_dir / "venues.json").write_text(
+        '{"venues": [{"names": ["Elsewhere Hall"], "categories": ["club"]}]}', encoding="utf-8"
+    )
+    _, _, md = _build(data_dir, capsys, "--venue-type", "cinema", "--venue-type", "club")
+    assert "Midnight Film" in md
+    assert "Mystery Show" in md
+    assert "Gig At The Echo" not in md
+
+
+def test_when_every_event_is_filtered_out_the_section_is_omitted_and_says_why(
+    data_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _venue_ledger(data_dir)
+    out, _, md = _build(data_dir, capsys, "--venue-type", "arena")
+    assert "## Coming up" not in md
+    assert "0 upcoming events in the next" in out
+    assert "not shown" in out
+
+
+def test_a_broken_venues_file_stops_the_build_when_a_venue_type_is_asked_for(
+    data_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _venue_ledger(data_dir)
+    (data_dir / "venues.json").write_text("{nope", encoding="utf-8")
+    with pytest.raises(SystemExit) as stop:
+        cli_main.main(["build", "--home-tz", _LA, "--venue-type", "cinema"])
+    assert stop.value.code == 2
+    assert "venues.json" in capsys.readouterr().err
+
+
+def test_a_broken_venues_file_is_not_read_without_a_venue_type(
+    data_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _venue_ledger(data_dir)
+    (data_dir / "venues.json").write_text("{nope", encoding="utf-8")
+    _, err, md = _build(data_dir, capsys)
+    assert err == ""
+    assert "Gig At The Echo" in md
+
+
+def test_an_unknown_venue_type_is_refused_with_the_choices(
+    data_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _venue_ledger(data_dir)
+    with pytest.raises(SystemExit) as stop:
+        cli_main.main(["build", "--venue-type", "spaceship"])
+    assert stop.value.code == 2
+    assert "music_venue" in capsys.readouterr().err
+
+
+def test_every_module_that_builds_a_venue_filter_also_reports_what_it_hid() -> None:
+    """A filter that hides events must be said out loud; scan the callers, not a reminder."""
+    root = Path(cli_main.__file__).parent
+    offenders = [
+        str(path)
+        for path in root.rglob("*.py")
+        if "VenueFilter(" in path.read_text(encoding="utf-8")
+        and "unclassified_hidden" not in path.read_text(encoding="utf-8")
+    ]
+    assert offenders == []

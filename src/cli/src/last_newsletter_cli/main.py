@@ -25,6 +25,7 @@ from concert_tracker_core.use_cases.list_upcoming_events import (
     DEFAULT_WINDOW_DAYS,
     MAX_WINDOW_DAYS,
 )
+from concert_tracker_core.venue_categories import VenueCategory
 
 from last_newsletter_adapter_email.filtered_source import FilteredEmailSource
 from last_newsletter_adapter_email.imap_source import ImapConfig, ImapEmailSource
@@ -53,7 +54,11 @@ from last_newsletter_cli.process_command import (
     execute_process,
 )
 from last_newsletter_cli.process_stage import DEFAULT_BATCH_SIZE
-from last_newsletter_cli.upcoming_section import UpcomingOutcome, load_upcoming
+from last_newsletter_cli.upcoming_section import (
+    UpcomingOutcome,
+    load_upcoming,
+    venue_filter_for_types,
+)
 from last_newsletter_core.default_filters import DEFAULT_FILTERS
 from ranked_digest.entities import Cadence, digest_slug
 from ranked_digest.use_cases.build_digest import BuildDigestRequest, BuildDigestUseCase
@@ -216,6 +221,7 @@ class BuildOptions:
     events: bool = True
     event_days: int = DEFAULT_WINDOW_DAYS
     home_tz: str = "UTC"
+    venue_types: tuple[str, ...] = ()
 
 
 def _run_build(options: BuildOptions) -> None:
@@ -233,11 +239,13 @@ def _run_build(options: BuildOptions) -> None:
 
     # Read-only and optional: the ledger is never written here and never makes the digest fail.
     if options.events:
+        venue_filter = venue_filter_for_types(_DATA_DIR, options.venue_types)
         outcome = load_upcoming(
             _DATA_DIR / "events" / LEDGER_NAME,
             now=now,
             days=options.event_days,
             tz_name=options.home_tz,
+            venue_filter=venue_filter,
         )
         if outcome.warning is not None:
             sys.stderr.write(outcome.warning + "\n")
@@ -428,6 +436,16 @@ def main(argv: Sequence[str] | None = None) -> None:
         "(default: $LAST_NEWSLETTER_HOME_TZ, else UTC).",
     )
 
+    build_parser.add_argument(
+        "--venue-type",
+        action="append",
+        choices=[c.value for c in VenueCategory],
+        default=[],
+        help="Coming up: only events at venues of this type (repeat for any-of). Events at "
+        "venues not yet classified are left out and counted; `concert-tracker venues` lists "
+        "them, and <data dir>/venues.json classifies them.",
+    )
+
     raw_parser = subparsers.add_parser(
         "fetch",
         help="Stage 1: append new mail from IMAP to the local raw store (no digest, no model). "
@@ -500,6 +518,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                     events=not args.no_events,
                     event_days=args.event_days,
                     home_tz=args.home_tz,
+                    venue_types=tuple(args.venue_type),
                 )
             )
         except ConfigError as error:

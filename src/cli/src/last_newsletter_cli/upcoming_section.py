@@ -18,9 +18,12 @@ from concert_tracker_adapter_ledger import (
     SchemaTooOldError,
     SqliteEventRepository,
 )
+from concert_tracker_app.venue_directory import load_venue_directory
 from concert_tracker_core.use_cases.list_upcoming_events import ListUpcomingEventsUseCase
+from concert_tracker_core.venue_categories import VenueCategory, VenueFilter
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from datetime import datetime
     from pathlib import Path
 
@@ -40,15 +43,32 @@ class UpcomingOutcome:
     warning: str | None = None
 
 
+def venue_filter_for_types(data_dir: Path, venue_types: Iterable[str]) -> VenueFilter | None:
+    """The filter for `--venue-type`, or None when no type was asked for (nothing is read then).
+
+    Raises `ConfigError` naming the file when the owner's `venues.json` is broken: someone who
+    asked for a filter must not silently get the unfiltered section.
+    """
+    wanted = frozenset(VenueCategory(v) for v in venue_types)
+    if not wanted:
+        return None
+    return VenueFilter(load_venue_directory(data_dir), only=wanted)
+
+
 def describe_included(upcoming: UpcomingEvents) -> str:
     count = upcoming.event_count
+    hidden = upcoming.unclassified_hidden
+    note = f"; {hidden} more not shown: venue not classified" if hidden else ""
     if count == 0:
-        return f"coming up: 0 upcoming events in the next {_span(upcoming)} day(s); section omitted"
+        return (
+            f"coming up: 0 upcoming events in the next {_span(upcoming)} day(s); "
+            f"section omitted{note}"
+        )
     dates = len(upcoming.days)
     first, last = upcoming.days[0].day, upcoming.days[-1].day
     return (
         f"coming up: {count} upcoming event(s) on {dates} date(s), "
-        f"{first.isoformat()} to {last.isoformat()}"
+        f"{first.isoformat()} to {last.isoformat()}{note}"
     )
 
 
@@ -71,7 +91,14 @@ def _warning(path: Path, error: Exception) -> str:
     )
 
 
-def load_upcoming(ledger_path: Path, *, now: datetime, days: int, tz_name: str) -> UpcomingOutcome:
+def load_upcoming(
+    ledger_path: Path,
+    *,
+    now: datetime,
+    days: int,
+    tz_name: str,
+    venue_filter: VenueFilter | None = None,
+) -> UpcomingOutcome:
     """Never raises for a ledger problem; a bad `days` or `tz_name` is the caller's to validate."""
     if not ledger_path.is_file():
         return UpcomingOutcome(
@@ -82,7 +109,7 @@ def load_upcoming(ledger_path: Path, *, now: datetime, days: int, tz_name: str) 
             ledger_path, read_only=True, busy_timeout_s=LOCK_WAIT_S
         ) as ledger:
             upcoming = ListUpcomingEventsUseCase(ledger).execute(
-                now=now, days=days, tz_name=tz_name
+                now=now, days=days, tz_name=tz_name, venue_filter=venue_filter
             )
     except (
         sqlite3.Error,
