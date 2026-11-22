@@ -37,6 +37,12 @@ event with two mentions.
 | `squarespace` | a Squarespace events page (`?format=json`) | `--feed-url`, and `--feed-venue` or `--feed-organizer` | Yes (The Smell, Living Earth, Healing Force) |
 | `lodgeroom` | Lodge Room's WordPress API | nothing | Yes |
 | `scribble` | the public Sanity API behind Scribble's site | nothing | Yes (mixes music, comedy and workshops: no category field) |
+| `echo` | The Echo and Echoplex, through Live Nation's content API | nothing | Yes (uses the API key the venue's own site sends every visitor: see `src/adapter_venues/README.md`) |
+| `livenation` | any Live Nation club site (Palladium, Wiltern, Belasco, Observatory OC, House of Blues Anaheim) | `--feed-url <site>` | Yes (same API and key) |
+| `roadhouse` | Permanent Records Roadhouse: the hand-edited schedule page | nothing | Yes (plain http, no year or ids on the page) |
+| `socalradar` | SoCal Event Radar: someone else's published `events.json` (19hz, Resident Advisor and more, nightlife-heavy) | nothing | Yes (second-hand and unlicensed: venue-specific sources win; see `src/adapter_venues/README.md`) |
+| `zebulon`, `golddiggers`, `glasshouse` | Zebulon, Gold Diggers and the Glass House, through Dice's partner API | nothing | Yes (uses each venue's own widget key: see `src/adapter_venues/README.md`) |
+| `frida` | The Frida Cinema, Santa Ana: the theater's own showtime listing (film, one event per screening) | nothing | Yes (venue is category `cinema`) |
 
 Each adapter's own README (`src/adapter_*/README.md`) records what it reads, what it deliberately
 skips, and what was observed live.
@@ -44,6 +50,10 @@ skips, and what was observed live.
 **Deliberately not here:** Piqued (answers with a Vercel bot challenge, which this project does not
 try to get past), Dice (no public API), Oh My Rockness' show API (needs authentication), and the
 LA Events / What's Up In files (the operator requires written permission for bulk ingestion).
+Four more LA rooms were looked at and left out because their own sites offer nothing legitimate to
+read: Zebulon and Gold Diggers (their listings exist only in a Dice widget, whose embedded key is
+the venue's, not ours), The Midnight Hour (a stale Shopify blog) and Bricks Bar (a dead domain).
+Details in `src/adapter_venues/README.md`.
 
 **Terms of use are not checked for any source.** Read each one before relying on it, especially for
 anything you republish. Frequent Flyer's response says *free with attribution, not for bulk
@@ -68,6 +78,19 @@ across dates (a run of nights is separate events), never merges across a venue c
 errs toward keeping events apart: a missed merge shows a duplicate, a wrong one hides a show.
 `src/core/tests/test_dedupe_*` hold labelled same/different pairs, generated invariants, a scale
 check, and mutants that the pairs must catch.
+
+## Reading artists out of titles
+
+`concert_tracker_core.title_parsing.parse_title(title)` is a pure function that recognises the
+common shapes of a listing title and says which one fired (`TitlePattern`): `"<promoter> presents:
+<bill>"`, `"<artist> with|w/ <support>, <support> & <support>"`, `"An Evening with <artist>"`,
+`"<artist>: <tour name>"`, `"<a> / <b> / <c>"`, `"<a>, <b>, <c>"` (three or more) and
+`"<a> x <b>"`. It also splits off listing noise (`(21+)`, `- Ages 18+`, `- Night 2`, `SOLD OUT`,
+`Early Show`) into `decorations`. Every name it returns is a literal piece of the title, and when
+no pattern fires nothing is recognised (`pattern` is `NONE`, no names). A recognised pattern is a
+reading, not a fact: `"Making Love with David Magidoff"` parses as a band with a guest. The
+labelled titles it is tested against, and the known wrong readings, are in
+`src/core/tests/fixtures/event_titles.json`. No adapter calls it yet.
 
 ## Architecture
 

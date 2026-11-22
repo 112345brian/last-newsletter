@@ -29,6 +29,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from concert_tracker_core.events import (
     AllDay,
+    EntityRole,
     Event,
     ItemState,
     local_date,
@@ -67,6 +68,9 @@ class UpcomingEvent:
     mention_count: int = 1  # distinct documents that mentioned it
     venue_categories: frozenset[VenueCategory] = frozenset()  # empty: no directory, or unclassified
     sources: tuple[str, ...] = ()  # every source that listed it, sorted: where we found the event
+    artists: tuple[str, ...] = ()  # headliners then supports, as the event names them
+    genres: tuple[str, ...] = ()  # filled by `apply_taste`; empty means unknown, not "none"
+    plays: int = 0  # the owner's recent plays of its most-played artist (`apply_taste`)
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,6 +89,8 @@ class UpcomingEvents:
     # Events in the window left out only because their venue is unclassified while a category
     # filter was on. Never silent: whoever shows the list says so.
     unclassified_hidden: int = 0
+    # Events left out because a genre filter was on and their artists' genres are unknown.
+    taste_unknown_hidden: int = 0
 
     @property
     def event_count(self) -> int:
@@ -115,6 +121,15 @@ def _sources_of(event: Event) -> tuple[str, ...]:
     return tuple(sorted({m.source for m in event.mentions}, key=str.casefold))
 
 
+_ARTIST_ROLES = (EntityRole.HEADLINER, EntityRole.SUPPORT)
+
+
+def _artists_of(event: Event) -> tuple[str, ...]:
+    """Headliners then supports, each name once, in the order the event gives them."""
+    ordered = [e for role in _ARTIST_ROLES for e in event.entities if e.role is role]
+    return tuple(dict.fromkeys(e.name for e in ordered if e.name.strip()))
+
+
 def only_from_sources(events: Iterable[Event], sources: Iterable[str]) -> list[Event]:
     """`events` that at least one of `sources` listed (case-insensitive); all when none are named.
 
@@ -139,6 +154,7 @@ def _entry(event: Event) -> tuple[UpcomingEvent, datetime | None, date]:
         url=event.url,
         mention_count=len({m.message_id for m in event.mentions}),
         sources=_sources_of(event),
+        artists=_artists_of(event),
     )
     when = event.when
     if isinstance(when, AllDay):

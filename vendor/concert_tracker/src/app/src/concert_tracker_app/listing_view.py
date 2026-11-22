@@ -45,8 +45,10 @@ def _line(event: UpcomingEvent) -> str:
     when = "all day" if event.all_day else _clock(event.start) if event.start else "time n/a"
     where = f" - {event.venue}" if event.venue else ""
     tags = f" [{', '.join(_labels(event.venue_categories))}]" if event.venue_categories else ""
+    genres = f" ({', '.join(event.genres)})" if event.genres else ""
+    heard = f"  ★ {event.plays} plays" if event.plays else ""
     seen = f"  (via {', '.join(event.sources)})" if event.sources else ""
-    return f"  {when:<9} {event.title}{where}{tags}{seen}"
+    return f"  {when:<9} {event.title}{where}{tags}{genres}{heard}{seen}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,7 +98,7 @@ def upcoming_in_scope(
     )
 
 
-def render_upcoming(upcoming: UpcomingEvents) -> str:
+def render_upcoming(upcoming: UpcomingEvents, *, credit: str = "") -> str:
     lines: list[str] = []
     for day in upcoming.days:
         lines.append(day.day.strftime("%a %b %d"))
@@ -111,6 +113,12 @@ def render_upcoming(upcoming: UpcomingEvents) -> str:
             f"{upcoming.unclassified_hidden} more not shown: their venue is not classified "
             "(run `concert-tracker venues` to see which)."
         )
+    if upcoming.taste_unknown_hidden:
+        lines.append(
+            f"{upcoming.taste_unknown_hidden} more not shown: their artists' genres are unknown."
+        )
+    if credit:
+        lines.append(credit)
     return "\n".join(lines)
 
 
@@ -120,6 +128,7 @@ def upcoming_as_data(upcoming: UpcomingEvents) -> dict[str, Any]:
         "last_day": upcoming.last_day.isoformat(),
         "event_count": upcoming.event_count,
         "unclassified_hidden": upcoming.unclassified_hidden,
+        "taste_unknown_hidden": upcoming.taste_unknown_hidden,
         "days": [
             {
                 "day": day.day.isoformat(),
@@ -136,6 +145,9 @@ def upcoming_as_data(upcoming: UpcomingEvents) -> dict[str, Any]:
                         "url": e.url,
                         "mention_count": e.mention_count,
                         "sources": list(e.sources),
+                        "artists": list(e.artists),
+                        "genres": list(e.genres),
+                        "plays": e.plays,
                     }
                     for e in day.events
                 ],

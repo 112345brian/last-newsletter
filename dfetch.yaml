@@ -18,7 +18,7 @@ manifest:
     - name: concert_tracker
       dst: vendor/concert_tracker
       repo-path: concert-tracker.git
-      tag: v0.3.0
+      tag: v0.4.0
       ignore:
         - src/adapter_ticketmaster
         - src/adapter_frequentflyer
@@ -26,6 +26,7 @@ manifest:
         - src/adapter_squarespace
         - src/adapter_venues
         - src/adapter_embeddings
+        - src/adapter_lastfm
         - src/cli
         - "src/*/tests"
         - vendor
