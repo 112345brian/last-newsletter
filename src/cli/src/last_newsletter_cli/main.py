@@ -213,6 +213,14 @@ def build_window(
     return since, until
 
 
+REGION_DIR_VARIABLE = "CONCERT_TRACKER_REGION_DIR"
+
+
+def _region_dir_from_environment() -> Path | None:
+    configured = os.environ.get(REGION_DIR_VARIABLE, "").strip()
+    return Path(configured).expanduser() if configured else None
+
+
 def _now() -> datetime:
     """The one clock read of `build` (tests replace it)."""
     return datetime.now(tz=UTC)
@@ -231,6 +239,7 @@ class BuildOptions:
     event_days: int = DEFAULT_WINDOW_DAYS
     home_tz: str = "UTC"
     venue_types: tuple[str, ...] = ()
+    region_dir: Path | None = None
     taste: TasteOptions = NO_TASTE
 
 
@@ -249,7 +258,7 @@ def _run_build(options: BuildOptions) -> None:
 
     # Read-only and optional: the ledger is never written here and never makes the digest fail.
     if options.events:
-        venue_filter = venue_filter_for_types(_DATA_DIR, options.venue_types)
+        venue_filter = venue_filter_for_types(_DATA_DIR, options.venue_types, options.region_dir)
         outcome = load_upcoming(
             _DATA_DIR / "events" / LEDGER_NAME,
             now=now,
@@ -495,6 +504,14 @@ def main(argv: Sequence[str] | None = None) -> None:
         "venues not yet classified are left out and counted; `concert-tracker venues` lists "
         "them, and <data dir>/venues.json classifies them.",
     )
+    build_parser.add_argument(
+        "--region-dir",
+        type=Path,
+        default=_region_dir_from_environment(),
+        help="Directory of place-specific data (venues.json, ...) that tells --venue-type which "
+        f"venues are which, e.g. a clone of your events repo's region/ folder "
+        f"(default: ${REGION_DIR_VARIABLE}).",
+    )
     _add_taste_arguments(build_parser)
 
     raw_parser = subparsers.add_parser(
@@ -570,6 +587,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                     event_days=args.event_days,
                     home_tz=args.home_tz,
                     venue_types=tuple(args.venue_type),
+                    region_dir=args.region_dir,
                     taste=TasteOptions(
                         genres=tuple(args.genre),
                         min_plays=args.listened,

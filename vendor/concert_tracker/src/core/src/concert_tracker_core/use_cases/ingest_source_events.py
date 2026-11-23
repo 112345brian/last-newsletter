@@ -35,6 +35,7 @@ if TYPE_CHECKING:
         SourceWindow,
     )
     from concert_tracker_core.events import EventCandidate
+    from concert_tracker_core.promoters import PromoterDirectory
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,6 +45,7 @@ class SourceIngestPorts:
     repository: EventRepository
     ids: IdGenerator
     similar_index: SimilarEventIndex | None = None
+    promoters: PromoterDirectory | None = None
 
 
 class _FetchedReader:
@@ -103,6 +105,7 @@ class IngestSourceEvents:
                 extractor=_NoExtraction(),
                 ids=self._ports.ids,
                 similar_index=self._ports.similar_index,
+                promoters=self._ports.promoters,
             ),
             home_tz=self._home_tz,
             policy=self._policy,

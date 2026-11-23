@@ -68,15 +68,31 @@ def normalize_text(text: str) -> str:
 def normalize_without_leading_article(name: str) -> str:
     """`normalize_text`, minus one leading "the", for comparing names.
 
-    "The Echo", "the ECHO!" and "Echo" compare equal. Only a leading article goes (so "Lodge of the
-    Room" and "Thebes" are untouched), and a name that is only the article keeps it, so a name is
-    never normalized to nothing and mistaken for a missing one. Used for venue names today; any
-    other name that readers write with or without "The" can use it.
+    "The Example", "the EXAMPLE!" and "Example" compare equal.
+    Only a leading article goes (so "Lodge of the Room" and "Thebes" are untouched), and a name that
+    is only the article keeps it, so a name is never normalized to nothing and mistaken for a
+    missing one. Used for venue names today; any other name that readers write with or without
+    "The" can use it.
     """
     words = normalize_text(name).split()
     if len(words) > 1 and words[0] == "the":
         words = words[1:]
     return " ".join(words)
+
+
+# "TBA" is the reserved value for "venue unknown" (secret and warehouse shows), as are "TBD" and the
+# "(no venue)" placeholder the venue report prints. Stored as normalized text.
+UNKNOWN_VENUE_NAMES = frozenset({"tba", "t b a", "tbd", "t b d", "tba location", "no venue"})
+
+
+def venue_key(name: str) -> str:
+    """The comparable form of a venue name, or "" when the venue is unknown (blank, "TBA", ...).
+
+    "" is the one spelling of unknown: callers treat it as matching nothing, not even another
+    unknown, because two events that both say "TBA" are not at one place.
+    """
+    key = normalize_without_leading_article(name)
+    return "" if key in UNKNOWN_VENUE_NAMES else key
 
 
 def canonical_url(url: str) -> str | None:

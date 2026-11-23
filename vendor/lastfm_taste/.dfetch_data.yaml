@@ -1,0 +1,10 @@
+# This is a generated file by dfetch. Don't edit this, but edit the manifest.
+# For more info see https://dfetch.rtfd.io/en/latest/getting_started.html
+dfetch:
+  branch: main
+  hash: fd3ab40751e28eeec13a3432e5168c7d
+  last_fetch: 23/11/2026, 01:11:15
+  patch: ''
+  remote_url: https://github.com/112345brian/lastfm-taste.git
+  revision: ''
+  tag: v0.2.0

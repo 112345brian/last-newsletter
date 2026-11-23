@@ -1,0 +1,74 @@
+[project]
+name = "lastfm-taste"
+version = "0.2.0"
+description = "An artist's genres (Last.fm crowd tags, cleaned) and your own recent play counts, behind two small ports, with a local cache. Personal, non-commercial use under the Last.fm API terms."
+readme = "README.md"
+authors = [
+    { name = "112345brian", email = "11creepman@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = ["httpx>=0.27"]
+
+[dependency-groups]
+dev = [
+    "arborescent>=0.5.1",
+    "import-linter>=2.15",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "ty",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["D", "COM812", "ISC001", "CPY001"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S603", "S101", "D", "PLR2004", "ARG002", "INP001", "PLR0913", "S106"]
+# Adapters implement ports whose signatures they cannot change.
+"src/lastfm_taste/{client,sources,tag_cache}.py" = ["ARG002"]
+
+[tool.ty.environment]
+python-version = "3.11"
+
+# error-on-warning promotes every warn-level diagnostic to a hard failure; the rules below
+# default to `ignore` but matter for a strictly typed project.
+[tool.ty.terminal]
+error-on-warning = true
+
+[tool.ty.rules]
+possibly-unresolved-reference = "error"
+unused-ignore-comment = "error"
+blanket-ignore-comment = "error"
+missing-type-argument = "error"
+unsound-assignment = "error"
+unsound-return = "error"
+unsound-yield = "error"
+possibly-missing-attribute = "error"
+truthiness-test-of-none-union = "error"
+missing-override-decorator = "error"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.importlinter]
+root_packages = ["lastfm_taste"]
+
+[[tool.importlinter.contracts]]
+name = "Clean Architecture dependency rule (README.md#architecture)"
+type = "layers"
+layers = [
+    "lastfm_taste.sources",
+    "lastfm_taste.client | lastfm_taste.tag_cache",
+    "lastfm_taste.taste",
+    "lastfm_taste.names",
+]

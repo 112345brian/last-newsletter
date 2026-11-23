@@ -9,7 +9,6 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "concert-tracker-adapter-lastfm",
     "concert-tracker-adapter-ledger",
     "concert-tracker-app",
     "concert-tracker-core",
@@ -24,6 +23,7 @@ members = [
     "last-newsletter-adapter-web",
     "last-newsletter-cli",
     "last-newsletter-core",
+    "lastfm-taste",
     "llmhost",
     "mailtext",
     "process-lock",
@@ -118,37 +118,6 @@ wheels = [
 ]
 
 [[package]]
-name = "concert-tracker-adapter-lastfm"
-version = "0.1.0"
-source = { editable = "vendor/concert_tracker/src/adapter_lastfm" }
-dependencies = [
-    { name = "concert-tracker-core" },
-    { name = "httpx" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "ty" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "concert-tracker-core", editable = "vendor/concert_tracker/src/core" },
-    { name = "httpx", specifier = ">=0.27" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "ty" },
-]
-
-[[package]]
 name = "concert-tracker-adapter-ledger"
 version = "0.1.0"
 source = { editable = "vendor/concert_tracker/src/adapter_ledger" }
@@ -187,6 +156,7 @@ dependencies = [
     { name = "concert-tracker-adapter-ledger" },
     { name = "concert-tracker-core" },
     { name = "concert-tracker-ngram-index" },
+    { name = "lastfm-taste" },
 ]
 
 [package.dev-dependencies]
@@ -202,6 +172,7 @@ requires-dist = [
     { name = "concert-tracker-adapter-ledger", editable = "vendor/concert_tracker/src/adapter_ledger" },
     { name = "concert-tracker-core", editable = "vendor/concert_tracker/src/core" },
     { name = "concert-tracker-ngram-index", editable = "vendor/concert_tracker/src/ngram_index" },
+    { name = "lastfm-taste", editable = "vendor/lastfm_taste" },
 ]
 
 [package.metadata.requires-dev]
@@ -216,6 +187,9 @@ dev = [
 name = "concert-tracker-core"
 version = "0.1.0"
 source = { editable = "vendor/concert_tracker/src/core" }
+dependencies = [
+    { name = "lastfm-taste" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -226,6 +200,7 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "lastfm-taste", editable = "vendor/lastfm_taste" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1083,7 +1058,6 @@ name = "last-newsletter-cli"
 version = "0.1.0"
 source = { editable = "src/cli" }
 dependencies = [
-    { name = "concert-tracker-adapter-lastfm" },
     { name = "concert-tracker-adapter-ledger" },
     { name = "concert-tracker-app" },
     { name = "concert-tracker-core" },
@@ -1096,6 +1070,7 @@ dependencies = [
     { name = "last-newsletter-adapter-summarizer" },
     { name = "last-newsletter-adapter-web" },
     { name = "last-newsletter-core" },
+    { name = "lastfm-taste" },
     { name = "process-lock" },
     { name = "ranked-digest" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
@@ -1111,7 +1086,6 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "concert-tracker-adapter-lastfm", editable = "vendor/concert_tracker/src/adapter_lastfm" },
     { name = "concert-tracker-adapter-ledger", editable = "vendor/concert_tracker/src/adapter_ledger" },
     { name = "concert-tracker-app", editable = "vendor/concert_tracker/src/app" },
     { name = "concert-tracker-core", editable = "vendor/concert_tracker/src/core" },
@@ -1124,6 +1098,7 @@ requires-dist = [
     { name = "last-newsletter-adapter-summarizer", editable = "src/adapter_summarizer" },
     { name = "last-newsletter-adapter-web", editable = "src/adapter_web" },
     { name = "last-newsletter-core", editable = "src/core" },
+    { name = "lastfm-taste", editable = "vendor/lastfm_taste" },
     { name = "process-lock", editable = "vendor/process_lock" },
     { name = "ranked-digest", editable = "libs/ranked_digest" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
@@ -1162,6 +1137,37 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[[package]]
+name = "lastfm-taste"
+version = "0.2.0"
+source = { editable = "vendor/lastfm_taste" }
+dependencies = [
+    { name = "httpx" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "arborescent" },
+    { name = "import-linter" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "httpx", specifier = ">=0.27" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "arborescent", specifier = ">=0.5.1" },
+    { name = "import-linter", specifier = ">=2.15" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },

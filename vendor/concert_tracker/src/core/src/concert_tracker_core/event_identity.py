@@ -14,6 +14,12 @@ Rungs, stopping at the first hit:
    wording (`same_date_title_contains`, `same_date_title_similar`). Other dates never match.
 5. optional: a `SimilarEventIndex` score, consulted only if rungs 1 to 4 found nothing.
 
+An unknown venue (blank, "TBA", "TBD", "(no venue)": `event_rules.venue_key` is "") is not a
+venue and matches nothing: two events that both say "TBA" are never one event because of that.
+Rung 3 needs a known, equal venue (same title and date at "TBA" is only linked as a possible
+duplicate). Rungs 4 and 5 never relied on the venue matching, only on it not conflicting, and an
+unknown venue conflicts with nothing: they still merge on a shared showtime / a near-certain score.
+
 Failure policy: when a draft could be several existing events, or a rung found something
 suspicious but not certain, it stays a NEW event and is linked to those events as a possible
 duplicate. Showing a duplicate is safe; hiding a live item is not. Links are for the same date
@@ -31,7 +37,7 @@ from difflib import SequenceMatcher
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
-from concert_tracker_core.event_rules import normalize_text, normalize_without_leading_article
+from concert_tracker_core.event_rules import normalize_text, venue_key
 from concert_tracker_core.events import EventId, MatchRule, Timed, local_date
 
 if TYPE_CHECKING:
@@ -87,19 +93,22 @@ def _linked(events: Sequence[Event]) -> tuple[EventId, ...]:
 
 
 def _venues_conflict(draft: EventDraft, event: Event) -> bool:
-    a, b = (
-        normalize_without_leading_article(draft.venue),
-        normalize_without_leading_article(event.venue),
-    )
+    a, b = venue_key(draft.venue), venue_key(event.venue)
     return bool(a and b and a != b)
+
+
+def _same_known_venue(draft: EventDraft, event: Event) -> bool:
+    """Both name the same venue. An unknown venue (blank, "TBA", "TBD", "(no venue)") is not a
+    venue, so it is the same place as nothing, not even another unknown."""
+    key = venue_key(draft.venue)
+    return bool(key) and key == venue_key(event.venue)
 
 
 def _is_dated_sibling(draft: EventDraft, event: Event) -> bool:
     """Same title and venue, different listed date: separate by design, so not a duplicate."""
     return (
         normalize_text(event.title) == normalize_text(draft.title)
-        and normalize_without_leading_article(event.venue)
-        == normalize_without_leading_article(draft.venue)
+        and _same_known_venue(draft, event)
         and not _same_day(draft, event)
     )
 
@@ -176,9 +185,8 @@ def identify(
         soft.update({e.id: e for e in same_url if _same_day(draft, e)})
 
     title = normalize_text(draft.title)
-    venue = normalize_without_leading_article(draft.venue)
     same_title = [e for e in pool if normalize_text(e.title) == title and _same_day(draft, e)]
-    same_venue = [e for e in same_title if normalize_without_leading_article(e.venue) == venue]
+    same_venue = [e for e in same_title if _same_known_venue(draft, e)]
     if same_venue:
         return _decide(MatchRule.TITLE_DATE_VENUE, _closest(draft, same_venue), soft)
     soft.update({e.id: e for e in same_title if not _venues_conflict(draft, e)})

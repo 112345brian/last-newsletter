@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/112345brian/concert-tracker/export.schema.json",
+  "title": "concert-tracker export, schema_version 1",
+  "description": "Public facts about upcoming events. No listening data, no message ids or evidence, no local paths. generated_at is when the ledger last saw any listed event (not the wall clock), so an unchanged ledger exports identical bytes. Unknown is null, never a guess.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "region", "window", "counts", "events"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "generated_at": {"type": ["string", "null"], "format": "date-time"},
+    "region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "time_zone"],
+      "properties": {
+        "name": {"type": ["string", "null"]},
+        "time_zone": {"type": "string", "minLength": 1}
+      }
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["first_day", "last_day"],
+      "properties": {
+        "first_day": {"type": "string", "format": "date"},
+        "last_day": {"type": "string", "format": "date"}
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["events", "by_event_type", "by_source"],
+      "properties": {
+        "events": {"type": "integer", "minimum": 0},
+        "by_event_type": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 1}},
+        "by_source": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 1}}
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id", "title", "date", "all_day", "start", "end", "showtimes", "venue", "city",
+          "venue_categories", "event_type", "sources", "url", "artists", "tags"
+        ],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "title": {"type": "string", "minLength": 1},
+          "date": {"type": "string", "format": "date"},
+          "all_day": {"type": "boolean"},
+          "start": {"type": ["string", "null"], "format": "date-time"},
+          "end": {"type": ["string", "null"], "format": "date-time"},
+          "showtimes": {"type": "array", "items": {"type": "string", "format": "date-time"}},
+          "venue": {"type": ["string", "null"]},
+          "city": {"type": ["string", "null"]},
+          "venue_categories": {"type": "array", "items": {"type": "string"}},
+          "event_type": {"type": "string", "minLength": 1},
+          "sources": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "url": {"type": ["string", "null"]},
+          "artists": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "role"],
+              "properties": {
+                "name": {"type": "string", "minLength": 1},
+                "role": {"enum": ["headliner", "support"]}
+              }
+            }
+          },
+          "tags": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}

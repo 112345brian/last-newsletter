@@ -27,6 +27,7 @@ from datetime import datetime, time, timedelta
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from concert_tracker_core.event_types import EventType
 from concert_tracker_core.events import (
     AllDay,
     EntityRole,
@@ -61,16 +62,23 @@ class UpcomingEvent:
     start: time | None = None
     end: time | None = None
     end_day: date | None = None  # set only when the end falls on a later date than `day`
+    starts_at: datetime | None = None  # the real start, aware, in the event's own zone
+    ends_at: datetime | None = None  # the real end, aware, in the event's own zone; None: unknown
     showtimes: tuple[time, ...] = ()
     venue: str = ""
-    city: str = ""
+    city: str = ""  # the event's own city; else the venue directory's (`city_from_directory`)
+    city_from_directory: bool = False  # True: `city` is the venue's, the event itself gave none
     url: str | None = None
     mention_count: int = 1  # distinct documents that mentioned it
     venue_categories: frozenset[VenueCategory] = frozenset()  # empty: no directory, or unclassified
     sources: tuple[str, ...] = ()  # every source that listed it, sorted: where we found the event
     artists: tuple[str, ...] = ()  # headliners then supports, as the event names them
+    headliners: tuple[str, ...] = ()  # the headliner-role names among `artists`
     genres: tuple[str, ...] = ()  # filled by `apply_taste`; empty means unknown, not "none"
     plays: int = 0  # the owner's recent plays of its most-played artist (`apply_taste`)
+    organizers: tuple[str, ...] = ()  # organizer-role names, as the event gives them
+    tags: tuple[str, ...] = ()  # the tags its sources gave it, sorted
+    event_type: EventType = EventType.UNKNOWN  # filled by `apply_event_types`; unknown is an answer
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +99,8 @@ class UpcomingEvents:
     unclassified_hidden: int = 0
     # Events left out because a genre filter was on and their artists' genres are unknown.
     taste_unknown_hidden: int = 0
+    # Events left out because an event-type filter was on and no rule could tell their type.
+    event_type_unknown_hidden: int = 0
 
     @property
     def event_count(self) -> int:
@@ -130,6 +140,16 @@ def _artists_of(event: Event) -> tuple[str, ...]:
     return tuple(dict.fromkeys(e.name for e in ordered if e.name.strip()))
 
 
+def _headliners_of(event: Event) -> tuple[str, ...]:
+    names = (e.name for e in event.entities if e.role is EntityRole.HEADLINER and e.name.strip())
+    return tuple(dict.fromkeys(names))
+
+
+def _organizers_of(event: Event) -> tuple[str, ...]:
+    names = (e.name for e in event.entities if e.role is EntityRole.ORGANIZER and e.name.strip())
+    return tuple(dict.fromkeys(names))
+
+
 def only_from_sources(events: Iterable[Event], sources: Iterable[str]) -> list[Event]:
     """`events` that at least one of `sources` listed (case-insensitive); all when none are named.
 
@@ -155,6 +175,9 @@ def _entry(event: Event) -> tuple[UpcomingEvent, datetime | None, date]:
         mention_count=len({m.message_id for m in event.mentions}),
         sources=_sources_of(event),
         artists=_artists_of(event),
+        headliners=_headliners_of(event),
+        organizers=_organizers_of(event),
+        tags=tuple(sorted(event.tags)),
     )
     when = event.when
     if isinstance(when, AllDay):
@@ -178,6 +201,8 @@ def _entry(event: Event) -> tuple[UpcomingEvent, datetime | None, date]:
         end=end_local.time() if end_local is not None else None,
         end_day=end_day,
         showtimes=showtimes,
+        starts_at=start_local,
+        ends_at=end_local,
     )
     return line, over, day
 
@@ -207,6 +232,15 @@ def _screen(
     if venue_filter is None:
         return frozenset(), Screening.KEEP
     return venue_filter.screen(event.venue)
+
+
+def _with_directory_city(line: UpcomingEvent, venue_filter: VenueFilter | None) -> UpcomingEvent:
+    """Fill a missing city from the venue directory, and say so. The event's own city always
+    wins; an unclassified or place-less venue leaves the city blank (unknown is an answer)."""
+    if line.city.strip() or venue_filter is None:
+        return line
+    city = venue_filter.directory.place_for(line.venue).city
+    return replace(line, city=city, city_from_directory=True) if city else line
 
 
 def upcoming_from_events(
@@ -245,7 +279,8 @@ def upcoming_from_events(
             continue
         if screening is Screening.EXCLUDED:
             continue
-        by_day.setdefault(line.day, []).append(replace(line, venue_categories=categories))
+        line = replace(line, venue_categories=categories)
+        by_day.setdefault(line.day, []).append(_with_directory_city(line, venue_filter))
     grouped = tuple(
         UpcomingDay(day=d, events=tuple(sorted(by_day[d], key=_sort_key))) for d in sorted(by_day)
     )

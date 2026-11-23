@@ -4,10 +4,11 @@ Managed by [dfetch](https://dfetch.readthedocs.io) — see `dfetch.yaml` at the 
 `vendor/` is a copy of a standalone repo `github.com/112345brian/<name-with-dashes>`, pinned to its own tag. Do not
 hand-edit `vendor/`; run `uvx dfetch update` to re-fetch.
 
-Two things are vendored now:
+Three things are vendored now:
 
 - `process_lock` (`v0.1.1`): the cross-process lock the raw message store and the atomic file writer take.
-- `concert_tracker` (`v0.2.1`, private repo `112345brian/concert-tracker`): the event ledger. This repo imports four of
+- `lastfm_taste` (`v0.2.0`, private repo `112345brian/lastfm-taste`): an artist's genres and the owner's recent play counts from Last.fm, behind two ports, with a local tag cache. Used by `build --genre/--listened/--rank/--taste`; the data it returns is personal and is never committed.
+- `concert_tracker` (`v0.5.0`, private repo `112345brian/concert-tracker`): the event ledger. This repo imports four of
   its packages: `core` (what counts as the same event, ingest use cases, ports), `adapter_ledger` (SQLite), `ngram_index`
   (the local similar-event index) and `app` (open the ledger under its lock, keep the index in step). They live at
   `vendor/concert_tracker/src/<name>`. dfetch cannot copy a nested package whose own directory holds a `src/`, so the
@@ -37,3 +38,5 @@ generic with outcome/usage/route; text completion goes through `complete_text*` 
 `pydantic`, `requests` and `genai-prices`. The only caller, `adapter_summarizer` (`anthropic_summarizer.py`), depends
 on the tool-use shape, so migrating means rewriting it and its tests, not re-pointing an import. Left as a fork until
 that is a deliberate piece of work (issue #1).
+
+`concert_tracker` is the generic engine and ships no place data. Which venue is a club or a cinema comes from a *region directory* (`--region-dir` or `$CONCERT_TRACKER_REGION_DIR`, e.g. the `region/` folder of the private `socal-events` repo) plus `<data dir>/venues.json`.

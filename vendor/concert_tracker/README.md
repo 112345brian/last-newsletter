@@ -12,14 +12,13 @@ the other way round.
 
 ```bash
 uv sync --all-packages
-export CONCERT_TRACKER_HOME_TZ=America/Los_Angeles   # times from UTC feeds are shown in this zone
+export CONCERT_TRACKER_HOME_TZ=Europe/London   # times from UTC feeds are shown in this zone
 
 # every command takes --dry-run: real requests, but a throwaway copy of the ledger, counts only
-uv run concert-tracker fetch-events --source frequentflyer --days 30 --dry-run
-uv run concert-tracker fetch-events --source lodgeroom --days 90
-uv run concert-tracker fetch-events --source ical --feed-url https://moshradar.com/calendar/city/los-angeles.ics --feed-name moshradar
+uv run concert-tracker fetch-events --source ical --feed-url https://calendar.example.com/events.ics --feed-name example
 uv run concert-tracker events            # what the ledger holds, with the mentions that cite each event
 uv run concert-tracker events --json
+uv run concert-tracker backfill-artists --dry-run   # artists from stored titles; lists each change
 ```
 
 The ledger is `<data dir>/events/ledger.sqlite`, where the data directory is `--data-dir`, else
@@ -32,32 +31,68 @@ event with two mentions.
 | `--source` | Reads | Needs | Checked against the live service |
 | --- | --- | --- | --- |
 | `ticketmaster` | Ticketmaster Discovery API | `$TICKETMASTER_API_KEY`, `--city` | **No.** Fixtures are hand-built to the documented shape; the first real `--dry-run` is the check |
-| `frequentflyer` | Frequent Flyer LA's JSON API | nothing | Yes |
 | `ical` | any published `.ics` calendar | `--feed-url` | Yes (CalDiscovery, Moshradar) |
 | `squarespace` | a Squarespace events page (`?format=json`) | `--feed-url`, and `--feed-venue` or `--feed-organizer` | Yes (The Smell, Living Earth, Healing Force) |
-| `lodgeroom` | Lodge Room's WordPress API | nothing | Yes |
-| `scribble` | the public Sanity API behind Scribble's site | nothing | Yes (mixes music, comedy and workshops: no category field) |
-| `echo` | The Echo and Echoplex, through Live Nation's content API | nothing | Yes (uses the API key the venue's own site sends every visitor: see `src/adapter_venues/README.md`) |
-| `livenation` | any Live Nation club site (Palladium, Wiltern, Belasco, Observatory OC, House of Blues Anaheim) | `--feed-url <site>` | Yes (same API and key) |
-| `roadhouse` | Permanent Records Roadhouse: the hand-edited schedule page | nothing | Yes (plain http, no year or ids on the page) |
-| `socalradar` | SoCal Event Radar: someone else's published `events.json` (19hz, Resident Advisor and more, nightlife-heavy) | nothing | Yes (second-hand and unlicensed: venue-specific sources win; see `src/adapter_venues/README.md`) |
-| `zebulon`, `golddiggers`, `glasshouse` | Zebulon, Gold Diggers and the Glass House, through Dice's partner API | nothing | Yes (uses each venue's own widget key: see `src/adapter_venues/README.md`) |
-| `frida` | The Frida Cinema, Santa Ana: the theater's own showtime listing (film, one event per screening) | nothing | Yes (venue is category `cinema`) |
 
 Each adapter's own README (`src/adapter_*/README.md`) records what it reads, what it deliberately
 skips, and what was observed live.
 
-**Deliberately not here:** Piqued (answers with a Vercel bot challenge, which this project does not
-try to get past), Dice (no public API), Oh My Rockness' show API (needs authentication), and the
-LA Events / What's Up In files (the operator requires written permission for bulk ingestion).
-Four more LA rooms were looked at and left out because their own sites offer nothing legitimate to
-read: Zebulon and Gold Diggers (their listings exist only in a Dice widget, whose embedded key is
-the venue's, not ours), The Midnight Hour (a stale Shopify blog) and Bricks Bar (a dead domain).
-Details in `src/adapter_venues/README.md`.
+Place-specific sources (named venues, a city's aggregators) are not built in: they are plugins
+shipped by a client package (see "Source plugins" below), such as a city's own client repository.
 
 **Terms of use are not checked for any source.** Read each one before relying on it, especially for
-anything you republish. Frequent Flyer's response says *free with attribution, not for bulk
+anything you republish. Some services say *free with attribution, not for bulk
 redistribution*, and the run summary prints the attribution it asks for.
+
+## Running every day (Windows)
+
+`concert-tracker run` fetches every enabled source in the catalog (`sources.json`, see
+`concert-tracker sources`), records each run in `<data dir>/events/runs.sqlite` and judges each
+source's health: **failing** after 3 failed runs in a row, **degraded** after a failed run or when a
+usually-busy source suddenly finds under 35% of its usual count. `schedule` runs it daily as a
+Windows scheduled task.
+
+```powershell
+# 1. API keys live in your user environment, never in the task (set once, then open a new terminal)
+setx TICKETMASTER_API_KEY "..."          # only if you use the ticketmaster source
+
+# 2. Look: this prints exactly what would be created and changes nothing
+uv run concert-tracker --data-dir $HOME\.concert-tracker schedule install --at 06:30 --home-tz Europe/London
+
+# 3. Create it (running this again changes nothing; a new --at replaces the old time)
+uv run concert-tracker --data-dir $HOME\.concert-tracker schedule install --at 06:30 --home-tz Europe/London --yes
+
+uv run concert-tracker schedule status    # is it there, when, and what it runs (read-only; exit 1 if not)
+uv run concert-tracker schedule remove    # delete it (nothing to do if it is not there)
+```
+
+The task is named `ConcertTracker Run`, runs daily at `--at` (default 06:30) **as you, only while
+you are logged on**, and no password or key is given to Task Scheduler. It runs
+`concert-tracker --data-dir <dir> run --home-tz <zone> --log --notify` with absolute paths, using
+the `concert-tracker` program that is running when you install. Install from the checkout you
+intend to keep (its virtual environment is what the task points at); `schedule status` shows the
+exact command, and installing from another checkout replaces it. Task Scheduler limits the command
+to 261 characters, so a very long `--data-dir` is refused with a message. If the PC is off at the
+set time the run is skipped, and the next one is the following day.
+
+**Knowing when a source breaks.** Every scheduled run appends its report to
+`<data dir>/logs/run-YYYY-MM.log`, and exits 1 if any source is failing or degraded (Task
+Scheduler shows that as the task's last result). A Windows toast says which source and why, once:
+a source is announced when it first becomes unwell and again only if it gets worse; it is not
+repeated daily, and a source that recovers and later breaks again is announced again. If the toast
+cannot be shown (no desktop session) the run says so and tries again next time. The toast uses the
+Windows PowerShell that ships with Windows, so it adds no dependency; it has not been seen on screen
+in the automated checks.
+
+```powershell
+uv run concert-tracker health            # sources that are failing or degraded, with reason and last good run; exit 1 if any
+uv run concert-tracker health --json
+uv run concert-tracker sources           # every source: last run and health
+```
+
+`health` reads the history and always lists every unwell source, whatever was announced before.
+It does not notice a run that never happened (PC off for days, task removed): check
+`schedule status` and the log's dates for that.
 
 ## How "the same event" is decided
 
@@ -90,7 +125,90 @@ common shapes of a listing title and says which one fired (`TitlePattern`): `"<p
 no pattern fires nothing is recognised (`pattern` is `NONE`, no names). A recognised pattern is a
 reading, not a fact: `"Making Love with David Magidoff"` parses as a band with a guest. The
 labelled titles it is tested against, and the known wrong readings, are in
-`src/core/tests/fixtures/event_titles.json`. No adapter calls it yet.
+`src/core/tests/fixtures/event_titles.json`.
+
+Ingestion uses it (`title_artists.entities_with_title_artists`): an event no source gave an artist
+for gets the headliners and supports its title names (and the promoter, as an organizer). A source's
+own artists are never touched, an unreadable title adds nothing, and a venue, a promoter or `TBA`
+is never made an artist. `concert-tracker backfill-artists [--dry-run]` does the same for events
+already stored; rerunning it changes nothing.
+
+## Making it yours: region directory, plugins, export
+
+The engine is place-agnostic. Three extension points, all additive (nothing changes when none is
+used); a client repository (for example one holding a city's venues and scrapers) builds on them.
+
+### Region directory
+
+`--region-dir DIR` (or `$CONCERT_TRACKER_REGION_DIR`; default none) points at one directory of
+place-specific data. Layout (every file optional, same shapes as the owner files):
+
+```
+region.json        {"name": "Exampleton", "home_tz": "Europe/London"}
+venues.json        {"venues": [{"names": [...], "categories": [...], "city": "...", "address": "..."}]}
+promoters.json     {"promoters": [{"name": "...", "aliases": [...], "affinities": [...]}]}
+sources.json       {"sources": [{"name": "...", "kind": "ical|<plugin>|...", "options": {...}}]}
+event_types.json   {"rules": [{"type": "...", <conditions>}]}
+```
+
+Precedence, later wins: packaged data < region directory < the owner's files in the data directory
+(`--data-dir`). Event type rules of a later layer are tried first. A broken file is an error that
+names it; a region directory that does not exist is refused. `region.json` gives the place name
+(shown in `export`) and the default `--home-tz` (precedence: `--home-tz`, `$CONCERT_TRACKER_HOME_TZ`,
+the region's, then UTC). `schedule install` carries `--region-dir` into the scheduled task.
+One loader, `concert_tracker_app.layered_data.load_layered`, reads all four files.
+
+### Source plugins
+
+A package adds sources through the entry-point group `concert_tracker.sources`:
+
+```toml
+[project.entry-points."concert_tracker.sources"]
+my-sources = "my_package.plugins:PLUGINS"   # one SourcePlugin, or a list/tuple of them
+```
+
+The contract (`concert_tracker_core.source_plugins`; core ring, import only that):
+
+```python
+class SourceOption:   name: str; help: str = ""; required: bool = False; default: str = ""
+class SourceContext:  home_tz: str; environ: Mapping[str, str]
+                      http: object | None = None   # an httpx.Client when the engine has one
+                      sleep: Callable[[float], None] | None = None
+class SourcePlugin(Protocol):                       # runtime-checkable
+    name: str                  # lower-case slug [a-z0-9][a-z0-9_-]*: `--source` and a catalog `kind`
+    description: str           # one line, shown by `concert-tracker sources`
+    options: tuple[SourceOption, ...]
+    def build(self, options: Mapping[str, str], context: SourceContext) -> EventSource: ...
+    # may raise SourceOptionError; options arrive checked (unknown refused, required present,
+    # defaults filled) by resolve_options
+# EventSource (concert_tracker_core.event_ports): name -> str;
+#   fetch(window: SourceWindow, *, now: datetime) -> SourceBatch(candidates, SourceReport)
+#   (raises SourceFetchError)
+```
+
+A plugin is used like a built-in: `fetch-events --source NAME --option KEY=VALUE`, a `sources.json`
+entry `{"name": "x", "kind": "NAME", "options": {"KEY": "VALUE"}}` for `run`, and it is listed by
+`concert-tracker sources`. Built-in names cannot be taken; a plugin that fails to import, is the
+wrong shape or reuses a name is reported by entry-point name (in `sources` and in the unknown-source
+error) and never stops another source. The engine ships no place-specific source; a client
+package registers them
+this way.
+
+### Export
+
+```powershell
+concert-tracker export --format json --out events.json [--days 60] [--source NAME ...]
+concert-tracker export --format sqlite --out events.sqlite
+```
+
+Writes the upcoming window for publishing: `schema_version` 1 (JSON Schema:
+`concert_tracker_app/data/export.schema.json`, also `concert_tracker_app.export_view.export_schema()`),
+`generated_at` (when the ledger last saw any listed event, not the wall clock), `region`, `window`,
+`counts`, and per event: id, title, date, all_day, start/end (ISO with offset), showtimes, venue,
+city, venue_categories, event_type, sources (names), url, artists (name and headliner/support role),
+tags. Unknown is `null`. The same ledger and the same day give the same bytes. It is built from an
+allow-list: no Last.fm genres or plays, no message ids, no mail-derived evidence, no local paths
+(tests scan the schema, the SQLite columns and the output for these).
 
 ## Architecture
 
@@ -115,6 +233,9 @@ A new source is an adapter implementing `EventSource.fetch(window, now) -> Sourc
 `src/cli/.../fetch_events_command.py`, and tests.
 
 ## Development
+
+Genres and listening come from the private `lastfm-taste` library, pinned to a git tag in the
+root `[tool.uv.sources]` (a package that depends on the engine must repeat that source).
 
 ```bash
 uv sync --all-packages

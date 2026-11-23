@@ -11,6 +11,7 @@ dependencies = [
     "concert-tracker-core",
     "concert-tracker-adapter-ledger",
     "concert-tracker-ngram-index",
+    "lastfm-taste",
 ]
 
 [dependency-groups]

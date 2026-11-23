@@ -18,7 +18,7 @@ dependencies = [
     "last-newsletter-adapter-knowledge",
     "concert-tracker-core",
     "concert-tracker-adapter-ledger",
-    "concert-tracker-adapter-lastfm",
+    "lastfm-taste",
     "concert-tracker-ngram-index",
     "concert-tracker-app",
     "last-newsletter-adapter-events",
@@ -44,7 +44,7 @@ last-newsletter-adapter-web = { workspace = true }
 last-newsletter-adapter-knowledge = { workspace = true }
 concert-tracker-core = { workspace = true }
 concert-tracker-adapter-ledger = { workspace = true }
-concert-tracker-adapter-lastfm = { workspace = true }
+lastfm-taste = { workspace = true }
 concert-tracker-ngram-index = { workspace = true }
 concert-tracker-app = { workspace = true }
 last-newsletter-adapter-events = { workspace = true }

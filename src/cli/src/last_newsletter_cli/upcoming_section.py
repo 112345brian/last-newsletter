@@ -43,16 +43,18 @@ class UpcomingOutcome:
     warning: str | None = None
 
 
-def venue_filter_for_types(data_dir: Path, venue_types: Iterable[str]) -> VenueFilter | None:
+def venue_filter_for_types(
+    data_dir: Path, venue_types: Iterable[str], region_dir: Path | None = None
+) -> VenueFilter | None:
     """The filter for `--venue-type`, or None when no type was asked for (nothing is read then).
 
-    Raises `ConfigError` naming the file when the owner's `venues.json` is broken: someone who
-    asked for a filter must not silently get the unfiltered section.
+    Raises `ConfigError` naming the file when the region's or the owner's `venues.json` is
+    broken: someone who asked for a filter must not silently get the unfiltered section.
     """
     wanted = frozenset(VenueCategory(v) for v in venue_types)
     if not wanted:
         return None
-    return VenueFilter(load_venue_directory(data_dir), only=wanted)
+    return VenueFilter(load_venue_directory(data_dir, region_dir), only=wanted)
 
 
 def describe_included(upcoming: UpcomingEvents) -> str:

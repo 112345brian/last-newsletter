@@ -90,7 +90,7 @@ def _cosine(a: Vector, b: Vector) -> float:
 def _date_factor(a: date | None, b: date | None) -> float:
     if a is None or b is None:
         return _DATE_UNKNOWN
-    # No +-1 day tolerance: consecutive-night runs of one title are common (19hz snapshot), and
+    # No +-1 day tolerance: consecutive-night runs of one title are common (a real snapshot), and
     # timezone slop is core's identity-ladder concern, not a similarity one.
     return 1.0 if a == b else _DATE_DIFFERENT
 

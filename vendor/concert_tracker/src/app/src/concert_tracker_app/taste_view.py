@@ -15,20 +15,15 @@ __arbor__ = {"ring": "app"}
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from concert_tracker_core.taste import (
-    ArtistTaste,
-    TasteBook,
-    TasteFilter,
-    TasteSourceError,
-    apply_taste,
-    artist_key,
-    clean_genres,
-)
+from lastfm_taste import ArtistTaste, TasteBook, TasteSourceError, artist_key, clean_genres
+
+from concert_tracker_core.taste import TasteFilter, apply_taste
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from concert_tracker_core.taste import ArtistTagSource, ListeningHistory
+    from lastfm_taste import ArtistTagSource, ListeningHistory
+
     from concert_tracker_core.use_cases.list_upcoming_events import UpcomingEvents
 
 CONSECUTIVE_FAILURES_BEFORE_GIVING_UP = 3
@@ -85,12 +80,12 @@ def build_taste_book(
             streak = 0
             if found is not None:
                 genres[key] = clean_genres(found, artist=name)
-    book = {
-        key: ArtistTaste(genres.get(key, ()), plays.get(key, 0))
-        for key in names
+    book = TasteBook.from_names(
+        (name, ArtistTaste(genres.get(key, ()), plays.get(key, 0)))
+        for key, name in names.items()
         if key in genres or key in plays
-    }
-    return TasteReport(TasteBook(book), failures)
+    )
+    return TasteReport(book, failures)
 
 
 def with_taste(

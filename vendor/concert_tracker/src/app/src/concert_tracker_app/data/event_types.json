@@ -1,0 +1,131 @@
+{
+  "_comment": "Rules are tried top to bottom; the first match decides. Your own <data dir>/event_types.json is tried before these. A rule names a type and conditions (all named kinds must hold; any value within one kind is enough): title_phrases, sources, venues, venue_categories, venue_categories_only, promoter_affinities, genres, tags.",
+  "rules": [
+    {
+      "type": "comedy",
+      "title_phrases": [
+        "comedy",
+        "stand up",
+        "standup",
+        "improv",
+        "improvised"
+      ]
+    },
+    {
+      "type": "comedy",
+      "tags": [
+        "comedy"
+      ]
+    },
+    {
+      "type": "film",
+      "title_phrases": [
+        "screening",
+        "film screening",
+        "movie night",
+        "double feature"
+      ]
+    },
+    {
+      "type": "other",
+      "title_phrases": [
+        "karaoke",
+        "workshop"
+      ]
+    },
+    {
+      "type": "festival",
+      "title_phrases": [
+        "festival",
+        "fest"
+      ]
+    },
+    {
+      "type": "rave",
+      "title_phrases": [
+        "rave",
+        "b2b",
+        "warehouse party",
+        "after hours",
+        "afterhours",
+        "dance party",
+        "club night",
+        "all night long"
+      ]
+    },
+    {
+      "type": "rave",
+      "promoter_affinities": [
+        "electronic"
+      ]
+    },
+    {
+      "type": "rave",
+      "genres": [
+        "house",
+        "techno",
+        "trance",
+        "drum and bass",
+        "dubstep",
+        "edm",
+        "deep house",
+        "tech house",
+        "hardstyle"
+      ]
+    },
+    {
+      "type": "theater",
+      "tags": [
+        "theater",
+        "theatre"
+      ]
+    },
+    {
+      "type": "other",
+      "tags": [
+        "hiking",
+        "literary"
+      ]
+    },
+    {
+      "type": "rave",
+      "venue_categories_only": [
+        "club"
+      ]
+    },
+    {
+      "type": "concert",
+      "tags": [
+        "live music",
+        "music"
+      ]
+    },
+    {
+      "type": "film",
+      "venue_categories_only": [
+        "cinema"
+      ]
+    },
+    {
+      "type": "theater",
+      "venue_categories_only": [
+        "theater"
+      ]
+    },
+    {
+      "type": "other",
+      "venue_categories_only": [
+        "museum_gallery"
+      ]
+    },
+    {
+      "type": "concert",
+      "venue_categories": [
+        "music_venue",
+        "concert_hall",
+        "arena",
+        "amphitheater"
+      ]
+    }
+  ]
+}

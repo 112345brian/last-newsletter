@@ -34,10 +34,15 @@ members = [
     "vendor/process_lock",
     "vendor/concert_tracker/src/core",
     "vendor/concert_tracker/src/adapter_ledger",
-    "vendor/concert_tracker/src/adapter_lastfm",
+    "vendor/lastfm_taste",
     "vendor/concert_tracker/src/ngram_index",
     "vendor/concert_tracker/src/app",
 ]
+
+# Vendored concert-tracker packages depend on lastfm-taste but declare no source for it; uv applies
+# the workspace root's sources to every member.
+[tool.uv.sources]
+lastfm-taste = { workspace = true }
 
 [tool.ruff]
 line-length = 100
@@ -101,9 +106,9 @@ root_packages = [
     "process_lock",
     "concert_tracker_core",
     "concert_tracker_adapter_ledger",
-    "concert_tracker_adapter_lastfm",
     "concert_tracker_ngram_index",
     "concert_tracker_app",
+    "lastfm_taste",
 ]
 
 [[tool.importlinter.contracts]]
@@ -114,7 +119,7 @@ layers = [
     "last_newsletter_adapter_email | last_newsletter_adapter_summarizer | last_newsletter_adapter_publish | last_newsletter_adapter_storage | last_newsletter_adapter_web | last_newsletter_adapter_knowledge | last_newsletter_adapter_events",
     "concert_tracker_app",
     "last_newsletter_core",
-    "concert_tracker_adapter_ledger | concert_tracker_adapter_lastfm | concert_tracker_ngram_index",
+    "concert_tracker_adapter_ledger | concert_tracker_ngram_index",
     "ranked_digest | text_match | mailtext | llmhost | concert_tracker_core",
-    "process_lock",
+    "process_lock | lastfm_taste",
 ]

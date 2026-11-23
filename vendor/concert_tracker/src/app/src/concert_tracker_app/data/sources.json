@@ -1,15 +1,22 @@
 {
+  "_comment": "Generic kinds only, switched off: copy an entry into your region's or data dir's sources.json and enable it. Place-specific sources come from plugins.",
   "sources": [
-    {"name": "frequentflyer", "kind": "frequentflyer"},
-    {"name": "lodgeroom", "kind": "lodgeroom"},
-    {"name": "scribble", "kind": "scribble"},
-    {"name": "moshradar", "kind": "ical",
-     "options": {"feed_url": "https://moshradar.com/calendar/city/los-angeles.ics"}},
-    {"name": "caldiscovery", "kind": "ical",
-     "options": {"feed_url": "https://caldiscovery.com/los-angeles-ca/this-weekend-music.ics"}},
-    {"name": "thesmell", "kind": "squarespace",
-     "options": {"feed_url": "https://www.thesmell.org/events", "feed_venue": "The Smell"}},
-    {"name": "livingearth", "kind": "squarespace",
-     "options": {"feed_url": "https://www.livingearth.la/gatherings", "feed_organizer": "Living Earth"}}
+    {
+      "name": "example-ical",
+      "kind": "ical",
+      "enabled": false,
+      "options": {
+        "feed_url": "https://calendar.example.com/events.ics"
+      }
+    },
+    {
+      "name": "example-squarespace",
+      "kind": "squarespace",
+      "enabled": false,
+      "options": {
+        "feed_url": "https://venue.example.com/events",
+        "feed_venue": "Example Hall"
+      }
+    }
   ]
 }

@@ -20,7 +20,7 @@ with ledger_session(data_dir, dry_run=False) as session:
     session.sync_index()
     ingest = IngestEvents(
         IngestPorts(repository=session.ledger, ..., similar_index=CoreSimilarIndex(session.index)),
-        home_tz="America/Los_Angeles",
+        home_tz="Europe/London",
         policy=LINK_ONLY_POLICY,
     )
 ```

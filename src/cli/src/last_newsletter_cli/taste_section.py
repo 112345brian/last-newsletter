@@ -17,10 +17,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from concert_tracker_adapter_lastfm import LastfmArtistTags, LastfmClient, LastfmListening, TagCache
 from concert_tracker_app import ConfigError
 from concert_tracker_app.taste_view import with_taste
-from concert_tracker_core.taste import TasteFilter, TasteSourceError
+from concert_tracker_core.taste import TasteFilter
+from lastfm_taste import (
+    LastfmArtistTags,
+    LastfmClient,
+    LastfmListening,
+    TagCache,
+    TasteConfigurationError,
+    TasteSourceError,
+)
 
 from last_newsletter_cli.upcoming_section import UpcomingOutcome, describe_included
 
@@ -97,7 +104,7 @@ def apply_taste_section(
         with TagCache(cache_path, now=now) as cache:
             tags = LastfmArtistTags(client, cache) if options.needs_genres else None
             narrowed, report = with_taste(outcome.upcoming, tags, history, wanted, options.months)
-    except TasteSourceError as error:
+    except (TasteSourceError, TasteConfigurationError) as error:
         raise ConfigError(str(error)) from None
     warning = (
         f"warning: {report.lookup_failures} artist lookup(s) on Last.fm failed; "

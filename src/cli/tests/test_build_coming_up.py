@@ -131,6 +131,8 @@ def _raw_mail(data_dir: Path) -> None:
 def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(cli_main, "_DATA_DIR", tmp_path)
     monkeypatch.setattr(cli_main, "_now", lambda: _NOW)
+    (tmp_path / "region").mkdir()
+    monkeypatch.setenv("CONCERT_TRACKER_REGION_DIR", str(tmp_path / "region"))
     _raw_mail(tmp_path)
     return tmp_path
 
@@ -402,7 +404,16 @@ def test_end_to_end_raw_mail_to_process_to_build_has_a_coming_up_section(
     assert "<!-- event:" in md
 
 
+_REGION_VENUES = (
+    '{"venues": [{"names": ["The Echo"], "categories": ["music_venue"]},'
+    ' {"names": ["The Frida Cinema"], "categories": ["cinema"]}]}'
+)
+
+
 def _venue_ledger(data_dir: Path) -> None:
+    """Events at venues the test region classifies (Echo, Frida) and two it does not."""
+    (data_dir / "region" / "venues.json").write_text(_REGION_VENUES, encoding="utf-8")
+
     def at(n: int, title: str, venue: str, day: int) -> Event:
         entities = (EntityRef(venue, EntityRole.VENUE),) if venue else ()
         return _event(n, _timed(_la(11, day, 20)), title, entities=entities)
@@ -505,3 +516,30 @@ def test_every_module_that_builds_a_venue_filter_also_reports_what_it_hid() -> N
         and "unclassified_hidden" not in path.read_text(encoding="utf-8")
     ]
     assert offenders == []
+
+
+def test_region_dir_flag_beats_the_environment_and_a_missing_one_is_refused(
+    data_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _venue_ledger(data_dir)
+    other = data_dir / "other-region"
+    other.mkdir()
+    (other / "venues.json").write_text(
+        '{"venues": [{"names": ["Elsewhere Hall"], "categories": ["club"]}]}', encoding="utf-8"
+    )
+    _, _, md = _build(data_dir, capsys, "--venue-type", "club", "--region-dir", str(other))
+    assert "Mystery Show" in md
+    assert "Gig At The Echo" not in md  # the flag's region, not the environment's, was used
+    with pytest.raises(SystemExit) as stop:
+        cli_main.main(
+            [
+                "build",
+                "--home-tz",
+                _LA,
+                "--venue-type",
+                "club",
+                "--region-dir",
+                str(data_dir / "no"),
+            ]
+        )
+    assert stop.value.code == 2

@@ -21,7 +21,6 @@ sources = [
     "vendor/process_lock/src",
     "vendor/concert_tracker/src/core/src",
     "vendor/concert_tracker/src/adapter_ledger/src",
-    "vendor/concert_tracker/src/adapter_lastfm/src",
     "vendor/concert_tracker/src/ngram_index/src",
     "vendor/concert_tracker/src/app/src",
 ]
@@ -42,11 +41,12 @@ source_roots = [
     "vendor/process_lock/src",
     "vendor/concert_tracker/src/core/src",
     "vendor/concert_tracker/src/adapter_ledger/src",
-    "vendor/concert_tracker/src/adapter_lastfm/src",
     "vendor/concert_tracker/src/ngram_index/src",
     "vendor/concert_tracker/src/app/src",
 ]
-exclude = ["tests", "docs", ".venv", "scripts"]
+# vendor/lastfm_taste is a separate library with its own arborescent config upstream; this repo uses it
+# as an external package (see external = [...] below).
+exclude = ["tests", "docs", ".venv", "scripts", "vendor/lastfm_taste"]
 scan_vendors = true
 type_checkers = ["ty"]
 preset = "relaxed"
@@ -55,9 +55,11 @@ disabled_tools = ["tach"]
 rings = ["core", "libs", "llm", "adapters", "app", "cli"]
 
 # core: domain rules and ports plus the standalone pure helpers. No effects at all.
+# lastfm_taste is a pure ports-and-values library (pinned by tag), so the vendored core/app may use it
+# like an external package; it is not one of this repo's rings.
 [ring.core]
 forbid = ["clock", "env", "identity", "randomness", "sleep", "threads", "process", "dynamic-import"]
-external = []
+external = ["lastfm_taste"]
 
 # libs: standalone helpers that sit beside core and may not import it (import-linter keeps them
 # independent siblings). They may use third-party packages, but no effects.
@@ -81,7 +83,7 @@ external = ["imapclient", "flask", "dateparser", "filelock", "tenacity", "psutil
 # app: concert-tracker's application layer (vendored): opens the ledger, keeps the index in step.
 [ring.app]
 may_import = ["core", "adapters"]
-external = []
+external = ["lastfm_taste"]
 
 [ring.cli]
 may_import = ["*"]
@@ -114,8 +116,6 @@ external = ["*"]
 "concert_tracker_core.*" = "core"
 "concert_tracker_adapter_ledger" = "adapters"
 "concert_tracker_adapter_ledger.*" = "adapters"
-"concert_tracker_adapter_lastfm" = "adapters"
-"concert_tracker_adapter_lastfm.*" = "adapters"
 "concert_tracker_ngram_index" = "adapters"
 "concert_tracker_ngram_index.*" = "adapters"
 "concert_tracker_app" = "app"

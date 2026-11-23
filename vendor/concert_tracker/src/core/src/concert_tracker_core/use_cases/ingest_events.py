@@ -20,6 +20,8 @@ from concert_tracker_core.event_ports import CandidateQuery, ExtractionFailedErr
 from concert_tracker_core.event_rules import RejectReason, validate_candidate
 from concert_tracker_core.event_similarity import DifflibSimilarEventIndex
 from concert_tracker_core.events import Event, MatchRule, Mention, local_date, require_aware
+from concert_tracker_core.promoters import PromoterDirectory
+from concert_tracker_core.title_artists import entities_with_title_artists
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -101,6 +103,8 @@ class IngestPorts:
     ids: IdGenerator
     similar_index: SimilarEventIndex | None = None
     raw_store: DocumentStore | None = None
+    promoters: PromoterDirectory | None = None
+    """Promoters to recognise in titles (so one is never read as an artist); none known if None."""
 
 
 class IngestEvents:
@@ -113,6 +117,7 @@ class IngestEvents:
         self._ids = ports.ids
         self._index = ports.similar_index
         self._raw_store = ports.raw_store
+        self._promoters = ports.promoters or PromoterDirectory(())
         self._home_tz = home_tz
         self._policy = policy or IdentityPolicy()
 
@@ -180,6 +185,10 @@ class IngestEvents:
         if isinstance(draft, RejectReason):
             run.tally.reject(draft)
             return
+        draft = replace(
+            draft,
+            entities=entities_with_title_artists(draft.title, draft.entities, self._promoters),
+        )
         day = local_date(draft.when)
         pool = self._repository.find_candidates(
             CandidateQuery(

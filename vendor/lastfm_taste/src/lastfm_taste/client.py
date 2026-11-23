@@ -11,11 +11,11 @@ __arbor__ = {"ring": "adapters"}
 
 import json
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 import httpx
 
-from concert_tracker_core.taste import TasteSourceError
+from lastfm_taste.taste import TasteConfigurationError, TasteSourceError
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -37,6 +37,14 @@ class LastfmNotFoundError(Exception):
     """Last.fm answered "not found" (error 6): the artist or user does not exist there."""
 
 
+class LastfmApi(Protocol):
+    """What the sources need from a Last.fm client: one call that returns the JSON answer."""
+
+    def call(self, method: str, **params: str) -> dict[str, object]:
+        """The JSON answer to `method`. Raises `LastfmNotFoundError` or `TasteSourceError`."""
+        ...
+
+
 class LastfmClient:
     def __init__(
         self,
@@ -48,7 +56,7 @@ class LastfmClient:
     ) -> None:
         if not api_key.strip():
             msg = "a Last.fm API key is required"
-            raise TasteSourceError(msg)
+            raise TasteConfigurationError(msg)
         self._key = api_key.strip()
         self._http = http or httpx.Client(timeout=_TIMEOUT_S)
         self._sleep = sleep
